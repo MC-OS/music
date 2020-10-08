@@ -65,7 +65,6 @@ public class Music.Widgets.ViewSelector : Gtk.ToolItem {
             mode_button.set_active (value ? (int) mode : -1);
             ((SimpleAction) App.main_window.lookup_action (Music.LibraryWindow.ACTION_VIEW_ALBUMS)).set_enabled (value);
             ((SimpleAction) App.main_window.lookup_action (Music.LibraryWindow.ACTION_VIEW_LIST)).set_enabled (value);
-            ((SimpleAction) App.main_window.lookup_action (Music.LibraryWindow.ACTION_VIEW_COLUMNS)).set_enabled (value);
         }
     }
 
@@ -87,16 +86,9 @@ public class Music.Widgets.ViewSelector : Gtk.ToolItem {
             _("View as list")
         );
 
-        var column = new Gtk.Image.from_icon_name ("view-column-symbolic", Gtk.IconSize.MENU);
-        column.tooltip_markup = Granite.markup_accel_tooltip (
-            application_instance.get_accels_for_action (LibraryWindow.ACTION_PREFIX + LibraryWindow.ACTION_VIEW_COLUMNS),
-            _("View in columns")
-        );
-
         mode_button = new Granite.Widgets.ModeButton ();
         mode_button.append (image);
         mode_button.append (list);
-        mode_button.append (column);
 
         add (mode_button);
 

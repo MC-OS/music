@@ -65,7 +65,6 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
     public const string ACTION_QUIT = "action_quit";
     public const string ACTION_SEARCH = "action_search";
     public const string ACTION_VIEW_ALBUMS = "action_view_albums";
-    public const string ACTION_VIEW_COLUMNS = "action_view_columns";
     public const string ACTION_VIEW_LIST = "action_view_list";
 
     private const ActionEntry[] ACTION_ENTRIES = {
@@ -76,7 +75,6 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         { ACTION_QUIT, action_quit },
         { ACTION_SEARCH, action_search },
         { ACTION_VIEW_ALBUMS, action_view_albums },
-        { ACTION_VIEW_COLUMNS, action_view_columns },
         { ACTION_VIEW_LIST, action_view_list }
     };
 
@@ -87,7 +85,6 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         application.set_accels_for_action (ACTION_PREFIX + ACTION_SEARCH, {"<Control>f"});
         application.set_accels_for_action (ACTION_PREFIX + ACTION_VIEW_ALBUMS, {"<Control>1"});
         application.set_accels_for_action (ACTION_PREFIX + ACTION_VIEW_LIST, {"<Control>2"});
-        application.set_accels_for_action (ACTION_PREFIX + ACTION_VIEW_COLUMNS, {"<Control>3"});
     }
 
     construct {
@@ -1076,10 +1073,6 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
 
     private void action_view_albums () {
         view_selector.selected = Widgets.ViewSelector.Mode.GRID;
-    }
-
-    private void action_view_columns () {
-        view_selector.selected = Widgets.ViewSelector.Mode.COLUMN;
     }
 
     private void action_view_list () {

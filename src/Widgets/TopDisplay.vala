@@ -75,10 +75,8 @@ public class Music.TopDisplay : Gtk.Stack {
         add_named (action_grid, "action");
         add_named (time_grid, "time");
         add_named (empty_grid, "empty");
-        get_style_context ().add_class (Gtk.STYLE_CLASS_TITLEBAR);
-        get_style_context ().add_class ("topBar");
 
-
+        get_style_context ().add_class (Gtk.STYLE_CLASS_ENTRY);
 
         show_all ();
 

@@ -22,7 +22,7 @@ subdir('data')
 app_deps = core_deps + [
   core,
   dependency('libgda-5.0'),
-  dependency('libhandy-1', version: '>=0.83.0'),
+  dependency('libhandy-1'),
   dependency('taglib_c'),
   dependency('zeitgeist-2.0'),
   meson.get_compiler('vala').find_library('posix'),

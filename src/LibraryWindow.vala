@@ -1051,6 +1051,27 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         }
     }
 
+    /*public bool on_key_pressed (Gtk.Widget widget, Gdk.EventKey event) {
+        switch (event.keyval) {
+            case Gdk.Key.AudioPrev:
+                play_previous_media();
+                break;
+            case Gdk.Key.AudioNext:
+                break;
+            case Gdk.Key.Right:
+                break;
+            case Gdk.Key.Left:
+                play_previous_media();
+                break;
+            case Gdk.Key.AudioPlay:
+                play_media();
+                break;
+            default:
+                break;
+        }
+        return true;
+    }*/
+
     private void action_play () {
         play_media ();
     }

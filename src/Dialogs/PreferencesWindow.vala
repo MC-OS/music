@@ -71,6 +71,10 @@ public class Music.PreferencesWindow : Gtk.Dialog {
         hide_on_close_switch.halign = Gtk.Align.START;
         main_settings.schema.bind ("close-while-playing", hide_on_close_switch, "active", SettingsBindFlags.INVERT_BOOLEAN);
 
+        var disable_smart_playlists_switch = new Gtk.Switch ();
+        disable_smart_playlists_switch.halign = Gtk.Align.START;
+        main_settings.schema.bind ("disable-smart-playlists", disable_smart_playlists_switch, "active", SettingsBindFlags.INVERT_BOOLEAN);
+
         var layout = new Gtk.Grid ();
         layout.column_spacing = 12;
         layout.margin = 6;
@@ -84,9 +88,11 @@ public class Music.PreferencesWindow : Gtk.Dialog {
         layout.attach (write_file_metadata_switch, 1, 4);
         layout.attach (new SettingsLabel (_("Copy imported files to Library:")), 0, 5);
         layout.attach (copy_imported_music_switch, 1, 5);
-        layout.attach (new Granite.HeaderLabel (_("Desktop Integration")), 0, 6);
-        layout.attach (new SettingsLabel (_("Continue playback when closed:")), 0, 7);
-        layout.attach (hide_on_close_switch, 1, 7);
+        layout.attach (new SettingsLabel (_("Disabe smart playlists")), 0, 6);
+        layout.attach (disable_smart_playlists_switch, 1, 6);
+        layout.attach (new Granite.HeaderLabel (_("Desktop Integration")), 0, 7);
+        layout.attach (new SettingsLabel (_("Continue playback when closed:")), 0, 8);
+        layout.attach (hide_on_close_switch, 1, 8);
 
         var content = get_content_area () as Gtk.Box;
         content.add (layout);

@@ -24,7 +24,7 @@
  * statement from your version.
  */
 
-public class Music.PreferencesWindow : Hdy.ApplicationWindow {
+public class Music.PreferencesWindow : Gtk.Dialog {
     public const int MIN_WIDTH = 420;
     public const int MIN_HEIGHT = 300;
 
@@ -32,18 +32,19 @@ public class Music.PreferencesWindow : Hdy.ApplicationWindow {
 
     public PreferencesWindow () {
         Object (
-
+            border_width: 6,
+            deletable: false,
+            destroy_with_parent: true,
+            height_request: MIN_HEIGHT,
+            resizable: false,
+            title: _("Preferences"),
+            transient_for: App.main_window,
+            width_request: MIN_WIDTH,
+            window_position: Gtk.WindowPosition.CENTER_ON_PARENT
         );
     }
 
     construct {
-        Hdy.init ();
-
-        var headerbar = new Hdy.HeaderBar ();
-        headerbar.show_close_button = true;
-        headerbar.set_title (_("Preferences"));
-        headerbar.show_all ();
-
         var library_filechooser = new Gtk.FileChooserButton (_("Select Music Folder…"), Gtk.FileChooserAction.SELECT_FOLDER);
         library_filechooser.hexpand = true;
         library_filechooser.set_current_folder (Settings.Main.get_default ().music_folder);
@@ -71,32 +72,30 @@ public class Music.PreferencesWindow : Hdy.ApplicationWindow {
         main_settings.schema.bind ("close-while-playing", hide_on_close_switch, "active", SettingsBindFlags.INVERT_BOOLEAN);
 
         var layout = new Gtk.Grid ();
-        layout.column_spacing = 3;
-        layout.margin = 3;
-        layout.row_spacing = 3;
+        layout.column_spacing = 12;
+        layout.margin = 6;
+        layout.row_spacing = 6;
         layout.attach (new Granite.HeaderLabel (_("Music Folder Location")), 0, 0);
         layout.attach (library_filechooser, 0, 1, 2, 1);
         layout.attach (new Granite.HeaderLabel (_("Library Management")), 0, 2);
-        layout.attach (new SettingsLabel (_("Keep Music folder organized:")), 0, 3, 5, 5);
-        layout.attach (organize_folders_switch, 1, 3, 2, 1);
-        layout.attach (new SettingsLabel (_("Write metadata to file:")), 0, 4, 5, 5);
-        layout.attach (write_file_metadata_switch, 1, 4, 2, 1);
-        layout.attach (new SettingsLabel (_("Copy imported files to Library:")), 0, 5, 5, 5);
-        layout.attach (copy_imported_music_switch, 1, 5, 2, 1);
+        layout.attach (new SettingsLabel (_("Keep Music folder organized:")), 0, 3);
+        layout.attach (organize_folders_switch, 1, 3);
+        layout.attach (new SettingsLabel (_("Write metadata to file:")), 0, 4);
+        layout.attach (write_file_metadata_switch, 1, 4);
+        layout.attach (new SettingsLabel (_("Copy imported files to Library:")), 0, 5);
+        layout.attach (copy_imported_music_switch, 1, 5);
         layout.attach (new Granite.HeaderLabel (_("Desktop Integration")), 0, 6);
-        layout.attach (new SettingsLabel (_("Continue playback when closed:")), 0, 7, 5, 5);
-        layout.attach (hide_on_close_switch, 1, 7, 2, 1);
+        layout.attach (new SettingsLabel (_("Continue playback when closed:")), 0, 7);
+        layout.attach (hide_on_close_switch, 1, 7);
 
-        var grid = new Gtk.Grid ();
-        grid.attach (headerbar, 0, 0);
-        grid.attach (layout, 0, 1);
-        grid.show_all ();
-
-        add (grid);
+        var content = get_content_area () as Gtk.Box;
+        content.add (layout);
 
         //FIXME: don't know if I can delete this
         Plugins.Manager.get_default ().hook_preferences_window (this);
 
+        var close_button = add_button (_("Close"), Gtk.ResponseType.CLOSE);
+        ((Gtk.Button) close_button).clicked.connect (() => destroy ());
     }
 
     private class SettingsLabel : Gtk.Label {

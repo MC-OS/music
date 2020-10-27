@@ -33,10 +33,10 @@ public class Music.PreferencesWindow : Gtk.Dialog {
     public PreferencesWindow () {
         Object (
             border_width: 6,
-            deletable: false,
+            deletable: true,
             destroy_with_parent: true,
             height_request: MIN_HEIGHT,
-            resizable: false,
+            resizable: true,
             title: _("Preferences"),
             transient_for: App.main_window,
             width_request: MIN_WIDTH,

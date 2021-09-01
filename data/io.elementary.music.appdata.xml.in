@@ -2,18 +2,28 @@
 <!-- Copyright 2015-2019 elementary, Inc. <contact@elementary.io> -->
 <component type="desktop-application">
   <id>io.elementary.music</id>
+  <launchable type="desktop-id">io.elementary.music.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
   <project_group>elementary</project_group>
   <project_license>GPL-3.0+</project_license>
   <name>Music</name>
   <summary>The official elementary music player</summary>
   <description>
-    <p>Music is a fast and beautiful audio player with a focus on music and libraries. It handles external devices, CDs, and album art.</p>
+    <p>Music is a fast and beautiful audio player with a focus on music and libraries. It handles external devices and album art.</p>
   </description>
   <releases>
-    <release version="5.1.0" date="2020-04-2" urgency="medium">
+    <release version="5.1.1" date="2021-07-16" urgency="medium">
       <description>
+        <p>Drop support for Last.FM</p>
+        <p>Updated translations</p>
+      </description>
+    </release>
+    <release version="5.1.0" date="2021-07-13" urgency="medium">
+      <description>
+        <p>Fix an issue with saving smart playlists</p>
         <p>Drop support for CD-ROM</p>
+        <p>Dark style support</p>
+        <p>Minor visual improvements</p>
         <p>Updated translations</p>
       </description>
     </release>

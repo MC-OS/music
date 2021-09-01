@@ -24,23 +24,13 @@
  * statement from your version.
  */
 
-public class Music.PreferencesWindow : Gtk.Dialog {
-    public const int MIN_WIDTH = 420;
-    public const int MIN_HEIGHT = 300;
-
-    public Gtk.FileChooserButton library_filechooser;
-
+public class Music.PreferencesWindow : Granite.Dialog {
     public PreferencesWindow () {
         Object (
-            border_width: 6,
-            deletable: true,
             destroy_with_parent: true,
-            height_request: MIN_HEIGHT,
-            resizable: true,
+            resizable: false,
             title: _("Preferences"),
-            transient_for: App.main_window,
-            width_request: MIN_WIDTH,
-            window_position: Gtk.WindowPosition.CENTER_ON_PARENT
+            transient_for: App.main_window
         );
     }
 
@@ -94,8 +84,7 @@ public class Music.PreferencesWindow : Gtk.Dialog {
         layout.attach (new SettingsLabel (_("Continue playback when closed:")), 0, 8);
         layout.attach (hide_on_close_switch, 1, 8);
 
-        var content = get_content_area () as Gtk.Box;
-        content.add (layout);
+        get_content_area ().add (layout);
 
         //FIXME: don't know if I can delete this
         Plugins.Manager.get_default ().hook_preferences_window (this);

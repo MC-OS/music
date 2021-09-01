@@ -102,23 +102,26 @@ public class Music.LocalLibrary : Library {
             }
         }
 
-        // Load all smart playlists from database
-        var sp_ids = get_rowids_from_table (Database.SmartPlaylists.TABLE_NAME);
-        if (sp_ids.is_empty) {
-            LocalSmartPlaylist.add_defaults (connection);
-            sp_ids = get_rowids_from_table (Database.SmartPlaylists.TABLE_NAME);
-        }
+        if (App.settings.get_boolean ("disable-smart-playlists")) {
+            // Load all smart playlists from database
+            var sp_ids = get_rowids_from_table (Database.SmartPlaylists.TABLE_NAME);
+            if (sp_ids.is_empty) {
+                    LocalSmartPlaylist.add_defaults (connection);
 
-        foreach (var sp_id in sp_ids) {
-            var sp = new LocalSmartPlaylist (sp_id, connection);
-            _smart_playlists.add (sp);
-        }
+                sp_ids = get_rowids_from_table (Database.SmartPlaylists.TABLE_NAME);
+            }
 
-        // Load all static playlists from database
-        var p_ids = get_rowids_from_table (Database.Playlists.TABLE_NAME);
-        foreach (var p_id in p_ids) {
-            var p = new LocalStaticPlaylist (p_id, connection);
-            _playlists.add (p);
+            foreach (var sp_id in sp_ids) {
+                var sp = new LocalSmartPlaylist (sp_id, connection);
+                _smart_playlists.add (sp);
+            }
+
+            // Load all static playlists from database
+            var p_ids = get_rowids_from_table (Database.Playlists.TABLE_NAME);
+            foreach (var p_id in p_ids) {
+                var p = new LocalStaticPlaylist (p_id, connection);
+                _playlists.add (p);
+            }
         }
     }
 

@@ -1,7 +1,7 @@
 project(
   'io.elementary.music',
   'vala', 'c',
-  version: '5.0.5'
+  version: '5.1.1'
 )
 
 prefix = get_option('prefix')
@@ -14,6 +14,15 @@ add_global_arguments([
         '-DHANDY_USE_UNSTABLE_API'
     ],
     language:'c'
+)
+
+config_data = configuration_data()
+config_data.set_quoted('LOCALEDIR', join_paths(get_option('prefix'), get_option('localedir')))
+config_data.set_quoted('GETTEXT_PACKAGE', meson.project_name())
+config_file = configure_file(
+    input: 'src/Config.vala.in',
+    output: '@BASENAME@',
+    configuration: config_data
 )
 
 subdir('core')
@@ -95,6 +104,7 @@ app_files = files(
 app = executable (
     meson.project_name(),
     app_files,
+    config_file,
     icon_res,
     dependencies: app_deps,
     install: true
@@ -104,6 +114,7 @@ app = executable (
 app_shared_lib = static_library(
     'music-lib',
     app_files,
+    config_file,
     dependencies: app_deps
 )
 

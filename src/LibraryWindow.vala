@@ -190,7 +190,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
     public void build_ui () {
         height_request = 350;
         width_request = 400;
-        icon_name = "multimedia-audio-player";
+        icon_name = application.application_id;
         title = _("Music");
 
         int window_x, window_y, window_width, window_height;
@@ -559,7 +559,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         if (icon != null) {
             notification.set_icon (icon);
         } else {
-            notification.set_icon (new ThemedIcon ("multimedia-audio-player"));
+            notification.set_icon (new ThemedIcon (icon_name));
         }
 
         notification.set_default_action ("app.present");

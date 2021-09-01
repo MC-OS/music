@@ -27,11 +27,8 @@
 public class Music.PreferencesWindow : Granite.Dialog {
     public PreferencesWindow () {
         Object (
-            border_width: 6,
-            deletable: true,
             destroy_with_parent: true,
-            height_request: MIN_HEIGHT,
-            resizable: true,
+            resizable: false,
             title: _("Preferences"),
             transient_for: App.main_window
         );

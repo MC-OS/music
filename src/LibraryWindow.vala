@@ -1241,16 +1241,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
      * This doesn't apply to calls to App.instance.quit ()
      */
     public override bool delete_event (Gdk.EventAny event) {
-        bool playing = App.player.current_media != null && App.player.playing;
-
-        // if playing a song, don't allow closing
-        if (!App.settings.get_boolean ("close-while-playing") && playing) {
-            hide ();
-
-            return true;
-        }
-
-        return false; // can exit
+        return true; // can exit
     }
 
     public override bool configure_event (Gdk.EventConfigure event) {

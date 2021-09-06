@@ -600,28 +600,4 @@ public class Music.Plugins.iPodLibrary : Music.Library { //vala-lint=naming-conv
             }
         }
     }
-
-    void cleanup_files (GLib.File music_folder, Gee.LinkedList<string> used_uris) {
-        GLib.FileInfo file_info = null;
-        try {
-            var enumerator = music_folder.enumerate_children (
-                FileAttribute.STANDARD_NAME + "," + FileAttribute.STANDARD_TYPE,
-                0
-            );
-            while ((file_info = enumerator.next_file ()) != null) {
-                var file_uri = music_folder.get_uri () + "/" + file_info.get_name ();
-                if (file_info.get_file_type () == GLib.FileType.REGULAR && !used_uris.contains (file_uri)) {
-                    message ("Deleting unused file %s\n", file_uri);
-                    var file = File.new_for_uri (file_uri);
-                    file.delete ();
-                } else if (file_info.get_file_type () == GLib.FileType.REGULAR) {
-                    used_uris.remove (file_uri);
-                } else if (file_info.get_file_type () == GLib.FileType.DIRECTORY) {
-                    cleanup_files (GLib.File.new_for_uri (file_uri), used_uris);
-                }
-            }
-        } catch (GLib.Error err) {
-            critical ("Could not pre-scan music folder. Progress percentage may be off: %s", err.message);
-        }
-    }
 }

@@ -32,15 +32,9 @@
 public class Music.ListView : Gtk.Box, ViewInterface {
     public signal void reordered ();
 
-    // Wrapper for the list view and miller columns
-    private Gtk.Paned browser_pane; // for left mode
-
-    public ColumnBrowser column_browser { get; construct set; }
     public MusicListView list_view { get; construct set; }
 
     public ViewWrapper view_wrapper { get; construct set; }
-
-    private bool obey_column_browser = false;
 
     public uint n_media {
         get { return list_view.get_table ().size; }
@@ -48,37 +42,9 @@ public class Music.ListView : Gtk.Box, ViewInterface {
 
     // UI Properties
 
-    public bool has_column_browser { get { return column_browser != null; } }
-
-    public bool column_browser_enabled {
-        get {
-            return has_column_browser && !column_browser.no_show_all;
-        }
-        private set {
-            if (has_column_browser) {
-                column_browser.set_no_show_all (!value);
-                if (value) {
-                    // Populate column browser
-                    column_browser.show_all ();
-
-                    if (!column_browser.initialized)
-                        column_browser.set_media (get_visible_media ());
-                }
-                else {
-                    // Before hiding, reset the filters to "All..."
-                    // We want all the media to be shown as soon as the user disables
-                    // the column browser
-                    column_browser.hide ();
-                    column_browser.reset_filters ();
-                }
-            }
-        }
-    }
-
-    public ListView (ViewWrapper view_wrapper, TreeViewSetup tvs, bool add_browser = false) {
+    public ListView (ViewWrapper view_wrapper, TreeViewSetup tvs) {
         Object (view_wrapper: view_wrapper,
-                list_view: new MusicListView (view_wrapper, tvs),
-                column_browser: add_browser ? new ColumnBrowser (view_wrapper) : null);
+                list_view: new MusicListView (view_wrapper, tvs));
     }
 
     construct {
@@ -95,117 +61,8 @@ public class Music.ListView : Gtk.Box, ViewInterface {
         });
 
         list_view.set_search_func (view_search_func);
-        view_wrapper.library.search_finished.connect (() => { list_view.research_needed = true; });
-
-        if (has_column_browser) {
-            browser_pane = new Gtk.Paned (Gtk.Orientation.HORIZONTAL);
-            browser_pane.expand = true;
-            browser_pane.pack1 (column_browser, false, false);
-            browser_pane.pack2 (list_scrolled, true, false);
-
-            add (browser_pane);
-
-            set_column_browser_position (column_browser.position);
-
-            // Connect signals once the widget has been realized to avoid writing to settings
-            // on startup
-            realize.connect (connect_column_browser_ui_signals);
-
-            column_browser_enabled = App.saved_state.get_boolean ("column-browser-enabled");
-
-            // Connect data signals
-            column_browser.changed.connect (column_browser_changed);
-        } else {
-            add (list_scrolled);
-        }
-    }
-
-    private void set_column_browser_position (ColumnBrowser.Position position) {
-        ColumnBrowser.Position actual_position = position; //position that will be actually applied
-
-        if (actual_position == ColumnBrowser.Position.AUTOMATIC) {
-            // Decide what orientation to use based on the view area size
-
-            int view_width = get_allocated_width ();
-            const int MIN_RECOMMENDED_COLUMN_WIDTH = 160;
-
-            int visible_columns = 0;
-            foreach (var column in column_browser.columns) {
-                if (column.visible) {
-                    ++ visible_columns;
-                }
-            }
-
-
-            // Checks width and number of visible columns
-            int required_width = MIN_RECOMMENDED_COLUMN_WIDTH * visible_columns;
-            int n_cols = 0;
-            foreach (var column in list_view.get_columns ()) {
-                if (column.visible) {
-                    n_cols ++;
-                }
-            }
-
-            if (view_width - required_width < list_view.get_allocated_width () && n_cols > 2 && visible_columns > 2) {
-                actual_position = ColumnBrowser.Position.TOP;
-            } else {
-                actual_position = ColumnBrowser.Position.LEFT;
-            }
-        }
-
-        column_browser.actual_position = actual_position;
-
-        if (actual_position == ColumnBrowser.Position.LEFT) {
-            GLib.Settings.unbind (browser_pane, "position");
-            browser_pane.orientation = Gtk.Orientation.HORIZONTAL;
-            App.saved_state.bind ("column-browser-width", browser_pane, "position", GLib.SettingsBindFlags.DEFAULT);
-        } else if (actual_position == ColumnBrowser.Position.TOP) {
-            GLib.Settings.unbind (browser_pane, "position");
-            browser_pane.orientation = Gtk.Orientation.VERTICAL;
-            App.saved_state.bind ("column-browser-height", browser_pane, "position", GLib.SettingsBindFlags.DEFAULT);
-        }
-    }
-
-    private void connect_column_browser_ui_signals () {
-        if (!has_column_browser) {
-            return;
-        }
-
-        // For automatic position stuff
-        size_allocate.connect (() => {
-            if (!App.main_window.initialization_finished) {
-                return;
-            }
-
-            if (column_browser.position == ColumnBrowser.Position.AUTOMATIC) {
-                set_column_browser_position (ColumnBrowser.Position.AUTOMATIC);
-            }
-        });
-
-        column_browser.size_allocate.connect (() => {
-            if (!App.main_window.initialization_finished || !column_browser_enabled) {
-                return;
-            }
-        });
-
-        App.main_window.view_selector.column_browser_toggled.connect ((enabled) => {
-            if (enabled != column_browser_enabled) {
-                column_browser_enabled = enabled;
-            }
-        });
-
-        column_browser.position_changed.connect (set_column_browser_position);
-
-        // We only save the settings when this view wrapper is being destroyed. This avoids unnecessary
-        // disk access to write settings.
-        destroy.connect (save_column_browser_settings);
-    }
-
-    private void save_column_browser_settings () {
-        // Need to add a proper fix later ... Something similar to TreeViewSetup
-        if (has_column_browser) {
-            App.saved_state.set_boolean ("column-browser-enabled", column_browser_enabled);
-        }
+        view_wrapper.library.search_finished.connect (() => { list_view.research_needed = true; });      
+        add (list_scrolled);
     }
 
     /**
@@ -226,13 +83,6 @@ public class Music.ListView : Gtk.Box, ViewInterface {
         var media = new Gee.ArrayList<Media> ();
         media.add_all (list_view.get_visible_table ());
         return media;
-    }
-
-    private void column_browser_changed () {
-        if (App.main_window.initialization_finished) {
-            // This is supposed to take the browser's filter into account because obey_column_browser is #false
-            list_view.do_search (null);
-        }
     }
 
     public void set_as_current_list (int media_id) {
@@ -256,16 +106,8 @@ public class Music.ListView : Gtk.Box, ViewInterface {
     }
 
     public void set_media (Gee.Collection<Media> media) {
-        obey_column_browser = false;
-
         list_view.set_media (media);
         list_view.research_needed = true;
-
-        if (has_column_browser) {
-            column_browser.set_media (media);
-        }
-
-        obey_column_browser = true;
     }
 
     public void update_media (Gee.Collection<Media> media) {
@@ -273,22 +115,7 @@ public class Music.ListView : Gtk.Box, ViewInterface {
     }
 
     public void refilter () {
-        // We set 'obey_column_browser' to 'false' because otherwise refilter () would
-        // filter the visible media based on the browser's current filter, and then re-populate
-        // the browser using that same media. We don't want that to happen, because it would
-        // make the browser filter its own media!
-        // Basically, what 'obey_column_browser = false' does is forcing the view to traverse
-        // the entire item table again to decide what elements are visible without taking into
-        // account the column browser filter - just the search string.
-        //
-        // We can safely do this because the browser is smart enough to keep its current
-        // selection/filter as long as the new media contains properties matching the criteria.
-        obey_column_browser = false;
         list_view.do_search ();
-        obey_column_browser = true;
-
-        if (has_column_browser)
-            column_browser.set_media (view_wrapper.library.get_search_result ());
     }
 
     private void view_search_func (string search, Gee.ArrayList<Media> table, Gee.ArrayList<Media> showing) {
@@ -297,24 +124,15 @@ public class Music.ListView : Gtk.Box, ViewInterface {
         // If an external refiltering is going on, we cannot obey the column browser filter
         // because it wil be refreshed after this search based on the new 'showing' table
         // (populated by this method).
-        bool obey_column_browser = column_browser_enabled && this.obey_column_browser;
 
         if (result.size != view_wrapper.library.get_medias ().size) {
-            foreach (var m in table) {
-                if (obey_column_browser && !column_browser.match_media (m)) {
-                    continue;
-                }
-
+            foreach (var m in table) {              
                 if (m in result) {
                     showing.add (m);
                 }
             }
         } else {
             foreach (var m in table) {
-                if (obey_column_browser && !column_browser.match_media (m)) {
-                    continue;
-                }
-
                 showing.add (m);
             }
         }

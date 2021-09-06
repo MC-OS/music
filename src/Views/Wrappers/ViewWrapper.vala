@@ -237,13 +237,6 @@ public abstract class Music.ViewWrapper : Gtk.Grid {
                                                   && current_view != ViewType.WELCOME
                                                   && current_view != ViewType.ALERT;
 
-        // Set active mode to column view if it is visible. We have to ensure
-        // that it is not null because the column_browser is not guaranteed to
-        // exist. This is done separately from below because of ViewSelector's
-        // poor API.
-        App.main_window.view_selector.set_column_browser_toggle_active (list_view.column_browser != null
-                                                                       && list_view.column_browser.visible);
-
         // select the right view in the view selector if it's one of the three views.
         // The order is important here. The sensitivity set above must be set before this,
         // as view_selector_changed() depends on that.

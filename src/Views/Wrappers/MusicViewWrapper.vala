@@ -49,7 +49,7 @@ public class Music.MusicViewWrapper : ViewWrapper {
             music_setup = tvs;
         }
 
-        list_view = new ListView (this, music_setup, true);
+        list_view = new ListView (this, music_setup);
         top_display.list_view = list_view.list_view;
 
         // Welcome screen

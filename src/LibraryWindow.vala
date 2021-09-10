@@ -608,7 +608,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
     private void load_playlists () {
         debug ("Loading playlists");
 
-        if (App.settings.get_boolean ("disable-smart-playlists")) {
+        if (!App.settings.get_boolean ("enable-smart-playlists")) {
             foreach (SmartPlaylist p in library_manager.get_smart_playlists ()) {
                 add_smartplaylist (p);
             }

@@ -102,7 +102,7 @@ public class Music.LocalLibrary : Library {
             }
         }
 
-        if (App.settings.get_boolean ("disable-smart-playlists")) {
+        if (App.settings.get_boolean ("enable-smart-playlists")) {
             // Load all smart playlists from database
             var sp_ids = get_rowids_from_table (Database.SmartPlaylists.TABLE_NAME);
             if (sp_ids.is_empty) {

@@ -38,7 +38,7 @@ public class Music.Widgets.StatusBar : Gtk.ActionBar {
 
         var menu = new Gtk.Menu ();
         menu.append (add_pl_menuitem);
-        if (App.settings.get_boolean ("disable-smart-playlists")) {
+        if (App.settings.get_boolean ("enable-smart-playlists")) {
             menu.append (add_spl_menuitem);
         }
         menu.show_all ();

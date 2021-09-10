@@ -39,10 +39,10 @@
       <summary>Whether or not to copy imported files to music folder</summary>
       <description>Whether or not to copy imported files to music folder</description>
     </key>
-    <key type="b" name="disable-smart-playlists">
+    <key type="b" name="enable-smart-playlists">
       <default>false</default>
-      <summary>Whether to disable smart playlists will be hiden by default.</summary>
-      <description>When enabled, smart playlists will be disable by default next time you launch the App.</description>
+      <summary>Whether to enable smart playlists, Smart playlists will be hiden by default.</summary>
+      <description>When enabled, smart playlists stay hidden untill you relaunch the App this will change once I find a way to do it with needing to relaunch the App.</description>
     </key>
     <key enum="io.elementary.music.shuffle" name="shuffle-mode">
       <default>'off'</default>

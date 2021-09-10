@@ -57,9 +57,9 @@ public class Music.PreferencesWindow : Granite.Dialog {
         copy_imported_music_switch.halign = Gtk.Align.START;
         main_settings.schema.bind ("copy-imported-music", copy_imported_music_switch, "active", SettingsBindFlags.DEFAULT);
 
-        var disable_smart_playlists_switch = new Gtk.Switch ();
-        disable_smart_playlists_switch.halign = Gtk.Align.START;
-        main_settings.schema.bind ("disable-smart-playlists", disable_smart_playlists_switch, "active", SettingsBindFlags.INVERT_BOOLEAN);
+        var enable_smart_playlists_switch = new Gtk.Switch ();
+        enable_smart_playlists_switch.halign = Gtk.Align.START;
+        main_settings.schema.bind ("enable-smart-playlists", enable_smart_playlists_switch, "active", SettingsBindFlags.DEFAULT);
 
         var layout = new Gtk.Grid ();
         layout.column_spacing = 12;
@@ -75,8 +75,8 @@ public class Music.PreferencesWindow : Granite.Dialog {
         layout.attach (new SettingsLabel (_("Copy imported files to Library:")), 0, 5);
         layout.attach (copy_imported_music_switch, 1, 5);
 		layout.attach (new Granite.HeaderLabel (_("Look & Feel")), 0, 6);
-        layout.attach (new SettingsLabel (_("Disabe smart playlists")), 0, 7);
-        layout.attach (disable_smart_playlists_switch, 1, 7);
+        layout.attach (new SettingsLabel (_("Enabe smart playlists")), 0, 7);
+        layout.attach (enable_smart_playlists_switch, 1, 7);
 
         get_content_area ().add (layout);
 

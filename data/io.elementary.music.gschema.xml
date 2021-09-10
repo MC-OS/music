@@ -112,31 +112,6 @@
       <summary>Index of which view type to use</summary>
       <description>Index of which view type to use</description>
     </key>
-    <key type="b" name="column-browser-enabled">
-      <default>false</default>
-      <summary>Whether or not the column browser is enabled</summary>
-      <description>Whether or not the column browser is enabled</description>
-    </key>
-    <key type="i" name="column-browser-width">
-      <default>200</default>
-      <summary>column-browser column width</summary>
-      <description>column-browser column width</description>
-    </key>
-    <key type="i" name="column-browser-height">
-      <default>200</default>
-      <summary>column-browser column height</summary>
-      <description>column-browser column height</description>
-    </key>
-    <key type="i" name="column-browser-position">
-      <default>0</default>
-      <summary>column-browser columns position</summary>
-      <description>column-browser columns position</description>
-    </key>
-    <key type="as" name="column-browser-visible-columns">
-      <default>['3', '5', '6']</default>
-      <summary>Enabled column-browser columns for the music library view</summary>
-      <description>Enabled column-browser columns for the music library view</description>
-    </key>
   </schema>
 
   <schema path="/io/elementary/music/equalizer/" id="io.elementary.music.equalizer">

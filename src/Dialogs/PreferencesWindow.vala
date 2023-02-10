@@ -60,6 +60,10 @@ public class Music.PreferencesWindow : Granite.Dialog {
         var enable_smart_playlists_switch = new Gtk.Switch ();
         enable_smart_playlists_switch.halign = Gtk.Align.START;
         main_settings.schema.bind ("enable-smart-playlists", enable_smart_playlists_switch, "active", SettingsBindFlags.DEFAULT);
+        
+        var enable_headless_playlists_switch = new Gtk.Switch ();
+        enable_headless_playlists_switch.halign = Gtk.Align.START;
+        main_settings.schema.bind ("enable-headless-playlists", enable_headless_playlists_switch, "active", SettingsBindFlags.DEFAULT);
 
         var layout = new Gtk.Grid ();
         layout.column_spacing = 12;
@@ -77,6 +81,8 @@ public class Music.PreferencesWindow : Granite.Dialog {
 		layout.attach (new Granite.HeaderLabel (_("Look & Feel")), 0, 6);
         layout.attach (new SettingsLabel (_("Enabe smart playlists")), 0, 7);
         layout.attach (enable_smart_playlists_switch, 1, 7);
+        layout.attach (new SettingsLabel (_("Enabe headless playlists")), 0, 8);
+        layout.attach (enable_headless_playlists_switch, 1, 8);
 
         get_content_area ().add (layout);
 

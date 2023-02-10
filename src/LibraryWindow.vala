@@ -607,13 +607,26 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
 
     private void load_playlists () {
         debug ("Loading playlists");
-
-        if (!App.settings.get_boolean ("enable-smart-playlists")) {
+        
+        string sp_key = "enable-smart-playlists";
+        
+        App.settings.changed [sp_key].connect ((state) => {
+            foreach (SmartPlaylist p in library_manager.get_smart_playlists ()) {
+                if (App.settings.get_boolean (state)) {
+                    add_smartplaylist (p);
+                } else {
+                    remove_smartplaylist (p);
+                }
+            }
+        });
+        
+        if (App.settings.get_boolean (sp_key)) {
             foreach (SmartPlaylist p in library_manager.get_smart_playlists ()) {
                 add_smartplaylist (p);
             }
         }
 
+        
         foreach (StaticPlaylist p in library_manager.get_playlists ()) {
             add_playlist (p);
         }

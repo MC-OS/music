@@ -44,6 +44,13 @@
       <summary>Whether to enable smart playlists, Smart playlists will be hiden by default.</summary>
       <description>When enabled, smart playlists stay hidden untill you relaunch the App this will change once I find a way to do it with needing to relaunch the App.</description>
     </key>
+    
+    <key type="b" name="enable-headless-playlists">
+      <default>false</default>
+      <summary>Whether to enable headless playlists, headless playlists will be hiden by default.</summary>
+      <description>When enabled, headless playlists stay hidden untill you relaunch the App this will change once I find a way to do it with needing to relaunch the App.</description>
+    </key>
+    
     <key enum="io.elementary.music.shuffle" name="shuffle-mode">
       <default>'off'</default>
       <summary>An index representing the shuffle mode</summary>

@@ -31,6 +31,7 @@ public class Music.LibrariesManager : GLib.Object {
      * Headless playlists are playlists that are not linked to a library.
      */
     public signal void add_headless_playlist (StaticPlaylist playlist);
+    public signal void remove_headless_playlist (StaticPlaylist playlist);
 
     public signal void library_removed (Library library);
     public signal void library_added (Library library);

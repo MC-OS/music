@@ -133,6 +133,10 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         libraries_manager.add_headless_playlist.connect ((playlist) => {
             add_playlist (playlist);
         });
+        
+        libraries_manager.remove_headless_playlist.connect ((playlist) => {
+            remove_playlist (playlist);
+        });
 
         // init some booleans
         if (library_manager.get_medias ().size > 0) {
@@ -609,6 +613,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         debug ("Loading playlists");
         
         string sp_key = "enable-smart-playlists";
+        string headless_key = "enable-headless-playlists";
         
         App.settings.changed [sp_key].connect ((state) => {
             foreach (SmartPlaylist p in library_manager.get_smart_playlists ()) {
@@ -626,13 +631,24 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
             }
         }
 
+        App.settings.changed [headless_key].connect ((state) => {
+            if (App.settings.get_boolean (state)) {
+                libraries_manager.add_headless_playlist (App.player.queue_playlist);
+                libraries_manager.add_headless_playlist (App.player.history_playlist);
+            } else {
+                libraries_manager.remove_headless_playlist (App.player.queue_playlist);
+                libraries_manager.remove_headless_playlist (App.player.history_playlist);
+            }
+        });
+        
+        if (App.settings.get_boolean (headless_key)) {
+            libraries_manager.add_headless_playlist (App.player.queue_playlist);
+            libraries_manager.add_headless_playlist (App.player.history_playlist);
+        }
         
         foreach (StaticPlaylist p in library_manager.get_playlists ()) {
             add_playlist (p);
         }
-
-        libraries_manager.add_headless_playlist (App.player.queue_playlist);
-        libraries_manager.add_headless_playlist (App.player.history_playlist);
 
         // Add Music Library View
         var music_tvs = new TreeViewSetup (ViewWrapper.Hint.MUSIC, "library:main", library_manager.connection);

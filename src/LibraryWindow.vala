@@ -266,8 +266,8 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         view_selector.valign = Gtk.Align.CENTER;
 
         top_display = new TopDisplay ();
-        top_display.margin_start = 30;
-        top_display.margin_end = 30;
+        top_display.margin_start = 10;
+        top_display.margin_end = 10;
 
         var headerbar = new Hdy.HeaderBar ();
         headerbar.show_close_button = true;

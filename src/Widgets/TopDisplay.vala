@@ -130,47 +130,6 @@ public class Music.TopDisplay : Gtk.Stack {
         }
     }
 
-    private class RepeatChooser : SimpleOptionChooser {
-        public RepeatChooser () {
-            // MUST follow the exact same order of Music.Player.Repeat
-            append_item ("media-playlist-no-repeat-symbolic", _("Enable Repeat"));
-            append_item ("media-playlist-repeat-song-symbolic", _("Repeat Song"));
-            append_item ("media-playlist-repeat-symbolic", _("Disable Repeat"));
-
-            update_option ();
-
-            option_changed.connect (() => {
-                App.player.set_repeat_mode ((Music.PlaybackManager.RepeatMode) current_option);
-            });
-
-            App.player.notify["repeat"].connect (update_option);
-        }
-
-        private void update_option () {
-            set_option ((int) Music.App.settings.get_enum ("repeat-mode"));
-        }
-    }
-
-
-    private class ShuffleChooser : SimpleOptionChooser {
-        public ShuffleChooser () {
-            append_item ("media-playlist-consecutive-symbolic", _("Enable Shuffle"));
-            append_item ("media-playlist-shuffle-symbolic", _("Disable Shuffle"));
-
-            update_mode ();
-
-            option_changed.connect (() => {
-                App.player.set_shuffle_mode ((Music.PlaybackManager.ShuffleMode) current_option);
-            });
-
-            App.player.notify["shuffle"].connect (update_mode);
-        }
-
-        private void update_mode () {
-            set_option ((int) Music.App.settings.get_enum ("shuffle-mode"));
-        }
-    }
-
     public override void get_preferred_width (out int minimum_width, out int natural_width) {
         base.get_preferred_width (out minimum_width, out natural_width);
         minimum_width = 200;

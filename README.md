@@ -3,6 +3,8 @@
 
 ![Screenshot](data/screenshot.png?raw=true)
 
+This branch is based on the Elementary OS 6.0-6.1 version of the app which used the classic Mac OS/Window 7 iTunes UI, But is currently being Updated to be more inline with the more modern iTunes/Apple Music toolbar layout.
+
 ## Building, Testing, and Installation
 
 You'll need the following dependencies:

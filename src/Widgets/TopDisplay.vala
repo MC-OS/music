@@ -39,8 +39,6 @@ public class Music.TopDisplay : Gtk.Stack {
     construct {
         seek_bar = new Granite.SeekBar (0.0);
 
-        var shuffle_chooser = new ShuffleChooser ();
-        var repeat_chooser = new RepeatChooser ();
         var track_label = new TitleLabel ("");
 
         var track_eventbox = new Gtk.EventBox ();
@@ -48,9 +46,7 @@ public class Music.TopDisplay : Gtk.Stack {
 
         var time_grid = new Gtk.Grid ();
         time_grid.column_spacing = 12;
-        time_grid.attach (shuffle_chooser, 0, 0, 1, 1);
         time_grid.attach (track_eventbox, 1, 0, 1, 1);
-        time_grid.attach (repeat_chooser, 2, 0, 1, 1);
         time_grid.attach (seek_bar, 0, 1, 3, 1);
 
         var action_label = new TitleLabel ("");

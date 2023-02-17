@@ -231,6 +231,8 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         menu_button.popup = menu;
         menu_button.valign = Gtk.Align.CENTER;
 
+        var shuffle_chooser = new ShuffleChooser ();
+
         var previous_button = new Gtk.Button.from_icon_name (
             "media-skip-backward-symbolic",
             Gtk.IconSize.LARGE_TOOLBAR
@@ -252,6 +254,8 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         next_button.action_name = ACTION_PREFIX + ACTION_PLAY_NEXT;
         next_button.tooltip_text = _("Next");
 
+        var repeat_chooser = new RepeatChooser ();
+
         search_entry = new Gtk.SearchEntry ();
         search_entry.valign = Gtk.Align.CENTER;
         search_entry.placeholder_text = _("Search Music");
@@ -267,9 +271,11 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
 
         var headerbar = new Hdy.HeaderBar ();
         headerbar.show_close_button = true;
+        headerbar.pack_start (shuffle_chooser);
         headerbar.pack_start (previous_button);
         headerbar.pack_start (play_button);
         headerbar.pack_start (next_button);
+        headerbar.pack_start (repeat_chooser);
         headerbar.pack_start (view_selector);
         headerbar.pack_end (menu_button);
         headerbar.pack_end (search_entry);
@@ -1295,5 +1301,53 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         }
 
         return base.configure_event (event);
+    }
+    
+    private class RepeatChooser : SimpleOptionChooser {
+        public RepeatChooser () {
+            // MUST follow the exact same order of Music.Player.Repeat
+            append_item ("media-playlist-no-repeat-symbolic", _("Enable Repeat"));
+            append_item ("media-playlist-repeat-song-symbolic", _("Repeat Song"));
+            append_item ("media-playlist-repeat-symbolic", _("Disable Repeat"));
+
+            update_option ();
+
+            option_changed.connect (() => {
+                App.player.set_repeat_mode ((Music.PlaybackManager.RepeatMode) current_option);
+            });
+
+            App.player.notify["repeat"].connect (update_option);
+        }
+
+        private void update_option () {
+            set_option ((int) Music.App.settings.get_enum ("repeat-mode"));
+        }
+    }
+
+    private class ShuffleChooser : SimpleOptionChooser {
+        public ShuffleChooser () {
+            append_item ("media-playlist-consecutive-symbolic", _("Enable Shuffle"));
+            append_item ("media-playlist-shuffle-symbolic", _("Disable Shuffle"));
+
+            update_mode ();
+
+            option_changed.connect (() => {
+                App.player.set_shuffle_mode ((Music.PlaybackManager.ShuffleMode) current_option);
+            });
+
+            App.player.notify["shuffle"].connect (update_mode);
+        }
+
+        private void update_mode () {
+            set_option ((int) Music.App.settings.get_enum ("shuffle-mode"));
+        }
+    }
+
+    public override void get_preferred_width (out int minimum_width, out int natural_width) {
+        base.get_preferred_width (out minimum_width, out natural_width);
+        minimum_width = 200;
+        if (natural_width < 600) {
+            natural_width = 600;
+        }
     }
 }

@@ -54,7 +54,7 @@ public class Music.SimpleOptionChooser : Gtk.EventBox {
     }
 
     public int append_item (string icon_name, string tooltip) {
-        var image = new Gtk.Image.from_icon_name (icon_name, Gtk.IconSize.MENU);
+        var image = new Gtk.Image.from_icon_name (icon_name, Gtk.IconSize.LARGE_TOOLBAR);
         image.tooltip_text = tooltip;
 
         options.add (image);

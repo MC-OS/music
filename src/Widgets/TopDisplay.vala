@@ -72,7 +72,9 @@ public class Music.TopDisplay : Gtk.Stack {
         add_named (time_grid, "time");
         add_named (empty_grid, "empty");
 
-        get_style_context ().add_class (Gtk.STYLE_CLASS_ENTRY);
+        var style_context = get_style_context ();
+        style_context.add_class (Gtk.STYLE_CLASS_ENTRY);
+        style_context.add_class ("topDisplay");
 
         show_all ();
 

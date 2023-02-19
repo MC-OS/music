@@ -80,7 +80,7 @@ iconview.cell {
     font-weight: initial;
 }
 
-.topBar {
+.topBar, .topDisplay {
     background: @base_color;
     box-shadow:
         inset 0 0 1px 1px alpha (@bg_highlight_color, 0.05),
@@ -94,4 +94,8 @@ iconview.cell {
     border-radius: 3px;
     color: @text_color;
 
+}
+
+.topDisplay {
+    border-radius: 6px;
 }

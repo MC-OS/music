@@ -269,13 +269,20 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         top_display.margin_start = 10;
         top_display.margin_end = 10;
 
+        var media_control_grid = new Gtk.Grid ();
+        media_control_grid.column_spacing = 6;
+        media_control_grid.margin_start = 10;
+        media_control_grid.margin_end = 10;
+        media_control_grid.valign = Gtk.Align.CENTER;
+        media_control_grid.attach (shuffle_chooser, 0, 0, 1, 1);
+        media_control_grid.attach (previous_button, 1, 0, 1, 1);
+        media_control_grid.attach (play_button, 2, 0, 1, 1);
+        media_control_grid.attach (next_button, 3, 0, 1, 1);
+        media_control_grid.attach (repeat_chooser, 4, 0, 1, 1);
+
         var headerbar = new Hdy.HeaderBar ();
         headerbar.show_close_button = true;
-        headerbar.pack_start (shuffle_chooser);
-        headerbar.pack_start (previous_button);
-        headerbar.pack_start (play_button);
-        headerbar.pack_start (next_button);
-        headerbar.pack_start (repeat_chooser);
+        headerbar.pack_start (media_control_grid);
         headerbar.pack_start (view_selector);
         headerbar.pack_end (menu_button);
         headerbar.pack_end (search_entry);
@@ -1351,3 +1358,4 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         }
     }
 }
+

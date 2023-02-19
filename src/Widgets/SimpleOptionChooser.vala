@@ -26,7 +26,8 @@
  * Authored by: Scott Ringwelski <sgringwe@mtu.edu>
  */
 
-public class Music.SimpleOptionChooser : Gtk.EventBox {
+public class Music.SimpleOptionChooser : Gtk.Button {
+    private bool did_press;
     public Gee.ArrayList<Gtk.Image> options { get; set; }
     public int current_option { get; private set; }
 
@@ -35,6 +36,8 @@ public class Music.SimpleOptionChooser : Gtk.EventBox {
     construct {
         options = new Gee.ArrayList<Gtk.Image> ();
         current_option = 0;
+        get_style_context ().add_class ("image-button");
+        get_style_context ().add_class (Gtk.STYLE_CLASS_RAISED);
     }
 
     public void set_option (int index, bool by_user = false) {
@@ -55,7 +58,7 @@ public class Music.SimpleOptionChooser : Gtk.EventBox {
 
     public int append_item (string icon_name, string tooltip) {
         var image = new Gtk.Image.from_icon_name (icon_name, Gtk.IconSize.LARGE_TOOLBAR);
-        image.tooltip_text = tooltip;
+        this.tooltip_text = tooltip;
 
         options.add (image);
 
@@ -63,13 +66,26 @@ public class Music.SimpleOptionChooser : Gtk.EventBox {
     }
 
     public override bool button_press_event (Gdk.EventButton event) {
-        if (event.type == Gdk.EventType.BUTTON_PRESS) {
+        // Do nothing.  The normal handler sets priv->button_down which
+        // internally causes draw() to draw a special border and background
+        // that we don't want.
+        did_press = true;
+        return true;
+    }
+
+    public override bool button_release_event (Gdk.EventButton event) {
+        if (did_press)
+        {
+            event.type = Gdk.EventType.BUTTON_PRESS;
+            base.button_press_event (event); // fake an insta-click
             var next = current_option + 1 < options.size
                 ? current_option + 1
                 : 0;
             set_option (next, true);
+            did_press = false;
         }
 
-        return true;
+        event.type = Gdk.EventType.BUTTON_RELEASE;
+        return base.button_release_event (event);
     }
 }

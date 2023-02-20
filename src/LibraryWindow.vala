@@ -262,6 +262,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
 
         search_entry = new Gtk.SearchEntry ();
         search_entry.valign = Gtk.Align.CENTER;
+        search_entry.hexpand = true;
         search_entry.placeholder_text = _("Search Music");
 
         view_selector = new Widgets.ViewSelector ();

@@ -24,7 +24,7 @@
  * statement from your version.
  */
 
-public class Music.PreferencesWindow : Granite.Dialog {
+public class Music.PreferencesWindow : Hdy.ApplicationWindow {
     public PreferencesWindow () {
         Object (
             destroy_with_parent: true,

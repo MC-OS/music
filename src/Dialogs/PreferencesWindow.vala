@@ -90,10 +90,17 @@ public class Music.PreferencesWindow : Hdy.ApplicationWindow {
         layout.attach (new SettingsLabel (_("Enabe headless playlists")), 0, 8);
         layout.attach (enable_headless_playlists_switch, 1, 8);
 
-        get_content_area ().add (layout);
+        var close_button = new Gtk.Button ();
+        close_button.label = _("Close");
+        close_button.clicked.connect (() => destroy ());
+        close_button.halign = Gtk.Align.END;
+        close_button.margin_end = 5;
+        close_button.margin_bottom = 5;
+
         var grid = new Gtk.Grid ();
         grid.attach (headerbar, 0, 0);
         grid.attach (layout, 0, 1);
+        grid.attach (close_button, 0, 2);
         grid.show_all ();
 
         // get_content_area ().

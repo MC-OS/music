@@ -75,16 +75,16 @@ public class Music.PreferencesWindow : Hdy.ApplicationWindow {
         layout.column_spacing = 12;
         layout.margin = 6;
         layout.row_spacing = 6;
-        layout.attach (new Granite.HeaderLabel (_("Music Folder Location")), 0, 0);
+        layout.attach (new SettingsHeaderLabel (_("Music Folder Location")), 0, 0);
         layout.attach (library_filechooser, 0, 1, 2, 1);
-        layout.attach (new Granite.HeaderLabel (_("Library Management")), 0, 2);
+        layout.attach (new SettingsHeaderLabel (_("Library Management")), 0, 2);
         layout.attach (new SettingsLabel (_("Keep Music folder organized:")), 0, 3);
         layout.attach (organize_folders_switch, 1, 3);
         layout.attach (new SettingsLabel (_("Write metadata to file:")), 0, 4);
         layout.attach (write_file_metadata_switch, 1, 4);
         layout.attach (new SettingsLabel (_("Copy imported files to Library:")), 0, 5);
         layout.attach (copy_imported_music_switch, 1, 5);
-		layout.attach (new Granite.HeaderLabel (_("Look & Feel")), 0, 6);
+		layout.attach (new SettingsHeaderLabel (_("Look & Feel")), 0, 6);
         layout.attach (new SettingsLabel (_("Enabe smart playlists")), 0, 7);
         layout.attach (enable_smart_playlists_switch, 1, 7);
         layout.attach (new SettingsLabel (_("Enabe headless playlists")), 0, 8);
@@ -112,6 +112,14 @@ public class Music.PreferencesWindow : Hdy.ApplicationWindow {
 
         //var close_button = add_button (_("Close"), Gtk.ResponseType.CLOSE);
         //((Gtk.Button) close_button).clicked.connect (() => destroy ());
+    }
+
+    private class SettingsHeaderLabel : Gtk.Stack {
+        public SettingsHeaderLabel (string text) {
+            var HeaderLabel = new Granite.HeaderLabel(_(text));
+            hexpand = true;
+            add (HeaderLabel);
+        }
     }
 
     private class SettingsLabel : Gtk.Label {

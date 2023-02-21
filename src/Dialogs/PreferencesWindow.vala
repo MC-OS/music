@@ -35,6 +35,12 @@ public class Music.PreferencesWindow : Hdy.ApplicationWindow {
     }
 
     construct {
+        var headerbar = new Hdy.HeaderBar ();
+        headerbar.show_close_button = true;
+        headerbar.set_title (_("Settings"));
+        headerbar.set_has_subtitle (false);
+        headerbar.show_all ();
+
         var library_filechooser = new Gtk.FileChooserButton (_("Select Music Folder…"), Gtk.FileChooserAction.SELECT_FOLDER);
         library_filechooser.hexpand = true;
         library_filechooser.set_current_folder (Settings.Main.get_default ().music_folder);
@@ -85,12 +91,20 @@ public class Music.PreferencesWindow : Hdy.ApplicationWindow {
         layout.attach (enable_headless_playlists_switch, 1, 8);
 
         get_content_area ().add (layout);
+        var grid = new Gtk.Grid ();
+        grid.attach (headerbar, 0, 0);
+        grid.attach (layout, 0, 1);
+        grid.show_all ();
+
+        // get_content_area ().
+
+        add (grid);
 
         //FIXME: don't know if I can delete this
         Plugins.Manager.get_default ().hook_preferences_window (this);
 
-        var close_button = add_button (_("Close"), Gtk.ResponseType.CLOSE);
-        ((Gtk.Button) close_button).clicked.connect (() => destroy ());
+        //var close_button = add_button (_("Close"), Gtk.ResponseType.CLOSE);
+        //((Gtk.Button) close_button).clicked.connect (() => destroy ());
     }
 
     private class SettingsLabel : Gtk.Label {

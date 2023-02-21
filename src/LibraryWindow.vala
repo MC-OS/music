@@ -1152,7 +1152,6 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         if (preferences == null)
             preferences = new PreferencesWindow ();
         preferences.show_all ();
-        //preferences.run ();
         preferences = null;
     }
 

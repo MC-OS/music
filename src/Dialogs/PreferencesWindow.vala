@@ -103,15 +103,10 @@ public class Music.PreferencesWindow : Hdy.ApplicationWindow {
         grid.attach (close_button, 0, 2);
         grid.show_all ();
 
-        // get_content_area ().
-
         add (grid);
 
         //FIXME: don't know if I can delete this
         Plugins.Manager.get_default ().hook_preferences_window (this);
-
-        //var close_button = add_button (_("Close"), Gtk.ResponseType.CLOSE);
-        //((Gtk.Button) close_button).clicked.connect (() => destroy ());
     }
 
     private class SettingsHeaderLabel : Gtk.Stack {

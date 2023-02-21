@@ -36,7 +36,6 @@ public class Music.PreferencesWindow : Hdy.ApplicationWindow {
 
     construct {
         var headerbar = new Hdy.HeaderBar ();
-        headerbar.show_close_button = true;
         headerbar.set_title (_("Settings"));
         headerbar.set_has_subtitle (false);
         headerbar.show_all ();

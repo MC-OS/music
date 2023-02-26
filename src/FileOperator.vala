@@ -206,7 +206,6 @@ public class Music.FileOperator : Object {
                 //TODO: COPY ALBUM AND IMAGE ARTWORK
                 if (old_folder_items == 0) {
                     debug ("going to delete %s because no files are in it\n", file.get_parent ().get_path ());
-                    //original.get_parent ().delete ();
                     var old_folder_parent_items = FileUtils.count_music_files (file.get_parent ().get_parent (), dummy_list);
                     if (old_folder_parent_items == 0) {
                         debug ("going to delete %s because no files are in it\n", file.get_parent ().get_parent ().get_path ());

@@ -103,11 +103,9 @@ public class Music.DeviceManager : GLib.Object {
     }
 
     public virtual void mount_changed (Mount mount) {
-        //message ("mount_changed:%s\n", mount.get_uuid());
     }
 
     public virtual void mount_pre_unmount (Mount mount) {
-        //message ("mount_preunmount:%s\n", mount.get_uuid());
     }
 
     public Gee.Collection<unowned Device> get_initialized_devices () {

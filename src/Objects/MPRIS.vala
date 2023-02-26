@@ -157,7 +157,6 @@ public class MprisPlayer : GLib.Object {
         }
 
         update_metadata_source = Timeout.add (300, () => {
-            //print ("trigger_metadata_update %s\n", global.current_artist);
             Variant variant = playback_status;
 
             queue_property_for_notification ("PlaybackStatus", variant);

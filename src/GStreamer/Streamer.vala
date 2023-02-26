@@ -34,18 +34,10 @@ public class Music.Streamer : Music.Playback, GLib.Object {
     public Gst.Element cdda;
     public bool set_resume_pos;
 
-    /* Signals are now in the Playback interface !
-    public signal void end_of_stream ();
-    public signal void current_position_update (int64 position);
-    public signal void media_not_found ();
-    public signal void error_occured (); */
-
     public Streamer () {
         pipe = new Music.Pipeline ();
 
         pipe.bus.add_watch (GLib.Priority.DEFAULT, bus_callback);
-        //pipe.playbin.about_to_finish.connect(about_to_finish);
-
 
         Timeout.add (200, update_position);
     }
@@ -85,7 +77,6 @@ public class Music.Streamer : Music.Playback, GLib.Object {
     public void set_media (Media media) {
         set_state (Gst.State.READY);
         debug ("set uri to %s\n", media.uri);
-        //pipe.playbin.uri = uri.replace("#", "%23");
         pipe.playbin.set_property ("uri", media.uri.replace ("#", "%23"));
 
         set_state (Gst.State.PLAYING);

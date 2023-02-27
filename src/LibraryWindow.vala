@@ -230,7 +230,6 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         menu_button.image = new Gtk.Image.from_icon_name ("open-menu", Gtk.IconSize.LARGE_TOOLBAR);
         menu_button.popup = menu;
         menu_button.valign = Gtk.Align.CENTER;
-        menu_button.get_style_context ().add_class  (Gtk.STYLE_CLASS_RAISED);
 
         var shuffle_chooser = new ShuffleChooser ();
 
@@ -240,7 +239,6 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         );
         previous_button.action_name = ACTION_PREFIX + ACTION_PLAY_PREVIOUS;
         previous_button.tooltip_text = _("Previous");
-        previous_button.get_style_context ().add_class (Gtk.STYLE_CLASS_RAISED);
 
         var play_button = new Gtk.Button.from_icon_name (
             "media-playback-start-symbolic",
@@ -248,7 +246,6 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         );
         play_button.action_name = ACTION_PREFIX + ACTION_PLAY;
         play_button.tooltip_text = _("Play");
-        play_button.get_style_context ().add_class (Gtk.STYLE_CLASS_RAISED);
 
         var next_button = new Gtk.Button.from_icon_name (
             "media-skip-forward-symbolic",
@@ -256,7 +253,6 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         );
         next_button.action_name = ACTION_PREFIX + ACTION_PLAY_NEXT;
         next_button.tooltip_text = _("Next");
-        next_button.get_style_context ().add_class (Gtk.STYLE_CLASS_RAISED);
 
         var repeat_chooser = new RepeatChooser ();
 

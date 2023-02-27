@@ -37,7 +37,7 @@ public class Music.SimpleOptionChooser : Gtk.Button {
         options = new Gee.ArrayList<Gtk.Image> ();
         current_option = 0;
         get_style_context ().add_class ("image-button");
-        get_style_context ().add_class (Gtk.STYLE_CLASS_FLAT);
+        get_style_context ().add_class (Gtk.STYLE_CLASS_RAISED);
     }
 
     public void set_option (int index, bool by_user = false) {

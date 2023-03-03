@@ -88,4 +88,17 @@ public class Music.SimpleOptionChooser : Gtk.Button {
         event.type = Gdk.EventType.BUTTON_RELEASE;
         return base.button_release_event (event);
     }
+
+    public override bool key_press_event (Gdk.EventKey event) {
+        switch (event.keyval) {
+            case Gdk.Key.Return:
+                GLib.log("Pressed", GLib.LogLevelFlags.LEVEL_DEBUG, "key_press_event()");
+                return true;
+                break;
+            default:
+                return false;
+                break;
+        }
+        return base.key_press_event (event);
+    }
 }

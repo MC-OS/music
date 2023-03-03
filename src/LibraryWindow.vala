@@ -170,9 +170,32 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         bool modifiers_active = (event.state & modifiers) != 0;
 
         if (!modifiers_active && search_field_has_focus) {
-            if (event.keyval == Gdk.Key.space && !search_entry.has_focus && !source_list_view.editing) {
-                play_media (); // toggle play/pause
-                return true;
+            if (!search_entry.has_focus && !source_list_view.editing) {
+               if (App.player.playing) {
+                switch (event.keyval) {
+                    case Gdk.Key.Left:
+                        play_previous_media();
+                        return true;
+                        break;
+                    case Gdk.Key.Right:
+                        play_next_media ();
+                        return true;
+                        break;
+                    default:
+                        break;
+                        return false;
+                    }
+                }
+
+                switch (event.keyval) {
+                    case Gdk.Key.space:
+                        play_media (); // toggle play/pause
+                        break;
+                        return true;
+                    default:
+                        break;
+                        return false;
+                }
             }
 
             var typed_unichar = event.str.get_char ();
@@ -187,7 +210,6 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
                 }
             }
         }
-
         return base.key_press_event (event);
     }
 

@@ -179,7 +179,7 @@ public class Music.SourceListExpandableItem : Granite.Widgets.SourceList.Expanda
                     });
                     device_menu.append (add_playlist_menuitem);
                 }
-                
+
                 if (device_library.support_smart_playlists ()) {
                     var add_smart_playlist_menuitem = new Gtk.MenuItem.with_label (_("New Smart Playlist"));
                     add_smart_playlist_menuitem.activate.connect (() => {

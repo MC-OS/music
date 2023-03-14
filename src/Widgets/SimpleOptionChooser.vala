@@ -77,7 +77,7 @@ public class Music.SimpleOptionChooser : Gtk.Button {
         if (did_press) {
             event.type = Gdk.EventType.BUTTON_PRESS;
             base.button_press_event (event); // fake an insta-click
-            update_button();
+            update_button ();
         }
 
         event.type = Gdk.EventType.BUTTON_RELEASE;
@@ -87,7 +87,7 @@ public class Music.SimpleOptionChooser : Gtk.Button {
     public override bool key_press_event (Gdk.EventKey event) {
         switch (event.keyval) {
             case Gdk.Key.Return:
-                update_button();
+                update_button ();
                 return true;
                 break;
             default:
@@ -97,7 +97,7 @@ public class Music.SimpleOptionChooser : Gtk.Button {
         return base.key_press_event (event);
     }
 
-    public void update_button() {
+    public void update_button () {
         var next = current_option + 1 < options.size
             ? current_option + 1
             : 0;

@@ -89,10 +89,8 @@ public class Music.SimpleOptionChooser : Gtk.Button {
             case Gdk.Key.Return:
                 update_button ();
                 return true;
-                break;
             default:
                 return false;
-                break;
         }
         return base.key_press_event (event);
     }

@@ -92,7 +92,6 @@ public class Music.SimpleOptionChooser : Gtk.Button {
             default:
                 return false;
         }
-        return base.key_press_event (event);
     }
 
     public void update_button () {

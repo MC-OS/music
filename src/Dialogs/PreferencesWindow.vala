@@ -65,7 +65,7 @@ public class Music.PreferencesWindow : Hdy.ApplicationWindow {
         var enable_smart_playlists_switch = new Gtk.Switch ();
         enable_smart_playlists_switch.halign = Gtk.Align.START;
         main_settings.schema.bind ("enable-smart-playlists", enable_smart_playlists_switch, "active", SettingsBindFlags.DEFAULT);
-        
+
         var enable_headless_playlists_switch = new Gtk.Switch ();
         enable_headless_playlists_switch.halign = Gtk.Align.START;
         main_settings.schema.bind ("enable-headless-playlists", enable_headless_playlists_switch, "active", SettingsBindFlags.DEFAULT);
@@ -83,7 +83,7 @@ public class Music.PreferencesWindow : Hdy.ApplicationWindow {
         layout.attach (write_file_metadata_switch, 1, 4);
         layout.attach (new SettingsLabel (_("Copy imported files to Library:")), 0, 5);
         layout.attach (copy_imported_music_switch, 1, 5);
-		layout.attach (new SettingsHeaderLabel (_("Look & Feel")), 0, 6);
+        layout.attach (new SettingsHeaderLabel (_("Look & Feel")), 0, 6);
         layout.attach (new SettingsLabel (_("Enabe smart playlists")), 0, 7);
         layout.attach (enable_smart_playlists_switch, 1, 7);
         layout.attach (new SettingsLabel (_("Enabe headless playlists")), 0, 8);
@@ -110,9 +110,9 @@ public class Music.PreferencesWindow : Hdy.ApplicationWindow {
 
     private class SettingsHeaderLabel : Gtk.Stack {
         public SettingsHeaderLabel (string text) {
-            var HeaderLabel = new Granite.HeaderLabel(_(text));
+            var header_label = new Granite.HeaderLabel (_(text));
             hexpand = true;
-            add (HeaderLabel);
+            add (header_label);
         }
     }
 

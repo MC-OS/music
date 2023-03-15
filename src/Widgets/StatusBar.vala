@@ -38,7 +38,7 @@ public class Music.Widgets.StatusBar : Gtk.ActionBar {
 
         var menu = new Gtk.Menu ();
         menu.append (add_pl_menuitem);
-        
+
         string sp_key = "enable-smart-playlists";
 
         App.settings.changed [sp_key].connect ((state) => {
@@ -48,11 +48,11 @@ public class Music.Widgets.StatusBar : Gtk.ActionBar {
                 menu.remove (add_spl_menuitem);
             }
         });
-        
+
         if (App.settings.get_boolean (sp_key)) {
             menu.append (add_spl_menuitem);
         }
-        
+
         menu.show_all ();
 
         playlist_menubutton = new Gtk.MenuButton () {

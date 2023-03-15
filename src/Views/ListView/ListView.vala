@@ -61,7 +61,7 @@ public class Music.ListView : Gtk.Box, ViewInterface {
         });
 
         list_view.set_search_func (view_search_func);
-        view_wrapper.library.search_finished.connect (() => { list_view.research_needed = true; });      
+        view_wrapper.library.search_finished.connect (() => { list_view.research_needed = true; });
         add (list_scrolled);
     }
 
@@ -126,7 +126,7 @@ public class Music.ListView : Gtk.Box, ViewInterface {
         // (populated by this method).
 
         if (result.size != view_wrapper.library.get_medias ().size) {
-            foreach (var m in table) {              
+            foreach (var m in table) {
                 if (m in result) {
                     showing.add (m);
                 }

@@ -133,7 +133,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         libraries_manager.add_headless_playlist.connect ((playlist) => {
             add_playlist (playlist);
         });
-        
+
         libraries_manager.remove_headless_playlist.connect ((playlist) => {
             remove_playlist (playlist);
         });
@@ -252,7 +252,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         menu_button.image = new Gtk.Image.from_icon_name ("open-menu", Gtk.IconSize.LARGE_TOOLBAR);
         menu_button.popup = menu;
         menu_button.valign = Gtk.Align.CENTER;
-        menu_button.get_style_context ().add_class  (Gtk.STYLE_CLASS_RAISED);
+        menu_button.get_style_context ().add_class (Gtk.STYLE_CLASS_RAISED);
 
         var shuffle_chooser = new ShuffleChooser ();
 
@@ -651,10 +651,10 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
 
     private void load_playlists () {
         debug ("Loading playlists");
-        
+
         string sp_key = "enable-smart-playlists";
         string headless_key = "enable-headless-playlists";
-        
+
         App.settings.changed [sp_key].connect ((state) => {
             foreach (SmartPlaylist p in library_manager.get_smart_playlists ()) {
                 if (App.settings.get_boolean (state)) {
@@ -664,7 +664,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
                 }
             }
         });
-        
+
         if (App.settings.get_boolean (sp_key)) {
             foreach (SmartPlaylist p in library_manager.get_smart_playlists ()) {
                 add_smartplaylist (p);
@@ -680,12 +680,12 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
                 libraries_manager.remove_headless_playlist (App.player.history_playlist);
             }
         });
-        
+
         if (App.settings.get_boolean (headless_key)) {
             libraries_manager.add_headless_playlist (App.player.queue_playlist);
             libraries_manager.add_headless_playlist (App.player.history_playlist);
         }
-        
+
         foreach (StaticPlaylist p in library_manager.get_playlists ()) {
             add_playlist (p);
         }
@@ -1314,7 +1314,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
 
         return base.configure_event (event);
     }
-    
+
     private class RepeatChooser : SimpleOptionChooser {
         public RepeatChooser () {
             // MUST follow the exact same order of Music.Player.Repeat
@@ -1363,4 +1363,3 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         }
     }
 }
-

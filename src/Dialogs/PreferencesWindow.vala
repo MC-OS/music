@@ -149,17 +149,17 @@ public class Music.PreferencesWindow : Hdy.PreferencesWindow {
          * LOOK & FEEL PAGE
          */
 
-        var appearance_page = new Hdy.PreferencesPage ();
-        appearance_page.title = _("Look & Feel");
-        appearance_page.icon_name = "preferences-desktop-theme-symbolic";
+        var playlist_page = new Hdy.PreferencesPage ();
+        playlist_page.title = _("Playlist");
+        playlist_page.icon_name = "view-list-symbolic";
 
-        var appearance_group = new Hdy.PreferencesGroup ();
-        appearance_group.title = _("Playlists");
+        var playlist_group = new Hdy.PreferencesGroup ();
+        playlist_group.title = _("Playlists Management");
 
-        appearance_group.add (make_row (_("Enable smart playlists"), enable_smart_playlists_switch));
-        appearance_group.add (make_row (_("Enable headless playlists"), enable_headless_playlists_switch));
+        playlist_group.add (make_row (_("Enable smart playlists"), enable_smart_playlists_switch));
+        playlist_group.add (make_row (_("Enable headless playlists"), enable_headless_playlists_switch));
 
-        appearance_page.add (appearance_group);
+        playlist_page.add (playlist_group);
 
         /*
          * ADD PAGES
@@ -167,7 +167,7 @@ public class Music.PreferencesWindow : Hdy.PreferencesWindow {
 
         add (general_page);
         add (library_page);
-        add (appearance_page);
+        add (playlist_page);
 
         Plugins.Manager.get_default ().hook_preferences_window (this);
 

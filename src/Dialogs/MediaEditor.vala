@@ -134,12 +134,8 @@ public class Music.MediaEditor : Granite.Dialog {
         save_button.has_default = true;
         save_button.get_style_context ().add_class (Gtk.STYLE_CLASS_SUGGESTED_ACTION);
 
-        var action_area = (Gtk.ButtonBox) get_action_area ();
-        action_area.margin = 5;
-        action_area.margin_top = 14;
-        action_area.pack_start (arrows_grid, false, false, 0);
-        action_area.set_child_secondary (arrows_grid, true);
-        action_area.set_child_non_homogeneous (arrows_grid, true);
+        // Use the modern API to attach the child as a formal action widget on the left end
+        this.add_action_widget (arrows_grid, Gtk.ResponseType.HELP);
 
         previous_button.clicked.connect (previous_track);
         next_button.clicked.connect (next_track);

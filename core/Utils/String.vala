@@ -91,7 +91,7 @@ namespace Music.String {
             case UnicodeType.FORMAT:
             case UnicodeType.UNASSIGNED:
             case UnicodeType.NON_SPACING_MARK:
-            case UnicodeType.COMBINING_MARK:
+            case UnicodeType.SPACING_MARK:
             case UnicodeType.ENCLOSING_MARK:
             case UnicodeType.LINE_SEPARATOR:
             case UnicodeType.SPACE_SEPARATOR:

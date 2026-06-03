@@ -87,17 +87,35 @@ public class Music.InstallGstreamerPluginsDialog : Granite.MessageDialog {
         if (installation_done)
             return false;   // this ends the checking method
 
-        var search = new Granite.Services.SimpleCommand ("/home", "/usr/bin/dpkg -l");
-        search.run ();      // this is asynchronous. It will tell us when its done
+        // Declare the process variable outside the try block so the rest of the method can see it
+        Subprocess process = null;
 
-        search.done.connect ((exit) => {
-            if (search.output_str.contains ("fluendo")) {   // if plugins installed
-                Gst.update_registry ();
-                installation_done = true;
+        try {
+            // Launch dpkg asynchronously and pass the arguments as an array
+            process = new Subprocess (
+                SubprocessFlags.STDOUT_PIPE, 
+                "/usr/bin/dpkg", "-l"
+            );
+        } catch (Error e) {
+            warning ("Could not run command: %s", e.message);
+            return true; // Keep checking later if it fails to start
+        }
+
+        // Read the output asynchronously without freezing the UI
+        process.communicate_utf8_async.begin (null, null, (obj, res) => {
+            try {
+                string stdout_str;
+                process.communicate_utf8_async.end (res, out stdout_str, null);
+
+                if (stdout_str.contains ("fluendo")) {   // if plugins installed
+                    Gst.update_registry ();
+                    installation_done = true;
+                }
+            } catch (Error e) {
+                warning ("Error reading command output: %s", e.message);
             }
         });
 
-        // this will mean that it will be checked again
-        return true;
+        return true; // this will mean that it will be checked again
     }
 }

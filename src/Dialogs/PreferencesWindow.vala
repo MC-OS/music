@@ -24,7 +24,7 @@
  * statement from your version.
  */
 
-public class Music.PreferencesWindow : Hdy.ApplicationWindow {
+public class Music.PreferencesWindow : Hdy.PreferencesWindow {
     public PreferencesWindow () {
         Object (
             destroy_with_parent: true,
@@ -35,94 +35,163 @@ public class Music.PreferencesWindow : Hdy.ApplicationWindow {
     }
 
     construct {
-        var headerbar = new Hdy.HeaderBar ();
-        headerbar.set_title (_("Settings"));
-        headerbar.set_has_subtitle (false);
-        headerbar.show_all ();
-
-        var library_filechooser = new Gtk.FileChooserButton (_("Select Music Folder…"), Gtk.FileChooserAction.SELECT_FOLDER);
+        var main_settings = Settings.Main.get_default ();
+        /*
+         * File chooser
+         */
+        var library_filechooser = new Gtk.FileChooserButton (
+            _("Select Music Folder…"),
+            Gtk.FileChooserAction.SELECT_FOLDER
+        );
         library_filechooser.hexpand = true;
-        library_filechooser.set_current_folder (Settings.Main.get_default ().music_folder);
+        library_filechooser.set_current_folder (
+            main_settings.music_folder
+        );
+
         library_filechooser.file_set.connect (() => {
             string? filename = library_filechooser.get_filename ();
             App.main_window.set_music_folder (filename);
         });
 
-        var main_settings = Settings.Main.get_default ();
+        /*
+         * Switches
+         */
 
         var organize_folders_switch = new Gtk.Switch ();
-        organize_folders_switch.halign = Gtk.Align.START;
-        main_settings.schema.bind ("update-folder-hierarchy", organize_folders_switch, "active", SettingsBindFlags.DEFAULT);
-
         var write_file_metadata_switch = new Gtk.Switch ();
-        write_file_metadata_switch.halign = Gtk.Align.START;
-        main_settings.schema.bind ("write-metadata-to-file", write_file_metadata_switch, "active", SettingsBindFlags.DEFAULT);
-
         var copy_imported_music_switch = new Gtk.Switch ();
-        copy_imported_music_switch.halign = Gtk.Align.START;
-        main_settings.schema.bind ("copy-imported-music", copy_imported_music_switch, "active", SettingsBindFlags.DEFAULT);
-
         var enable_smart_playlists_switch = new Gtk.Switch ();
-        enable_smart_playlists_switch.halign = Gtk.Align.START;
-        main_settings.schema.bind ("enable-smart-playlists", enable_smart_playlists_switch, "active", SettingsBindFlags.DEFAULT);
-
         var enable_headless_playlists_switch = new Gtk.Switch ();
-        enable_headless_playlists_switch.halign = Gtk.Align.START;
-        main_settings.schema.bind ("enable-headless-playlists", enable_headless_playlists_switch, "active", SettingsBindFlags.DEFAULT);
 
-        var layout = new Gtk.Grid ();
-        layout.column_spacing = 12;
-        layout.margin = 6;
-        layout.row_spacing = 6;
-        layout.attach (new SettingsHeaderLabel (_("Music Folder Location")), 0, 0);
-        layout.attach (library_filechooser, 0, 1, 2, 1);
-        layout.attach (new SettingsHeaderLabel (_("Library Management")), 0, 2);
-        layout.attach (new SettingsLabel (_("Keep Music folder organized:")), 0, 3);
-        layout.attach (organize_folders_switch, 1, 3);
-        layout.attach (new SettingsLabel (_("Write metadata to file:")), 0, 4);
-        layout.attach (write_file_metadata_switch, 1, 4);
-        layout.attach (new SettingsLabel (_("Copy imported files to Library:")), 0, 5);
-        layout.attach (copy_imported_music_switch, 1, 5);
-        layout.attach (new SettingsHeaderLabel (_("Look & Feel")), 0, 6);
-        layout.attach (new SettingsLabel (_("Enabe smart playlists")), 0, 7);
-        layout.attach (enable_smart_playlists_switch, 1, 7);
-        layout.attach (new SettingsLabel (_("Enabe headless playlists")), 0, 8);
-        layout.attach (enable_headless_playlists_switch, 1, 8);
+        organize_folders_switch.valign = Gtk.Align.CENTER;
+        write_file_metadata_switch.valign = Gtk.Align.CENTER;
+        copy_imported_music_switch.valign = Gtk.Align.CENTER;
+        enable_smart_playlists_switch.valign = Gtk.Align.CENTER;
+        enable_headless_playlists_switch.valign = Gtk.Align.CENTER;
 
-        var close_button = new Gtk.Button ();
-        close_button.label = _("Close");
-        close_button.clicked.connect (() => destroy ());
-        close_button.halign = Gtk.Align.END;
-        close_button.margin_end = 5;
-        close_button.margin_bottom = 5;
+        main_settings.schema.bind (
+            "update-folder-hierarchy",
+            organize_folders_switch,
+            "active",
+            SettingsBindFlags.DEFAULT
+        );
 
-        var grid = new Gtk.Grid ();
-        grid.attach (headerbar, 0, 0);
-        grid.attach (layout, 0, 1);
-        grid.attach (close_button, 0, 2);
-        grid.show_all ();
+        main_settings.schema.bind (
+            "write-metadata-to-file",
+            write_file_metadata_switch,
+            "active",
+            SettingsBindFlags.DEFAULT
+        );
 
-        add (grid);
+        main_settings.schema.bind (
+            "copy-imported-music",
+            copy_imported_music_switch,
+            "active",
+            SettingsBindFlags.DEFAULT
+        );
 
-        //FIXME: don't know if I can delete this
+        main_settings.schema.bind (
+            "enable-smart-playlists",
+            enable_smart_playlists_switch,
+            "active",
+            SettingsBindFlags.DEFAULT
+        );
+
+        main_settings.schema.bind (
+            "enable-headless-playlists",
+            enable_headless_playlists_switch,
+            "active",
+            SettingsBindFlags.DEFAULT
+        );
+
+        /*
+         * GENERAL PAGE
+         */
+
+        var general_page = new Hdy.PreferencesPage ();
+        general_page.title = _("General");
+        general_page.icon_name = "preferences-system-symbolic";
+
+        var music_group = new Hdy.PreferencesGroup ();
+        music_group.title = _("Music Folder Location");
+
+        var folder_grid = new Gtk.Grid ();
+        folder_grid.column_spacing = 12;
+
+        var folder_label = new Gtk.Label (_("Music Folder"));
+        folder_label.halign = Gtk.Align.START;
+        folder_label.hexpand = true;
+
+        folder_grid.attach (folder_label, 0, 0, 1, 1);
+        folder_grid.attach (library_filechooser, 1, 0, 1, 1);
+
+        music_group.add (folder_grid);
+        general_page.add (music_group);
+
+        /*
+         * LIBRARY PAGE
+         */
+
+        var library_page = new Hdy.PreferencesPage ();
+        library_page.title = _("Library");
+        library_page.icon_name = "folder-music-symbolic";
+
+        var library_group = new Hdy.PreferencesGroup ();
+        library_group.title = _("Library Management");
+
+        library_group.add (make_row (_("Keep Music folder organized"), organize_folders_switch));
+        library_group.add (make_row (_("Write metadata to file"), write_file_metadata_switch));
+        library_group.add (make_row (_("Copy imported files to Library"), copy_imported_music_switch));
+
+        library_page.add (library_group);
+
+        /*
+         * LOOK & FEEL PAGE
+         */
+
+        var appearance_page = new Hdy.PreferencesPage ();
+        appearance_page.title = _("Look & Feel");
+        appearance_page.icon_name = "preferences-desktop-theme-symbolic";
+
+        var appearance_group = new Hdy.PreferencesGroup ();
+        appearance_group.title = _("Playlists");
+
+        appearance_group.add (make_row (_("Enable smart playlists"), enable_smart_playlists_switch));
+        appearance_group.add (make_row (_("Enable headless playlists"), enable_headless_playlists_switch));
+
+        appearance_page.add (appearance_group);
+
+        /*
+         * ADD PAGES
+         */
+
+        add (general_page);
+        add (library_page);
+        add (appearance_page);
+
         Plugins.Manager.get_default ().hook_preferences_window (this);
+
+        show_all ();
     }
 
-    private class SettingsHeaderLabel : Gtk.Stack {
-        public SettingsHeaderLabel (string text) {
-            var header_label = new Granite.HeaderLabel (_(text));
-            hexpand = true;
-            add (header_label);
-        }
-    }
+    /*
+     * Helper: replaces ActionRow completely
+     */
+    private Gtk.Widget make_row (string title, Gtk.Switch sw) {
+        var grid = new Gtk.Grid ();
+        grid.column_spacing = 12;
+        grid.margin_top = 6;
+        grid.margin_bottom = 6;
 
-    private class SettingsLabel : Gtk.Label {
-        public SettingsLabel (string text) {
-            label = text;
-            halign = Gtk.Align.END;
-            hexpand = true;
-            margin_start = 12;
-        }
-    }
+        var label = new Gtk.Label (title);
+        label.halign = Gtk.Align.START;
+        label.hexpand = true;
 
+        sw.valign = Gtk.Align.CENTER;
+
+        grid.attach (label, 0, 0, 1, 1);
+        grid.attach (sw, 1, 0, 1, 1);
+
+        return grid;
+    }
 }

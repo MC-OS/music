@@ -54,9 +54,9 @@ public class Music.SetMusicFolderConfirmation : Granite.MessageDialog {
         playlist_box.pack_end (is_finished, false, false, 0);
         playlist_box.pack_end (is_working, false, false, 0);
 
-        var action_area = (Gtk.ButtonBox) get_action_area ();
-        action_area.add (playlist_box);
-        action_area.set_child_secondary (playlist_box, true);
+        // FIX: Add your custom box container as an action widget natively.
+        // This completely bypasses get_action_area() and satisfies the compiler!
+        this.add_action_widget (playlist_box, Gtk.ResponseType.HELP);
 
         unowned var set_button = (Gtk.Button) add_button (_("Set Music Folder"), Gtk.ResponseType.ACCEPT);
         set_button.get_style_context ().add_class (Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION);

@@ -78,9 +78,6 @@ public class Music.Plugins.Manager : Object {
         }
 
         /* Our extension set */
-        Parameter param = Parameter ();
-        param.value = plugin_iface;
-        param.name = "object";
         exts = new Peas.ExtensionSet (engine, typeof (Peas.Activatable), "object", plugin_iface, null);
 
         exts.extension_added.connect ((info, ext) => {

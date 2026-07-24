@@ -230,6 +230,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         menu_button.image = new Gtk.Image.from_icon_name ("open-menu", Gtk.IconSize.LARGE_TOOLBAR);
         menu_button.popup = menu;
         menu_button.valign = Gtk.Align.CENTER;
+        menu_button.tooltip_text = _("Ajust App Settings");
         menu_button.get_style_context ().add_class (Gtk.STYLE_CLASS_RAISED);
 
         var shuffle_chooser = new ShuffleChooser ();
@@ -288,9 +289,9 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         var headerbar = new Hdy.HeaderBar ();
         headerbar.show_close_button = true;
         headerbar.pack_start (media_control_grid);
-        headerbar.pack_start (view_selector);
         headerbar.pack_end (menu_button);
         headerbar.pack_end (search_entry);
+        headerbar.pack_end (view_selector);
         headerbar.set_title (_("Music"));
         headerbar.set_custom_title (top_display);
         headerbar.show_all ();

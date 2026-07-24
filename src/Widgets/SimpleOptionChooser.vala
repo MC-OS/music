@@ -52,6 +52,8 @@ public class Music.SimpleOptionChooser : Gtk.Button {
             remove (get_child ());
         }
 
+        this.tooltip_text = options[index].tooltip_text;
+
         add (options[index]);
         show_all ();
     }

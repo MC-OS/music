@@ -27,10 +27,10 @@
 public class Music.PreferencesWindow : Hdy.PreferencesWindow {
     public PreferencesWindow () {
         Object (
-            destroy_with_parent: true,
             resizable: false,
+            deletable: false,
             title: _("Preferences"),
-            transient_for: App.main_window
+            destroy_with_parent: true
         );
     }
 

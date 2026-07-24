@@ -58,19 +58,24 @@ public class Music.Widgets.StatusBar : Gtk.ActionBar {
         playlist_menubutton = new Gtk.MenuButton () {
             always_show_image = true,
             direction = Gtk.ArrowType.UP,
-            image = new Gtk.Image.from_icon_name ("list-add-symbolic", Gtk.IconSize.SMALL_TOOLBAR),
-            label = _("Add Playlist…"),
+            image = new Gtk.Image.from_icon_name ("list-add-symbolic", Gtk.IconSize.MENU),
+            tooltip_text = _("Add Playlist…"),
             popup = menu
         };
+
+        playlist_menubutton.get_style_context ().add_class (Gtk.STYLE_CLASS_RAISED);
 
         var eq_popover = new EqualizerPopover ();
 
         var eq_menubutton = new Gtk.MenuButton () {
             image = new Gtk.Image.from_icon_name ("media-eq-symbolic", Gtk.IconSize.SMALL_TOOLBAR),
+            tooltip_text = _("Ajust Equlizer Settings"),
             popover = eq_popover
         };
 
-        get_style_context ().add_class (Gtk.STYLE_CLASS_FLAT);
+        eq_menubutton.get_style_context ().add_class (Gtk.STYLE_CLASS_RAISED);
+
+        get_style_context ().add_class (Gtk.STYLE_CLASS_HEADER);
         pack_start (playlist_menubutton);
         pack_end (eq_menubutton);
 

@@ -230,6 +230,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         menu_button.image = new Gtk.Image.from_icon_name ("open-menu", Gtk.IconSize.LARGE_TOOLBAR);
         menu_button.popup = menu;
         menu_button.valign = Gtk.Align.CENTER;
+        menu_button.tooltip_text = _("Ajust App Settings");
         menu_button.get_style_context ().add_class (Gtk.STYLE_CLASS_RAISED);
 
         var shuffle_chooser = new ShuffleChooser ();

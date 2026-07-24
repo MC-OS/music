@@ -143,7 +143,11 @@ public class Music.GStreamerTagger : Object {
 
         // Try to do the best we can: if only tags are null, only skip these.
         // The other data should still be imported.
-        unowned Gst.TagList? tags = info.get_tags ();
+        #if GST_1_20_3
+            unowned Gst.TagList? tags = info.get_stream_info ()?.get_tags ();
+        #else
+            unowned Gst.TagList? tags = info.get_tags ();
+        #endif
 
         if (tags != null) {
 

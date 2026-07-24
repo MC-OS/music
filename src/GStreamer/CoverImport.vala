@@ -94,7 +94,11 @@ public class Music.CoverImport : GLib.Object {
 
         if (gstreamer_discovery_successful) {
             Gdk.Pixbuf pixbuf = null;
-            var tag_list = info.get_tags ();
+            #if GST_1_20_3
+                var tag_list = info.get_stream_info ()?.get_tags ();
+            #else
+                var tag_list = info.get_tags ();
+            #endif
             var sample = get_cover_sample (tag_list);
 
             if (sample == null) {

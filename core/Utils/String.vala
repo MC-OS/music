@@ -91,7 +91,11 @@ namespace Music.String {
             case UnicodeType.FORMAT:
             case UnicodeType.UNASSIGNED:
             case UnicodeType.NON_SPACING_MARK:
+            #if GLIB_2_72_4
+            case UnicodeType.SPACING_MARK:
+            #else
             case UnicodeType.COMBINING_MARK:
+            #endif
             case UnicodeType.ENCLOSING_MARK:
             case UnicodeType.LINE_SEPARATOR:
             case UnicodeType.SPACE_SEPARATOR:

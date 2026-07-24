@@ -284,7 +284,7 @@ namespace Gda {
 		[CCode (has_construct_function = false)]
 		protected DataModelIter ();
 		public static GLib.Quark error_quark ();
-		[Deprecated (since = "5.2")]
+		[Version (deprecated = true, deprecated_since = "5.2")]
 		public int get_column_for_param (Gda.Holder param);
 		public unowned Gda.Holder get_holder_for_field (int col);
 		public int get_row ();
@@ -785,7 +785,7 @@ namespace Gda {
 		public string escape_string (Gda.Connection? cnc, string str);
 		public string find_file (string inst_dir, string filename);
 		public unowned Gda.DataHandler get_data_handler_dbms (Gda.Connection? cnc, string for_type);
-		[Deprecated (since = "5.2")]
+		[Version (deprecated = true, deprecated_since = "5.2")]
 		public unowned Gda.DataHandler get_data_handler_default (Gda.Connection? cnc, GLib.Type type, string dbms_type);
 		public unowned Gda.DataHandler get_data_handler_g_type (Gda.Connection? cnc, GLib.Type for_type);
 		public unowned string get_default_dbms_type (Gda.Connection? cnc, GLib.Type type);
@@ -1255,16 +1255,16 @@ namespace Gda {
 		public bool import_from_model (Gda.DataModel from, bool overwrite, GLib.HashTable<int,int>? cols_trans) throws GLib.Error;
 		public bool import_from_string (string string, GLib.HashTable<int,int>? cols_trans, Gda.Set options) throws GLib.Error;
 		[CCode (vfunc_name = "i_iter_at_row")]
-		[Deprecated (since = "5.2")]
+		[Version (deprecated = true, deprecated_since = "5.2")]
 		public abstract bool iter_at_row (Gda.DataModelIter iter, int row);
 		[CCode (vfunc_name = "i_iter_next")]
-		[Deprecated (since = "5.2")]
+		[Version (deprecated = true, deprecated_since = "5.2")]
 		public abstract bool iter_next (Gda.DataModelIter iter);
 		[CCode (vfunc_name = "i_iter_prev")]
-		[Deprecated (since = "5.2")]
+		[Version (deprecated = true, deprecated_since = "5.2")]
 		public abstract bool iter_prev (Gda.DataModelIter iter);
 		[CCode (vfunc_name = "i_iter_set_value")]
-		[Deprecated (since = "5.2")]
+		[Version (deprecated = true, deprecated_since = "5.2")]
 		public abstract bool iter_set_value (Gda.DataModelIter iter, int col, GLib.Value value) throws GLib.Error;
 		[CCode (vfunc_name = "i_remove_row")]
 		public abstract bool remove_row (int row) throws GLib.Error;
@@ -1273,7 +1273,7 @@ namespace Gda {
 		public void set_column_name (int col, string name);
 		public void set_column_title (int col, string title);
 		[CCode (vfunc_name = "i_set_notify")]
-		[Deprecated (since = "5.2")]
+		[Version (deprecated = true, deprecated_since = "5.2")]
 		public abstract void set_notify (bool do_notify_changes);
 		[CCode (vfunc_name = "i_set_value_at")]
 		public abstract bool set_value_at (int col, int row, GLib.Value value) throws GLib.Error;

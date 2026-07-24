@@ -79,7 +79,11 @@ public class Music.Pipeline : GLib.Object {
 
         // Link the first tee pad to the primary audio sink queue
         Gst.Pad sinkpad = audiosinkqueue.get_static_pad ("sink");
-        pad = audiotee.get_request_pad ("src_%u");
+        #if VALA_0_52
+            pad = audiotee.get_request_pad ("src_%u");
+        #else
+            pad = audiotee.request_pad_simple ("src_%u");
+        #endif
         audiotee.set ("alloc-pad", pad);
         pad.link (sinkpad);
     }

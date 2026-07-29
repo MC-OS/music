@@ -261,6 +261,8 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
 
         var repeat_chooser = new RepeatChooser ();
 
+        var volume_button = new VolumeButton ();
+
         search_entry = new Gtk.SearchEntry ();
         search_entry.valign = Gtk.Align.CENTER;
         search_entry.hexpand = true;
@@ -281,17 +283,18 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         media_control_grid.margin_end = 10;
         media_control_grid.valign = Gtk.Align.CENTER;
         media_control_grid.attach (shuffle_chooser, 0, 0, 1, 1);
-        media_control_grid.attach (previous_button, 1, 0, 1, 1);
-        media_control_grid.attach (play_button, 2, 0, 1, 1);
-        media_control_grid.attach (next_button, 3, 0, 1, 1);
-        media_control_grid.attach (repeat_chooser, 4, 0, 1, 1);
+        media_control_grid.attach (previous_button, 2, 0, 1, 1);
+        media_control_grid.attach (play_button, 3, 0, 1, 1);
+        media_control_grid.attach (next_button, 4, 0, 1, 1);
+        media_control_grid.attach (repeat_chooser, 5, 0, 1, 1);
+        media_control_grid.attach (volume_button, 6, 0, 1, 1);
 
         var headerbar = new Hdy.HeaderBar ();
         headerbar.show_close_button = true;
         headerbar.pack_start (media_control_grid);
-        headerbar.pack_start (view_selector);
         headerbar.pack_end (menu_button);
         headerbar.pack_end (search_entry);
+        headerbar.pack_end (view_selector);
         headerbar.set_title (_("Music"));
         headerbar.set_custom_title (top_display);
         headerbar.show_all ();

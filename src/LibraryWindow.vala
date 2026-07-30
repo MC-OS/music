@@ -261,7 +261,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
 
         var repeat_chooser = new RepeatChooser ();
 
-        var volume_button = new VolumeButton ();
+        var volume_button = new Widgets.VolumeButton ();
 
         search_entry = new Gtk.SearchEntry ();
         search_entry.valign = Gtk.Align.CENTER;

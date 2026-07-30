@@ -34,7 +34,9 @@ public class Music.Widgets.VolumeButton : Gtk.MenuButton {
         // 4. Setup the popover and attach it to the button
         var popover = new Gtk.Popover (this);
         popover.add (this.slider);
-        popover.show_all (); 
+        
+        // FIX: Ensure the slider is shown, but DO NOT force-show the popover container
+        this.slider.show (); 
         
         this.set_popover (popover);
 

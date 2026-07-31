@@ -90,6 +90,7 @@ app_files = files(
   'src/Widgets/TopDisplay.vala',
   'src/Widgets/ViewSelector.vala',
   'src/Widgets/VolumeButton.vala',
+  'src/Widgets/MediaBar.vala',
   'src/Widgets/FastView/FastGrid.vala',
   'src/Widgets/FastView/FastGridModel.vala',
   'src/Widgets/FastView/FastListModel.vala',

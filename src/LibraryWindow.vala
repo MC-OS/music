@@ -302,6 +302,13 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         view_stack = new ViewStack ();
         source_list_view = new SourceListView ();
 
+        var view_Grid = new Gtk.Grid ();
+        view_Grid.orientation = Gtk.Orientation.VERTICAL;
+        view_Grid.get_style_context ().add_class (Gtk.STYLE_CLASS_FLAT);
+        view_Grid.add (view_stack);
+        view_Grid.add (new Widgets.MediaBar ());
+
+
         statusbar = new Widgets.StatusBar ();
 
         var sidebar_grid = new Gtk.Grid ();
@@ -312,7 +319,7 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
 
         var main_hpaned = new Gtk.Paned (Gtk.Orientation.HORIZONTAL);
         main_hpaned.pack1 (sidebar_grid, false, false);
-        main_hpaned.pack2 (view_stack, true, false);
+        main_hpaned.pack2 (view_Grid, true, false);
         main_hpaned.show_all ();
 
         var grid = new Gtk.Grid ();

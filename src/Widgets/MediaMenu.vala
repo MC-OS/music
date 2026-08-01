@@ -255,14 +255,17 @@ public class Music.MediaMenu : Gtk.Menu {
             return;
         }
 
+        var media_count = to_edit_med.size;
         var first_media = to_edit_med.first ();
         string music_folder_uri = File.new_for_path (Settings.Main.get_default ().music_folder).get_uri ();
-        if (to_edit_med.size == 1 && !first_media.file.query_exists () && first_media.uri.has_prefix (music_folder_uri)) {
+
+        if (media_count == 1 && !first_media.file.query_exists () && first_media.uri.has_prefix (music_folder_uri)) {
             first_media.unique_status_image = new ThemedIcon ("process-error-symbolic");
             var fnfd = new FileNotFoundDialog (to_edit_med);
             fnfd.present ();
         } else {
             var media_editor = new MediaEditor (to_edit_med);
+            media_editor.can_multi_edit(media_count > 1);
             media_editor.show_all ();
         }
     }

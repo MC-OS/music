@@ -43,6 +43,8 @@ public class Music.MediaEditor : Granite.Dialog {
     private Gtk.Button previous_button;
     private Gtk.Button next_button;
 
+    private Gtk.Grid arrows_grid;
+
     private Gee.TreeSet<Media> media_list;
     private Gee.HashMap<int64?, Media> temp_list;
     private Media current_media;
@@ -57,6 +59,7 @@ public class Music.MediaEditor : Granite.Dialog {
             width_request: 600,
             window_position: Gtk.WindowPosition.CENTER_ON_PARENT
         );
+
         media_list.add_all (given_media);
         set_media (media_list.first ());
     }
@@ -123,7 +126,7 @@ public class Music.MediaEditor : Granite.Dialog {
         previous_button = new Gtk.Button.from_icon_name ("go-previous-symbolic");
         next_button = new Gtk.Button.from_icon_name ("go-next-symbolic");
 
-        var arrows_grid = new Gtk.Grid ();
+        arrows_grid = new Gtk.Grid ();
         arrows_grid.get_style_context ().add_class (Gtk.STYLE_CLASS_LINKED);
         arrows_grid.add (previous_button);
         arrows_grid.add (next_button);
@@ -133,9 +136,6 @@ public class Music.MediaEditor : Granite.Dialog {
         var save_button = (Gtk.Button) add_button (_("Save"), Gtk.ResponseType.APPLY);
         save_button.has_default = true;
         save_button.get_style_context ().add_class (Gtk.STYLE_CLASS_SUGGESTED_ACTION);
-
-        // Use the modern API to attach the child as a formal action widget on the left end
-        this.add_action_widget (arrows_grid, Gtk.ResponseType.HELP);
 
         previous_button.clicked.connect (previous_track);
         next_button.clicked.connect (next_track);
@@ -147,6 +147,13 @@ public class Music.MediaEditor : Granite.Dialog {
 
             destroy ();
         });
+    }
+
+    public void can_multi_edit (bool can_multi_edit) {
+        // Use the modern API to attach the child as a formal action widget on the left end
+        if (can_multi_edit) {
+            add_action_widget (arrows_grid, Gtk.ResponseType.HELP);
+        }
     }
 
     private void previous_track () {

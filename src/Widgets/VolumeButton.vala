@@ -21,7 +21,7 @@ public class Music.Widgets.VolumeButton : Gtk.MenuButton {
         this.get_style_context ().add_class (Gtk.STYLE_CLASS_RAISED);
 
         // 2. Setup the dynamic icon
-        this.icon = new Gtk.Image.from_icon_name ("audio-volume-high-symbolic", Gtk.IconSize.BUTTON);
+        this.icon = new Gtk.Image.from_icon_name ("audio-volume-high-symbolic", Gtk.IconSize.LARGE_TOOLBAR);
         this.add (this.icon);
 
         // 3. Setup the clean vertical slider

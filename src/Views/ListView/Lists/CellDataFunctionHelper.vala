@@ -116,6 +116,12 @@ public class Music.CellDataFunctionHelper {
 
         Value val;
         tree_model.get_value (iter, column, out val);
+
+        if (val.type () != typeof (string)) {
+            ((Gtk.CellRendererText)cell).text = "";
+            return;
+        }
+
         ((Gtk.CellRendererText)cell).text = val.get_string ();
     }
 

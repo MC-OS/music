@@ -81,8 +81,10 @@ public class Music.TreeViewSetup : Object {
                 }
 
                 var columns_var = query_field ("columns");
-                if (columns_var != null && columns_var.type () != typeof (Gda.Null)) {
+                if (columns_var != null && columns_var.type () == typeof (string)) {
                     import_columns (columns_var.get_string ());
+                } else if (columns_var != null && columns_var.type () != typeof (Gda.Null)) {
+                    warning ("TreeViewSetup: skipped invalid columns field of type %s", columns_var.type ().to_string ());
                 }
             }
 
@@ -134,7 +136,11 @@ public class Music.TreeViewSetup : Object {
         for (int index = 0; index < col_strings.length - 1; ++index) {
             string[] pieces_of_column = col_strings[index].split (VALUE_SEP_STRING, 0);
 
-            var type = (ListColumn) int.parse (pieces_of_column[0]);
+            int type_value = int.parse (pieces_of_column[0]);
+            if (type_value < 0 || type_value >= ListColumn.N_COLUMNS)
+                return false;
+
+            var type = (ListColumn) type_value;
 
             int visible_val = int.parse (pieces_of_column[1]);
             if (visible_val != 1 && visible_val != 0)

@@ -34,7 +34,6 @@ public class Music.AlbumListGrid : Gtk.Grid {
             return _view_wrapper;
         }
         construct set {
-            list_view.parent_wrapper = value;
             _view_wrapper = value;
         }
     }

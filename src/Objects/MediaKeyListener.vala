@@ -61,12 +61,16 @@ public class Music.MediaKeyListener : Object {
             try {
                 media_object.grab_media_player_keys (Build.EXEC_NAME, (uint32)0);
             } catch (Error err) {
-                warning ("Could not grab media player keys: %s", err.message);
+                debug ("Could not grab media player keys: %s", err.message);
+                media_object = null;
             }
         }
     }
 
     public void release_media_keys () {
+        if (media_object == null)
+            return;
+
         try {
             media_object.release_media_player_keys (Build.EXEC_NAME);
         } catch (Error err) {

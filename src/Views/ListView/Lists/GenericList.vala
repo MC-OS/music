@@ -190,11 +190,14 @@ public abstract class Music.GenericList : Gtk.TreeView {
     // When the user clicks over a cell in the rating column, that cell renderer
     // emits the rating_changed signal. We need to update that rating...
     protected void on_rating_cell_changed (int new_rating, Gtk.Widget widget, string path) {
-        var m = get_media_from_index (int.parse (path));
+        var index = int.parse (path);
+        var m = get_media_from_index (index);
 
         return_if_fail (m != null);
 
         m.rating = new_rating;
+        fm.update_row (index);
+        queue_draw ();
 
         var to_update = new Gee.TreeSet<Media> ();
         to_update.add (m);
@@ -208,8 +211,8 @@ public abstract class Music.GenericList : Gtk.TreeView {
     }
 
     public override void row_activated (Gtk.TreePath path, Gtk.TreeViewColumn column) {
-        var m = get_media_from_index (int.parse (path.to_string ()));
-
+        var m = get_media_from_index (int.parse (path.to_string ()));        if (m == null)
+            return;
         // Now update current_list and current_index in LM if we aren't in the queue
         if (hint == ViewWrapper.Hint.QUEUE) {
             App.player.current_index = int.parse (path.to_string ());
@@ -225,7 +228,10 @@ public abstract class Music.GenericList : Gtk.TreeView {
         }
     }
 
-    private async void media_played (Media m) {
+    private async void media_played (Media? m) {
+        if (m == null)
+            return;
+
         queue_draw ();
 
         Idle.add_full (Priority.HIGH_IDLE + 10, media_played.callback);
@@ -235,7 +241,9 @@ public abstract class Music.GenericList : Gtk.TreeView {
     }
 
     public void set_as_current_list (Media? m = null) {
-        Media to_set = m == null ? App.player.current_media : m;
+        Media? to_set = m == null ? App.player.current_media : m;
+        if (to_set == null)
+            return;
 
         is_current_list = true;
         var main_settings = Settings.Main.get_default ();
@@ -263,10 +271,14 @@ public abstract class Music.GenericList : Gtk.TreeView {
         App.player.current_index = 0;
 
         // order the queue like this list
-        var view = App.main_window.match_playlists[App.player.queue_playlist];
-        view.list_view.list_view.set_sort_column_id (tvs.sort_column_id, tvs.sort_direction);
+        var view = App.main_window.match_playlists.get (App.player.queue_playlist);
+        if (view != null) {
+            view.list_view.list_view.set_sort_column_id (tvs.sort_column_id, tvs.sort_direction);
+        }
 
-        media_played.begin (App.player.current_media);
+        if (App.player.current_media != null) {
+            media_played.begin (App.player.current_media);
+        }
     }
 
     /**
@@ -340,13 +352,17 @@ public abstract class Music.GenericList : Gtk.TreeView {
     }
 
     /** Should not be manipulated by client */
-    public Gee.BidirList<Media> get_table () {
-        return table.read_only_view;
+    public Gee.List<Media> get_table () {
+        var result = new Gee.ArrayList<Media> ();
+        result.add_all (table);
+        return result;
     }
 
     /** Should not be manipulated by client */
-    public Gee.BidirList<Media> get_visible_table () {
-        return showing.read_only_view;
+    public Gee.List<Media> get_visible_table () {
+        var result = new Gee.ArrayList<Media> ();
+        result.add_all (showing);
+        return result;
     }
 
     public static int get_index_from_iter (Gtk.TreeIter iter) {

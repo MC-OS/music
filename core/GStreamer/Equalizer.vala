@@ -86,6 +86,8 @@ public class Music.Equalizer : GLib.Object {
         default_presets.add (new EqualizerPreset.with_gains (_("Soft Rock"), {20, 20, 10, -5, -25, -30, -20, -5, 15, 45}));
         default_presets.add (new EqualizerPreset.with_gains (_("Techno"), {40, 30, 0, -30, -25, 0, 40, 50, 50, 45}));
 
-        return default_presets.read_only_view;
+        var presets_copy = new Gee.ArrayList<EqualizerPreset> ();
+        presets_copy.add_all (default_presets);
+        return presets_copy;
     }
 }

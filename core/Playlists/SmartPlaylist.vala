@@ -109,7 +109,9 @@ public class Music.SmartPlaylist : Playlist {
     }
 
     public virtual Gee.Collection<SmartQuery> get_queries () {
-        return queries.read_only_view;
+        var queries_copy = new Gee.ArrayList<SmartQuery> ();
+        queries_copy.add_all (queries);
+        return queries_copy;
     }
 
     public virtual void add_query (SmartQuery s) {

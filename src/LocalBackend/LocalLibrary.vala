@@ -682,7 +682,9 @@ public class Music.LocalLibrary : Library {
         }
 
         debug ("%d media updated", updated.size);
-        media_updated (updated.read_only_view);
+        var updated_read_only = new Gee.ArrayList<Media> ();
+        updated_read_only.add_all (updated);
+        media_updated (updated_read_only);
         /* now do background work. even if update_meta is true, so must user preferences */
         if (update_meta)
             fo.save_media.begin (updated);
@@ -802,7 +804,9 @@ public class Music.LocalLibrary : Library {
 
         //TODO
         //FATAL noise_grid_view_real_compare_func: assertion 'o_a != NULL' failed
-        media_added (local_media.values.read_only_view);
+        var added_read_only = new Gee.ArrayList<Media> ();
+        added_read_only.add_all (local_media.values);
+        media_added (added_read_only);
     }
 
     public override void remove_media (Media s, bool trash) {
@@ -825,7 +829,9 @@ public class Music.LocalLibrary : Library {
 
         // Emit signal before actually removing the media because otherwise
         // media_from_id () and media_from_ids () wouldn't work.
-        media_removed (remove_treeset.read_only_view);
+        var removed_read_only = new Gee.ArrayList<Media> ();
+        removed_read_only.add_all (remove_treeset);
+        media_removed (removed_read_only);
 
         lock (_medias) {
             foreach (Media s in remove_treeset) {

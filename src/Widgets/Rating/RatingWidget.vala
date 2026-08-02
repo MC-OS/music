@@ -139,24 +139,32 @@ public class Music.RatingWidget : Gtk.EventBox {
                 int new_width = (item_width + star_spacing) * n_stars - star_spacing;
                 int new_height = item_height;
 
-                // Generate canvas pixbuf
-                if (canvas == null || new_width != width || new_height != height) {
-                    width = new_width;
-                    height = new_height;
-                    canvas = new Gdk.Pixbuf (Gdk.Colorspace.RGB, true, 8, width, height);
-                }
-
-                if (canvas != null) {
-                    canvas.fill ((uint) 0xffffff00);
-
-                    // Render
-                    for (int i = 0; i < n_stars; i++) {
-                        var to_copy = (i < rating) ? starred_pix : not_starred_pix;
-                        int dest_x = i * (item_width + (i > 0 ? star_spacing : 0)), dest_y = 0;
-                        to_copy.copy_area (0, 0, item_width, item_height, canvas, dest_x, dest_y);
-                    }
+                // Gdk.Pixbuf cannot be created with empty dimensions.
+                if (new_width <= 0 || new_height <= 0) {
+                    width = 0;
+                    height = 0;
+                    canvas = null;
+                    warning ("Empty width and height for rating canvas");
                 } else {
-                    warning ("NULL rating canvas");
+                    // Generate canvas pixbuf
+                    if (canvas == null || new_width != width || new_height != height) {
+                        width = new_width;
+                        height = new_height;
+                        canvas = new Gdk.Pixbuf (Gdk.Colorspace.RGB, true, 8, width, height);
+                    }
+
+                    if (canvas != null) {
+                        canvas.fill ((uint) 0xffffff00);
+
+                        // Render
+                        for (int i = 0; i < n_stars; i++) {
+                            var to_copy = (i < rating) ? starred_pix : not_starred_pix;
+                            int dest_x = i * (item_width + (i > 0 ? star_spacing : 0)), dest_y = 0;
+                            to_copy.copy_area (0, 0, item_width, item_height, canvas, dest_x, dest_y);
+                        }
+                    } else {
+                        warning ("NULL rating canvas");
+                    }
                 }
             }
 
@@ -216,6 +224,10 @@ public class Music.RatingWidget : Gtk.EventBox {
             // Invalidate old cached pixbufs
             starred_pixbufs.clear ();
             not_starred_pixbufs.clear ();
+
+            // The canvas may have been rendered before a style context was
+            // available. Render it again with the current symbolic colours.
+            property_changed = true;
         }
 
         private void on_property_changed () {
@@ -335,6 +347,9 @@ public class Music.RatingWidget : Gtk.EventBox {
     }
 
     public override bool draw (Cairo.Context context) {
+        if (renderer.canvas == null)
+            return false;
+
         Gtk.Allocation al;
         get_allocation (out al);
 

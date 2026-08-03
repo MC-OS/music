@@ -11,12 +11,11 @@
 public class Music.Widgets.VolumeButton : Gtk.MenuButton {
     private Gtk.Image icon;
     private Gtk.Scale slider;
-
-    // Fixed: Added 'new' keyword to explicitly hide the inherited Gtk.MenuButton property
     private new Gtk.Popover popover;
 
     private double last_volume = 1.0;
     private bool is_muted = false;
+    private uint hide_timeout_id = 0;
 
     public VolumeButton () {
         Object ();
@@ -24,7 +23,7 @@ public class Music.Widgets.VolumeButton : Gtk.MenuButton {
         // 1. Keep your original styling exactly as is
         this.relief = Gtk.ReliefStyle.NORMAL; 
         this.get_style_context ().add_class ("image-button");
-        this.get_style_context ().add_class (Gtk.STYLE_CLASS_RAISED); // fixed typo check or keep original
+        this.get_style_context ().add_class (Gtk.STYLE_CLASS_RAISED);
 
         // 2. Setup the dynamic icon
         this.icon = new Gtk.Image.from_icon_name ("audio-volume-high-symbolic", Gtk.IconSize.LARGE_TOOLBAR);
@@ -47,35 +46,27 @@ public class Music.Widgets.VolumeButton : Gtk.MenuButton {
         
         this.popover.add (box);
         this.set_popover (this.popover);
-
-        // Prevent GTK's automatic outside-click dismissal so it stays pinned open on hover
         this.popover.modal = false;
 
-        // 5. Hover-to-reveal: Pop open on mouse enter, close on leave using modern seat/device API
+        // 5. Hover events for the button and slider
         this.enter_notify_event.connect ((event) => {
+            cancel_hide_timeout ();
             this.popover.popup ();
             return false;
         });
 
         this.leave_notify_event.connect ((event) => {
-            Gdk.Window window = this.get_window ();
-            if (window != null) {
-                var display = window.get_display ();
-                var seat = display.get_default_seat ();
-                if (seat != null) {
-                    var pointer = seat.get_pointer ();
-                    int x, y;
-                    window.get_device_position (pointer, out x, out y, null);
+            schedule_hide_check ();
+            return false;
+        });
 
-                    Gtk.Allocation allocation;
-                    this.get_allocation (out allocation);
+        this.slider.enter_notify_event.connect ((event) => {
+            cancel_hide_timeout ();
+            return false;
+        });
 
-                    // If pointer is outside the button boundaries, hide popover
-                    if (x < 0 || x > allocation.width || y < 0 || y > allocation.height) {
-                        this.popover.popdown ();
-                    }
-                }
-            }
+        this.slider.leave_notify_event.connect ((event) => {
+            schedule_hide_check ();
             return false;
         });
 
@@ -107,15 +98,56 @@ public class Music.Widgets.VolumeButton : Gtk.MenuButton {
                 is_muted = true;
             }
 
-            // Your original connection
             App.player.volume = current_vol;
-            
-            // Trigger the icon change
             update_icon (current_vol);
         });
     }
 
-    // Helper method to handle the dynamic icon switching
+    private void cancel_hide_timeout () {
+        if (this.hide_timeout_id != 0) {
+            GLib.Source.remove (this.hide_timeout_id);
+            this.hide_timeout_id = 0;
+        }
+    }
+
+    private void schedule_hide_check () {
+        cancel_hide_timeout ();
+        this.hide_timeout_id = GLib.Timeout.add (150, () => {
+            this.hide_timeout_id = 0;
+
+            Gdk.Window window = this.get_window ();
+            if (window != null) {
+                var display = window.get_display ();
+                var seat = display.get_default_seat ();
+                if (seat != null) {
+                    var pointer = seat.get_pointer ();
+                    int x, y;
+                    window.get_device_position (pointer, out x, out y, null);
+
+                    Gtk.Allocation btn_alloc;
+                    this.get_allocation (out btn_alloc);
+
+                    bool inside_button = (x >= 0 && x <= btn_alloc.width && y >= 0 && y <= btn_alloc.height);
+
+                    bool inside_popover = false;
+                    var pop_window = this.popover.get_window ();
+                    if (pop_window != null) {
+                        int pop_x, pop_y;
+                        pop_window.get_device_position (pointer, out pop_x, out pop_y, null);
+                        Gtk.Allocation pop_alloc;
+                        this.popover.get_allocation (out pop_alloc);
+                        inside_popover = (pop_x >= 0 && pop_x <= pop_alloc.width && pop_y >= 0 && pop_y <= pop_alloc.height);
+                    }
+
+                    if (!inside_button && !inside_popover) {
+                        this.popover.popdown ();
+                    }
+                }
+            }
+            return false;
+        });
+    }
+
     private void update_icon (double volume) {
         string icon_name;
         

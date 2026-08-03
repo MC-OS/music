@@ -25,7 +25,7 @@ public class Music.Widgets.VolumeButton : Gtk.MenuButton {
         this.add (this.icon);
 
         // 3. Setup the clean vertical slider
-        this.slider = new Gtk.Scale.with_range (Gtk.Orientation.VERTICAL, 0.0, 1.0, 0.05);
+        this.slider = new Gtk.Scale.with_range (Gtk.Orientation.VERTICAL, 0.0, 1.0, 0.01);
         this.slider.set_inverted (true); // Puts highest volume at the top
         this.slider.set_size_request (-1, 120); // Gives the slider physical height
         this.slider.draw_value = false; // Hides the raw text number

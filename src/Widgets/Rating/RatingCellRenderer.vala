@@ -56,6 +56,7 @@ public class Music.RatingCellRenderer : Gtk.CellRendererPixbuf {
         // Set rating to 1 star and render to init the 'width' property
         rating = 1;
         renderer.render ();
+        update_pixbuf ();
     }
 
     public int star_spacing {
@@ -77,6 +78,13 @@ public class Music.RatingCellRenderer : Gtk.CellRendererPixbuf {
         set { renderer.n_stars = value; }
     }
 
+    private void update_pixbuf () {
+        this.pixbuf = renderer.canvas;
+        if (this.pixbuf != null) {
+            this.set_fixed_size (this.pixbuf.width, this.pixbuf.height);
+        }    
+    }
+
     public override void render (Cairo.Context ctx, Gtk.Widget widget, Gdk.Rectangle background_area, Gdk.Rectangle cell_area, Gtk.CellRendererState flags) {
         var style_context = widget.get_style_context ();
         var state = style_context.get_state ();
@@ -94,6 +102,7 @@ public class Music.RatingCellRenderer : Gtk.CellRendererPixbuf {
 
         renderer.style_context = style_context;
         renderer.render ();
+        update_pixbuf ();
         base.render (ctx, widget, background_area, cell_area, flags);
         n_stars = old_n_stars;
     }

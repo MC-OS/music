@@ -291,7 +291,6 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
 
         var headerbar = new Hdy.HeaderBar ();
         headerbar.show_close_button = true;
-        headerbar.pack_start (media_control_grid);
         headerbar.pack_end (menu_button);
         headerbar.pack_end (search_entry);
         headerbar.pack_end (view_selector);
@@ -302,12 +301,14 @@ public class Music.LibraryWindow : LibraryWindowInterface, Hdy.ApplicationWindow
         view_stack = new ViewStack ();
         source_list_view = new SourceListView ();
 
+        var media_bar = new Widgets.MediaBar ();
+        media_bar.pack_start (media_control_grid);
+
         var view_Grid = new Gtk.Grid ();
         view_Grid.orientation = Gtk.Orientation.VERTICAL;
         view_Grid.get_style_context ().add_class (Gtk.STYLE_CLASS_FLAT);
         view_Grid.add (view_stack);
-        view_Grid.add (new Widgets.MediaBar ());
-
+        view_Grid.add (media_bar);
 
         statusbar = new Widgets.StatusBar ();
 

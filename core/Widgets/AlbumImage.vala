@@ -32,6 +32,7 @@ public class Music.Widgets.AlbumImage : Gtk.Grid {
     construct {
         var style_context = get_style_context ();
         style_context.add_class (Granite.STYLE_CLASS_CARD);
+        style_context.add_class (Granite.STYLE_CLASS_ROUNDED);
         style_context.add_class ("album");
 
         image = new Gtk.Image ();

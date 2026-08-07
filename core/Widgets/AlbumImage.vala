@@ -38,6 +38,7 @@ public class Music.Widgets.AlbumImage : Gtk.Grid {
         image = new Gtk.Image ();
         image.height_request = 64;
         image.width_request = 64;
+        image.get_style_context ().add_class (Granite.STYLE_CLASS_ROUNDED);
 
         halign = Gtk.Align.CENTER;
         valign = Gtk.Align.CENTER;

@@ -74,6 +74,7 @@ public class Music.TopDisplay : Gtk.Stack {
 
         var style_context = get_style_context ();
         style_context.add_class (Gtk.STYLE_CLASS_ENTRY);
+        style_context.add_class (Granite.STYLE_CLASS_ROUNDED);
         style_context.add_class ("topDisplay");
 
         show_all ();

@@ -55,7 +55,6 @@ public class Music.PlaybackManager : Object {
     public StaticPlaylist queue_playlist;
     public HistoryPlaylist history_playlist;
 
-    // TODO: REWRITE IT USING THE LIBRARY
     private Library library { get { return libraries_manager.local_library; } }
 
     private int _current_index;

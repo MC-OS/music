@@ -203,12 +203,21 @@ public class Music.FileOperator : Object {
                 var file = File.new_for_uri (s.uri);
                 file.trash ();
                 var old_folder_items = FileUtils.count_music_files (file.get_parent (), dummy_list);
-                //TODO: COPY ALBUM AND IMAGE ARTWORK
                 if (old_folder_items == 0) {
-                    debug ("going to delete %s because no files are in it\n", file.get_parent ().get_path ());
-                    var old_folder_parent_items = FileUtils.count_music_files (file.get_parent ().get_parent (), dummy_list);
+                    var old_folder = file.get_parent ();
+
+                    debug ("going to delete %s because no files are in it\n",
+                        old_folder.get_path ());
+
+                    var old_folder_parent = old_folder.get_parent ();
+                    var old_folder_parent_items =
+                        FileUtils.count_music_files (old_folder_parent, dummy_list);
+
                     if (old_folder_parent_items == 0) {
-                        debug ("going to delete %s because no files are in it\n", file.get_parent ().get_parent ().get_path ());
+                        debug ("going to delete %s because no files are in it\n",
+                            old_folder_parent.get_path ());
+                        // Delete old_folder_parent here once artwork handling
+                        // has been accounted for.
                     }
                 }
             } catch (GLib.Error err) {

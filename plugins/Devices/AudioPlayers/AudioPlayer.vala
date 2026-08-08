@@ -53,13 +53,6 @@ namespace Music.Plugins {
 
         }
     }
-
-    /*public class AudioPlayerConfig : Peas.ExtensionBase, PeasGtk.Configurable {
-        public Gtk.Widget create_configure_widget () {
-            string text = "This is a configuration dialog for the ValaHello plugin.";
-            return new Gtk.Label (text);
-        }
-    }*/
 }
 
 [ModuleInit]
@@ -67,6 +60,4 @@ public void peas_register_types (GLib.TypeModule module) {
     var objmodule = module as Peas.ObjectModule;
     objmodule.register_extension_type (typeof (Peas.Activatable),
                                      typeof (Music.Plugins.AudioPlayerPlugin));
-    /*objmodule.register_extension_type (typeof (PeasGtk.Configurable),
-                                     typeof (Music.Plugins.AudioPlayerConfig));*/
 }

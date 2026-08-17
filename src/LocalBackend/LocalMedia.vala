@@ -229,6 +229,7 @@ public class Music.LocalMedia : Music.Media {
         }
     }
 
+    private uint? _rating = null;
     public override uint rating {
         get {
             common_uint_getter ("rating", ref _rating);

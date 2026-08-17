@@ -79,12 +79,8 @@ public class Music.Media : Object {
     public virtual uint samplerate { get; set; default = 0; }
 
     public virtual uint length { get; set; default = 0; } // duration in miliseconds
-
-    protected uint _rating;
-    public virtual uint rating {
-        get { return _rating; }
-        set { _rating = value.clamp (0, 5); }
-    }
+    
+    public virtual uint rating { get; set; default = 0; }
 
     /**
      * Internal stats

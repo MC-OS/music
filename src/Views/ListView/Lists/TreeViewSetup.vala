@@ -266,7 +266,6 @@ public class Music.TreeViewSetup : Object {
                 append_new_column (ListColumn.DATE_ADDED, false);
                 append_new_column (ListColumn.LAST_PLAYED, false);
                 append_new_column (ListColumn.BPM, false);
-                append_new_column (ListColumn.FILE_LOCATION, false);
                 append_new_column (ListColumn.FILE_SIZE, false);
             break;
         }

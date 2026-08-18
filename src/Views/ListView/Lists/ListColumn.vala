@@ -53,7 +53,6 @@ public enum Music.ListColumn {
     DATE_ADDED,
     LAST_PLAYED,
     BPM,
-    FILE_LOCATION,
     FILE_SIZE,
     N_COLUMNS;
 
@@ -119,9 +118,6 @@ public enum Music.ListColumn {
             case BPM:
                 return C_("List column title (beats per minute)", "BPM");
 
-            case FILE_LOCATION:
-                return C_("List column title (file location)", "Location");
-
             case FILE_SIZE:
                 return C_("List column title", "File Size");
 
@@ -145,8 +141,7 @@ public enum Music.ListColumn {
             case COMPOSER:
             case GENRE:
             case GROUPING:
-            case FILE_LOCATION:
-                return typeof (string);
+               return typeof (string);
 
             case NUMBER:
             case TRACK:
@@ -241,9 +236,6 @@ public enum Music.ListColumn {
 
             case BPM:
                 return m.bpm;
-
-            case FILE_LOCATION:
-                return m.get_display_location ();
 
             case FILE_SIZE:
                 return m.file_size;

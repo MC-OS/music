@@ -334,10 +334,6 @@ public class Music.MusicListView : GenericList {
             case ListColumn.FILE_SIZE:
                 order = Compare.standard_64 ((int64) media_a.file_size, (int64) media_b.file_size);
             break;
-
-            case ListColumn.FILE_LOCATION:
-                order = String.compare (media_a.get_display_location (), media_b.get_display_location ());
-            break;
         }
 
         // When order is zero, we'd like to jump into sorting by genre, but that'd
@@ -468,7 +464,6 @@ public class Music.MusicListView : GenericList {
             case ListColumn.COMPOSER:
             case ListColumn.GENRE:
             case ListColumn.GROUPING:
-            case ListColumn.FILE_LOCATION:
                 renderer = new Gtk.CellRendererText ();
                 tvc.set_cell_data_func (renderer, CellDataFunctionHelper.string_func);
                 /// Sample string used to measure the ideal size of the Title, Artist,

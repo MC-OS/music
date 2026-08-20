@@ -55,7 +55,7 @@ public class Music.MediaEditor : Granite.Dialog {
             deletable: false,
             destroy_with_parent: true,
             height_request: 400,
-            resizable: true,
+            resizable: false,
             transient_for: App.main_window,
             width_request: 600,
             window_position: Gtk.WindowPosition.CENTER_ON_PARENT
@@ -268,3 +268,4 @@ public class Music.MediaEditor : Granite.Dialog {
         }
     }
 }
+

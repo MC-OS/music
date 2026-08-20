@@ -152,18 +152,61 @@ public class Music.Album : Object {
             return null;
         }
 
+        int target = 128 * scale;
+
         var icon_info = Gtk.IconTheme.get_default ().lookup_by_gicon_for_scale (cover_icon, 128, scale, 0);
+        if (icon_info == null) {
+            return null;
+        }
+
         icon_info.load_icon_async.begin (null, (obj, res) => {
             try {
-                cover_pixbuf = icon_info.load_icon_async.end (res);
-                cover_pixbuf_scale = scale;
-                cover_rendered ();
+                var loaded = icon_info.load_icon_async.end (res);
+                if (loaded != null) {
+                    cover_pixbuf = scale_to_square (loaded, target);
+                    cover_pixbuf_scale = scale;
+                    cover_rendered ();
+                }
             } catch (Error e) {
                 critical (e.message);
             }
         });
 
         return cover_pixbuf;
+    }
+
+    public Gdk.Pixbuf scale_to_square (Gdk.Pixbuf src, int size) {
+        if (src.width == size && src.height == size) {
+            return src;
+        }
+
+        double scale_w = (double) size / src.width;
+        double scale_h = (double) size / src.height;
+        double s = scale_w < scale_h ? scale_w : scale_h;
+
+        int dw = (int) (src.width * s);
+        int dh = (int) (src.height * s);
+
+        if (dw < 1) {
+            dw = 1;
+        }
+        if (dh < 1) {
+            dh = 1;
+        }
+
+        var scaled = src.scale_simple (dw, dh, Gdk.InterpType.BILINEAR);
+        if (scaled == null) {
+            return src;
+        }
+
+        var square = new Gdk.Pixbuf (Gdk.Colorspace.RGB, true, 8, size, size);
+        square.fill (0x00000000);
+
+        int ox = (size - dw) / 2;
+        int oy = (size - dh) / 2;
+        scaled.copy_area (0, 0, dw, dh, square, ox, oy);
+
+        return square;
     }
 
     public void save_cover_file (GLib.File file) {

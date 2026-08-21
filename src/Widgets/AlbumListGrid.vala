@@ -158,10 +158,20 @@ public class Music.AlbumListGrid : Gtk.Grid {
     }
 
     void update_album_cover () {
-        if (album.cover_icon != null) {
-            album_cover.image.gicon = album.cover_icon;
+        if (album == null) {
+            album_cover.image.clear ();
+            return;
+        }
+
+        // Use the same load path as the tiles (includes scale_to_square if you added it)
+        var scale = album_cover.get_style_context ().get_scale ();
+        var pixbuf = album.get_cached_cover_pixbuf (256, scale);
+
+        if (pixbuf != null) {
+            album_cover.image.pixbuf = pixbuf;
+            album_cover.image.queue_resize ();
         } else {
-            album_cover.image.gicon = null;
+            album_cover.image.clear ();
         }
     }
 

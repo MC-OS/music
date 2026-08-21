@@ -143,7 +143,7 @@ public class Music.Album : Object {
         return media.read_only_view;
     }
 
-    public Gdk.Pixbuf? get_cached_cover_pixbuf (int scale) {
+    public Gdk.Pixbuf? get_cached_cover_pixbuf (int min_scale, int scale) {
         if (cover_pixbuf != null && cover_pixbuf_scale == scale) {
             return cover_pixbuf;
         }
@@ -152,61 +152,54 @@ public class Music.Album : Object {
             return null;
         }
 
-        int target = 128 * scale;
+        int target = min_scale * scale;
 
-        var icon_info = Gtk.IconTheme.get_default ().lookup_by_gicon_for_scale (cover_icon, 128, scale, 0);
-        if (icon_info == null) {
-            return null;
-        }
-
-        icon_info.load_icon_async.begin (null, (obj, res) => {
-            try {
-                var loaded = icon_info.load_icon_async.end (res);
+        try {
+            var icon_info = Gtk.IconTheme.get_default ().lookup_by_gicon_for_scale (cover_icon, min_scale, scale, 0);
+            if (icon_info != null) {
+                var loaded = icon_info.load_icon (); // Synchronous load avoids race conditions
                 if (loaded != null) {
                     cover_pixbuf = scale_to_square (loaded, target);
-                    cover_pixbuf_scale = scale;
-                    cover_rendered ();
+                    cover_pixbuf_scale = target;
                 }
-            } catch (Error e) {
-                critical (e.message);
             }
-        });
+        } catch (Error e) {
+            critical (e.message);
+        }
 
         return cover_pixbuf;
     }
 
     public Gdk.Pixbuf scale_to_square (Gdk.Pixbuf src, int size) {
-        if (src.width == size && src.height == size) {
-            return src;
+        int src_w = src.width;
+        int src_h = src.height;
+
+        int dw, dh;
+        
+        // Scale so the shortest side matches the target size, 
+        // leaving the other side larger to be cropped.
+        if (src_w < src_h) {
+            dw = size;
+            dh = (int) ((double) src_h * size / src_w);
+        } else {
+            dh = size;
+            dw = (int) ((double) src_w * size / src_h);
         }
 
-        double scale_w = (double) size / src.width;
-        double scale_h = (double) size / src.height;
-        double s = scale_w < scale_h ? scale_w : scale_h;
-
-        int dw = (int) (src.width * s);
-        int dh = (int) (src.height * s);
-
-        if (dw < 1) {
-            dw = 1;
-        }
-        if (dh < 1) {
-            dh = 1;
-        }
-
+        // 1. Scale the source to the intermediate oversized dimensions
         var scaled = src.scale_simple (dw, dh, Gdk.InterpType.BILINEAR);
         if (scaled == null) {
             return src;
         }
 
-        var square = new Gdk.Pixbuf (Gdk.Colorspace.RGB, true, 8, size, size);
-        square.fill (0x00000000);
+        // 2. Calculate offsets to crop from the exact center
+        int ox = (dw - size) / 2;
+        int oy = (dh - size) / 2;
 
-        int ox = (size - dw) / 2;
-        int oy = (size - dh) / 2;
-        scaled.copy_area (0, 0, dw, dh, square, ox, oy);
-
-        return square;
+        // 3. Slice the subpixbuf safely
+        // Note: Gdk.Pixbuf.subpixbuf is a method on an *existing* pixbuf instance, 
+        // you cannot use 'new Gdk.Pixbuf.subpixbuf'.
+        return new Gdk.Pixbuf.subpixbuf (scaled, ox, oy, size, size);
     }
 
     public void save_cover_file (GLib.File file) {

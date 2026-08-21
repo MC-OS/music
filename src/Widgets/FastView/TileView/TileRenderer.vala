@@ -157,7 +157,7 @@ internal class Music.Widgets.TileRenderer : Gtk.CellRenderer {
         var state = ctx.get_state ();
         var scale = ctx.get_scale ();
 
-        pixbuf = album.get_cached_cover_pixbuf (scale);
+        pixbuf = album.get_cached_cover_pixbuf (128, scale);
 
         border.left = 12;
         border.right = 12;

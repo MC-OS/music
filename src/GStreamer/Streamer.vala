@@ -46,6 +46,7 @@ public class Music.Streamer : Music.Playback, GLib.Object {
         var uris = new Gee.LinkedList<string> ();
         uris.add ("file://");
         uris.add ("http://");
+        uris.add ("https://");
         uris.add ("smb://");
         return uris;
     }

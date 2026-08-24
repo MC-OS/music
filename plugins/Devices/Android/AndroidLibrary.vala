@@ -1,5 +1,5 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
-/* Chunk 1: minimal library — list music files + file_size for later bar/playback. */
+/* Scan audio + media folders for StorageBar categories; playlist is audio-only. */
 
 public class Music.Plugins.AndroidLibrary : Music.Library {
     Gee.HashMap<string, Music.Media> medias;
@@ -34,32 +34,94 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
         }
     }
 
+    private bool is_tracked_extension (string name_down) {
+        return name_down.has_suffix (".mp3") || name_down.has_suffix (".flac")
+            || name_down.has_suffix (".m4a") || name_down.has_suffix (".ogg")
+            || name_down.has_suffix (".wav") || name_down.has_suffix (".aac")
+            || name_down.has_suffix (".opus") || name_down.has_suffix (".wma")
+            || name_down.has_suffix (".mp4") || name_down.has_suffix (".mkv")
+            || name_down.has_suffix (".avi") || name_down.has_suffix (".mov")
+            || name_down.has_suffix (".webm") || name_down.has_suffix (".3gp")
+            || name_down.has_suffix (".m4v") || name_down.has_suffix (".jpg")
+            || name_down.has_suffix (".jpeg") || name_down.has_suffix (".png")
+            || name_down.has_suffix (".gif") || name_down.has_suffix (".webp")
+            || name_down.has_suffix (".heic") || name_down.has_suffix (".apk");
+    }
+
+    private bool is_audio_extension (string name_down) {
+        return name_down.has_suffix (".mp3") || name_down.has_suffix (".flac")
+            || name_down.has_suffix (".m4a") || name_down.has_suffix (".ogg")
+            || name_down.has_suffix (".wav") || name_down.has_suffix (".aac")
+            || name_down.has_suffix (".opus") || name_down.has_suffix (".wma")
+            || name_down.has_suffix (".aiff");
+    }
+
+    private void collect_files (File dir, Gee.LinkedList<string> files, int depth) {
+        if (operation_cancelled || depth > 8) {
+            return;
+        }
+
+        try {
+            var enumerator = dir.enumerate_children (
+                "standard::name,standard::type",
+                FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+                null
+            );
+
+            FileInfo? info;
+            while ((info = enumerator.next_file (null)) != null) {
+                if (operation_cancelled) {
+                    break;
+                }
+
+                var child = dir.get_child (info.get_name ());
+                if (info.get_file_type () == FileType.DIRECTORY) {
+                    collect_files (child, files, depth + 1);
+                } else if (info.get_file_type () == FileType.REGULAR) {
+                    var name = info.get_name ().down ();
+                    if (is_tracked_extension (name)) {
+                        files.add (child.get_uri ());
+                    }
+                }
+            }
+        } catch (Error e) {
+            debug ("collect_files %s: %s", dir.get_uri (), e.message);
+        }
+    }
+
     public async void finish_initialization_async () {
         var root = device.get_uri ();
-        var music_folders = new Gee.LinkedList<string> ();
 
         string[] candidates = {
             root + "/Music",
             root + "/music",
             root + "/Download",
-            root + "/Downloads"
+            root + "/Downloads",
+            root + "/Movies",
+            root + "/Videos",
+            root + "/DCIM",
+            root + "/Pictures",
+            root + "/Photo",
+            root + "/Photos"
         };
 
+        var folders = new Gee.LinkedList<string> ();
         foreach (var folder in candidates) {
             if (File.new_for_uri (folder).query_exists ()) {
-                music_folders.add (folder);
+                folders.add (folder);
             }
         }
 
-        if (music_folders.size == 0) {
-            music_folders.add (root);
+        if (folders.size == 0) {
+            folders.add (root);
         }
 
         var files = new Gee.LinkedList<string> ();
-        foreach (var folder in music_folders) {
-            FileUtils.count_music_files (File.new_for_uri (folder), files);
+        foreach (var folder in folders) {
+            collect_files (File.new_for_uri (folder), files, 0);
         }
 
+        // Also pick up APKs under Android/data is too huge — only top-level Download
         foreach (var file_uri in files) {
             if (operation_cancelled) {
                 break;
@@ -80,6 +142,7 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
 
             device.initialized (device);
             search_medias ("");
+            file_operations_done ();
             return false;
         });
     }
@@ -90,13 +153,20 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
     public override void search_medias (string search) {
         lock (searched_medias) {
             searched_medias.clear ();
-            if (search == null || search == "") {
-                searched_medias.add_all (medias.values);
-            } else {
-                uint parsed_rating;
-                string parsed_search_string;
-                String.base_search_method (search, out parsed_rating, out parsed_search_string);
-                foreach (var m in medias.values) {
+
+            // Device song list: audio only (videos/photos still counted for the bar)
+            foreach (var m in medias.values) {
+                var uri = (m.uri ?? "").down ();
+                if (!is_audio_extension (uri)) {
+                    continue;
+                }
+
+                if (search == null || search == "") {
+                    searched_medias.add (m);
+                } else {
+                    uint parsed_rating;
+                    string parsed_search_string;
+                    String.base_search_method (search, out parsed_rating, out parsed_search_string);
                     if (Search.match_string_to_media (m, parsed_search_string)) {
                         searched_medias.add (m);
                     }

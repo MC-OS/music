@@ -2,28 +2,7 @@
 /*-
  * Copyright (c) 2012-2018 elementary LLC. (https://elementary.io)
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The Music authors hereby grant permission for non-GPL compatible
- * GStreamer plugins to be used and distributed together with GStreamer
- * and Music. This permission is above and beyond the permissions granted
- * by the GPL license by which Music is covered. If you modify this code
- * you may extend this exception to your version of the code, but you are not
- * obligated to do so. If you do not wish to do so, delete this exception
- * statement from your version.
- *
- * Authored by: Scott Ringwelski <sgringwe@mtu.edu>
+ * StorageBar fills Audio / Video / Photos / Apps / Other; Free is automatic.
  */
 
 public class Music.DeviceSummaryWidget : Gtk.EventBox {
@@ -93,9 +72,12 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_music_combobox.popup.connect (refresh_lists);
         sync_music_combobox.set_button_sensitivity (Gtk.SensitivityType.ON);
 
-        storagebar = new Granite.Widgets.StorageBar (device.get_capacity ());
-        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.OTHER, 0);
-        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.AUDIO, 0);
+        uint64 capacity = device.get_capacity ();
+        if (capacity == 0) {
+            capacity = 1;
+        }
+
+        storagebar = new Granite.Widgets.StorageBar.with_total_usage (capacity, device.get_used_space ());
 
         sync_button = new Gtk.Button.with_label (_("Sync"));
         sync_button.valign = Gtk.Align.CENTER;
@@ -121,7 +103,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         content_grid.column_spacing = 12;
         content_grid.margin_top = 12;
 
-        // device name box
         if (device_name_description_label.label == "") {
             content_grid.attach (device_name_title_label, 0, 0, 5, 1);
             device_name_title_label.halign = Gtk.Align.FILL;
@@ -150,7 +131,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         refresh_lists ();
 
-        /* set initial values*/
         auto_sync_switch.active = preferences.sync_when_mounted;
         sync_music_check.active = preferences.sync_music;
 
@@ -165,7 +145,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
             }
         }
 
-        /* hop onto signals to save preferences */
         auto_sync_switch.notify["active"].connect (save_preferences);
         sync_music_check.toggled.connect (save_preferences);
         sync_music_combobox.changed.connect (save_preferences);
@@ -181,6 +160,10 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
             sync_button.sensitive = true;
         });
 
+        device.initialized.connect (() => {
+            refresh_space_widget ();
+        });
+
         libraries_manager.local_library.playlist_added.connect (() => {refresh_lists ();});
         libraries_manager.local_library.playlist_name_updated.connect (() => {refresh_lists ();});
         libraries_manager.local_library.playlist_removed.connect (() => {refresh_lists ();});
@@ -188,20 +171,61 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         libraries_manager.local_library.smartplaylist_name_updated.connect (() => {refresh_lists ();});
         libraries_manager.local_library.smartplaylist_removed.connect (() => {refresh_lists ();});
         show_all ();
+
+        Timeout.add_seconds (2, () => {
+            refresh_space_widget ();
+            return false;
+        });
     }
 
     private void refresh_space_widget () {
-        uint64 other_files_size = 0;
-        uint64 music_size = 0;
+        uint64 audio = 0;
+        uint64 video = 0;
+        uint64 photo = 0;
+        uint64 app = 0;
+
         foreach (var m in device.get_library ().get_medias ()) {
-            if (m != null) {
-                music_size += m.file_size;
+            if (m == null || m.file_size == 0) {
+                continue;
+            }
+
+            var uri = (m.uri ?? "").down ();
+            if (uri.has_suffix (".mp3") || uri.has_suffix (".flac") || uri.has_suffix (".m4a")
+                || uri.has_suffix (".ogg") || uri.has_suffix (".wav") || uri.has_suffix (".aac")
+                || uri.has_suffix (".opus") || uri.has_suffix (".wma") || uri.has_suffix (".aiff")) {
+                audio += m.file_size;
+            } else if (uri.has_suffix (".mp4") || uri.has_suffix (".mkv") || uri.has_suffix (".avi")
+                || uri.has_suffix (".mov") || uri.has_suffix (".webm") || uri.has_suffix (".3gp")
+                || uri.has_suffix (".m4v")) {
+                video += m.file_size;
+            } else if (uri.has_suffix (".jpg") || uri.has_suffix (".jpeg") || uri.has_suffix (".png")
+                || uri.has_suffix (".gif") || uri.has_suffix (".webp") || uri.has_suffix (".heic")
+                || uri.has_suffix (".bmp")) {
+                photo += m.file_size;
+            } else if (uri.has_suffix (".apk")) {
+                app += m.file_size;
+            } else {
+                audio += m.file_size;
             }
         }
-        other_files_size = device.get_used_space () - music_size;
 
-        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.OTHER, other_files_size);
-        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.AUDIO, music_size);
+        uint64 accounted = audio + video + photo + app;
+        uint64 used = device.get_used_space ();
+        uint64 other = used > accounted ? used - accounted : 0;
+
+        uint64 capacity = device.get_capacity ();
+        if (capacity == 0) {
+            capacity = 1;
+        }
+
+        storagebar.storage = capacity;
+        storagebar.total_usage = used;
+
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.AUDIO, audio);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.VIDEO, video);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.PHOTO, photo);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.APP, app);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.FILES, other);
     }
 
     private bool row_separator_func (Gtk.TreeModel model, Gtk.TreeIter iter) {
@@ -239,15 +263,12 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         music_list.clear ();
 
-        /* add entire library options */
         music_list.append (out iter);
         music_list.set (iter, 0, null, 1, _("All Music"), 2, new ThemedIcon ("library-music"));
 
-        /* add separator */
         music_list.append (out iter);
         music_list.set (iter, 0, null, 1, "<separator_item_unique_name>");
 
-        /* add all playlists */
         foreach (var p in libraries_manager.local_library.get_smart_playlists ()) {
             music_list.append (out iter);
             music_list.set (iter, 0, p, 1, p.name, 2, p.icon);
@@ -326,14 +347,12 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
             var not_found = new Gee.TreeSet<Media> ();
             libraries_manager.local_library.media_from_name (device.get_library ().get_medias (), found, not_found);
 
-            if (not_found.size > 0) { // hand control over to SWD
+            if (not_found.size > 0) {
                 var swd = new SyncWarningDialog (device, list, not_found);
                 swd.response.connect ((src, id) => {
                     switch (id) {
                         case SyncWarningDialog.ResponseId.IMPORT_MEDIA:
                             libraries_manager.transfer_to_local_library (not_found);
-                            // TODO: After transfer, do sync
-
                             swd.destroy ();
                             break;
                         case SyncWarningDialog.ResponseId.CONTINUE:

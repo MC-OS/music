@@ -3,6 +3,6 @@ option(
   'plugins',
   type: 'array',
   choices: [ 'audioplayer', 'cdrom', 'ipod', 'android' ],
-  value: [ 'audioplayer', 'cdrom', 'ipod', 'android' ]
+  value: [ 'cdrom', 'ipod', 'android' ]
 )
 option ('documentation', type : 'boolean', value : false)

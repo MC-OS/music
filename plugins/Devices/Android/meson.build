@@ -2,6 +2,7 @@ Android_files = files(
   'Android.vala',
   'AndroidDevice.vala',
   'AndroidDeviceManager.vala',
+  'AndroidHardwareInfo.vala',
   'AndroidLibrary.vala'
 )
 

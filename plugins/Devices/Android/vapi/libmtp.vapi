@@ -1,4 +1,4 @@
-/* Minimal libmtp bindings — names + storage only (chunk 1). */
+/* Minimal libmtp bindings — names, storage, serial, version, battery. */
 [CCode (cheader_filename = "libmtp.h", cprefix = "LIBMTP_", lower_case_cprefix = "LIBMTP_")]
 namespace Mtp {
 
@@ -29,8 +29,15 @@ namespace Mtp {
         [CCode (cname = "LIBMTP_Get_Serialnumber")]
         public string? get_serial_number ();
 
+        [CCode (cname = "LIBMTP_Get_Deviceversion")]
+        public string? get_device_version ();
+
         [CCode (cname = "LIBMTP_Get_Storage")]
         public int get_storage (int sortby);
+
+        /* Returns 0 on success; levels are 0–100 style on most devices */
+        [CCode (cname = "LIBMTP_Get_Batterylevel")]
+        public int get_battery_level (out uint8 maxlevel, out uint8 curlevel);
     }
 
     [CCode (cname = "LIBMTP_Init")]

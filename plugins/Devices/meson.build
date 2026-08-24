@@ -5,3 +5,7 @@ endif
 if plugins.contains('ipod')
   subdir('iPod')
 endif
+
+if plugins.contains('android')
+  subdir('Android')
+endif

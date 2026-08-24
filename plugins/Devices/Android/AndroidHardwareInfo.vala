@@ -1,17 +1,24 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
- * Hardware info strip above stock DeviceSummaryWidget (iTunes-style).
- * Click identity row cycles: Serial → IMEI → Model.
+ * Device summary header inspired by classic iTunes device page
+ * (layout only — not a visual clone).
+ *
+ * Left: device icon + capacity / battery / identity
+ * Right: OS version + security patch
+ * Identity line cycles Serial → IMEI → Model on click
  */
 
 public class Music.Plugins.AndroidHardwareInfo : Gtk.Grid {
     private AndroidDevice device;
-    private Gtk.Label identity_title;
-    private Gtk.Label identity_value;
-    private Gtk.Label version_value;
-    private Gtk.Label patch_value;
-    private Gtk.Image battery_icon;
+
+    private Gtk.Image device_image;
+    private Gtk.Label name_label;
+    private Gtk.Label capacity_label;
     private Gtk.Label battery_label;
+    private Gtk.Label identity_key_label;
+    private Gtk.Label identity_value_label;
+    private Gtk.Label os_label;
+    private Gtk.Label patch_label;
 
     private enum IdentityMode {
         SERIAL,
@@ -24,71 +31,81 @@ public class Music.Plugins.AndroidHardwareInfo : Gtk.Grid {
     public AndroidHardwareInfo (AndroidDevice device) {
         this.device = device;
 
-        column_spacing = 12;
-        row_spacing = 6;
-        margin_start = 24;
-        margin_end = 24;
-        margin_top = 16;
-        margin_bottom = 0;
+        column_spacing = 24;
+        row_spacing = 4;
+        margin = 24;
+        margin_bottom = 8;
         halign = Gtk.Align.CENTER;
 
-        // Battery (placeholder / real % when MTP reports it)
-        battery_icon = new Gtk.Image.from_icon_name ("battery-good-symbolic", Gtk.IconSize.LARGE_TOOLBAR);
+        // —— Left: product icon + facts ——
+        device_image = new Gtk.Image.from_icon_name ("phone", Gtk.IconSize.DIALOG);
+        device_image.pixel_size = 96;
+        device_image.valign = Gtk.Align.START;
+
+        name_label = new Gtk.Label (device.get_display_name ());
+        name_label.xalign = 0;
+        name_label.get_style_context ().add_class (Granite.STYLE_CLASS_H2_LABEL);
+
+        capacity_label = new Gtk.Label ("");
+        capacity_label.xalign = 0;
+
         battery_label = new Gtk.Label ("");
-        battery_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
+        battery_label.xalign = 0;
 
-        var battery_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 2);
-        battery_box.valign = Gtk.Align.CENTER;
-        battery_box.add (battery_icon);
-        battery_box.add (battery_label);
+        identity_key_label = new Gtk.Label ("");
+        identity_key_label.xalign = 0;
+        identity_key_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
 
-        // Identity: click to cycle Serial / IMEI / Model
-        identity_title = new Gtk.Label ("");
-        identity_title.xalign = 0;
-        identity_title.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
+        identity_value_label = new Gtk.Label ("");
+        identity_value_label.xalign = 0;
+        identity_value_label.selectable = true;
 
-        identity_value = new Gtk.Label ("");
-        identity_value.xalign = 0;
-        identity_value.selectable = true;
-        identity_value.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
-
-        var identity_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 2);
-        identity_box.add (identity_title);
-        identity_box.add (identity_value);
+        var identity_box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
+        identity_box.add (identity_key_label);
+        identity_box.add (identity_value_label);
 
         var identity_event = new Gtk.EventBox ();
         identity_event.visible_window = false;
         identity_event.add (identity_box);
+        identity_event.tooltip_text = _("Click to cycle Serial number, IMEI, and Model");
         identity_event.button_press_event.connect (() => {
             cycle_identity ();
             return true;
         });
-        identity_event.tooltip_text = _("Click to cycle Serial, IMEI, and Model");
 
-        // Android version + security patch (best-effort over MTP)
-        var version_title = new Gtk.Label (_("Android version"));
-        version_title.xalign = 0;
-        version_title.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
-        version_value = new Gtk.Label ("");
-        version_value.xalign = 0;
+        var facts = new Gtk.Grid ();
+        facts.row_spacing = 4;
+        facts.column_spacing = 8;
+        facts.attach (name_label, 0, 0, 2, 1);
+        facts.attach (capacity_label, 0, 1, 2, 1);
+        facts.attach (battery_label, 0, 2, 2, 1);
+        facts.attach (identity_event, 0, 3, 2, 1);
 
-        var patch_title = new Gtk.Label (_("Security patch"));
-        patch_title.xalign = 0;
-        patch_title.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
-        patch_value = new Gtk.Label ("");
-        patch_value.xalign = 0;
+        var left = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 16);
+        left.pack_start (device_image, false, false, 0);
+        left.pack_start (facts, false, false, 0);
 
-        var meta_grid = new Gtk.Grid ();
-        meta_grid.column_spacing = 24;
-        meta_grid.row_spacing = 4;
-        meta_grid.attach (version_title, 0, 0);
-        meta_grid.attach (version_value, 0, 1);
-        meta_grid.attach (patch_title, 1, 0);
-        meta_grid.attach (patch_value, 1, 1);
+        // —— Right: software ——
+        os_label = new Gtk.Label ("");
+        os_label.xalign = 1;
+        os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
 
-        attach (battery_box, 0, 0, 1, 2);
-        attach (identity_event, 1, 0, 1, 1);
-        attach (meta_grid, 1, 1, 1, 1);
+        patch_label = new Gtk.Label ("");
+        patch_label.xalign = 1;
+        patch_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
+
+        var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 4);
+        right.halign = Gtk.Align.END;
+        right.valign = Gtk.Align.START;
+        right.pack_start (os_label, false, false, 0);
+        right.pack_start (patch_label, false, false, 0);
+
+        attach (left, 0, 0, 1, 1);
+        attach (right, 1, 0, 1, 1);
+
+        var sep = new Gtk.Separator (Gtk.Orientation.HORIZONTAL);
+        sep.margin_top = 12;
+        attach (sep, 0, 1, 2, 1);
 
         refresh ();
         show_all ();
@@ -102,70 +119,65 @@ public class Music.Plugins.AndroidHardwareInfo : Gtk.Grid {
             case IdentityMode.IMEI:
                 mode = IdentityMode.MODEL;
                 break;
-            case IdentityMode.MODEL:
             default:
                 mode = IdentityMode.SERIAL;
                 break;
         }
 
-        update_identity_labels ();
+        update_identity ();
     }
 
-    private void update_identity_labels () {
+    private void update_identity () {
         switch (mode) {
             case IdentityMode.SERIAL:
-                identity_title.label = _("Serial number");
-                identity_value.label = device.serial_number ?? _("Not available");
+                identity_key_label.label = _("Serial Number:");
+                identity_value_label.label = device.serial_number ?? _("Not available");
                 break;
             case IdentityMode.IMEI:
-                identity_title.label = _("IMEI");
-                identity_value.label = device.imei ?? _("Not available over MTP");
+                identity_key_label.label = _("IMEI:");
+                identity_value_label.label = device.imei ?? _("Not available over MTP");
                 break;
             case IdentityMode.MODEL:
-                identity_title.label = _("Model");
-                identity_value.label = device.model_label ?? _("Not available");
+                identity_key_label.label = _("Model:");
+                identity_value_label.label = device.model_label ?? _("Not available");
                 break;
         }
     }
 
     public void refresh () {
-        update_identity_labels ();
+        name_label.label = device.get_display_name ();
 
-        version_value.label = device.android_version ?? (device.device_version ?? _("Not available"));
-        patch_value.label = device.security_patch ?? _("Not available");
+        var cap = device.get_capacity ();
+        var free = device.get_free_space ();
+        if (cap > 0) {
+            capacity_label.label = _("Capacity: %s (%s free)").printf (
+                GLib.format_size (cap),
+                GLib.format_size (free)
+            );
+        } else {
+            capacity_label.label = _("Capacity: Not available");
+        }
 
         if (device.battery_percent >= 0) {
-            battery_label.label = "%d%%".printf (device.battery_percent);
-            battery_icon.icon_name = battery_icon_name (device.battery_percent);
-            battery_box_tooltip (device.battery_percent);
+            battery_label.label = _("Battery: %d%%").printf (device.battery_percent);
         } else {
-            battery_label.label = _("—");
-            battery_icon.icon_name = "battery-missing-symbolic";
-            battery_icon.tooltip_text = _("Battery level not reported over MTP");
-            battery_label.tooltip_text = battery_icon.tooltip_text;
-        }
-    }
-
-    private void battery_box_tooltip (int percent) {
-        var t = _("Battery %d%%").printf (percent);
-        battery_icon.tooltip_text = t;
-        battery_label.tooltip_text = t;
-    }
-
-    private string battery_icon_name (int percent) {
-        if (percent >= 90) {
-            return "battery-full-symbolic";
-        }
-        if (percent >= 60) {
-            return "battery-good-symbolic";
-        }
-        if (percent >= 30) {
-            return "battery-low-symbolic";
-        }
-        if (percent >= 10) {
-            return "battery-caution-symbolic";
+            battery_label.label = _("Battery: —");
         }
 
-        return "battery-empty-symbolic";
+        update_identity ();
+
+        if (device.android_version != null) {
+            os_label.label = _("Android %s").printf (device.android_version);
+        } else if (device.device_version != null) {
+            os_label.label = device.device_version;
+        } else {
+            os_label.label = _("Android");
+        }
+
+        if (device.security_patch != null) {
+            patch_label.label = _("Security patch: %s").printf (device.security_patch);
+        } else {
+            patch_label.label = _("Security patch: Not available");
+        }
     }
 }

@@ -1,9 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
- * Upper hardware panel:
- *   Top:  fancy name / model (blanked if empty)
- *   Left: icon + click-to-rename name / space / capacity / battery / identity
- *   Right: OS / patch (blanked if empty), Reset|Restore only if can_reset/can_restore
+ * Upper hardware panel — demo fallbacks fill empty fields so the full UI
+ * can be reviewed. Real device values always win when present.
  */
 
 public class Music.DeviceHardwareInfo : Gtk.Grid {
@@ -36,6 +34,18 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     }
 
     private IdentityMode mode = IdentityMode.SERIAL;
+
+    // Temporary demo data for UI sign-off (remove later if desired)
+    private const string DEMO_MODEL = "Galaxy Tab A (2019)";
+    private const string DEMO_NAME = "DJ’s Tablet";
+    private const string DEMO_SERIAL = "R58M30DEMO01";
+    private const string DEMO_IMEI = "359999999999999";
+    private const string DEMO_MODEL_ID = "SM-T510";
+    private const string DEMO_OS = "10";
+    private const string DEMO_PATCH = "2020-05-01";
+    private const int DEMO_BATTERY = 87;
+    private const uint64 DEMO_CAPACITY = 32ULL * 1024 * 1024 * 1024;
+    private const uint64 DEMO_FREE = 12ULL * 1024 * 1024 * 1024;
 
     public DeviceHardwareInfo (Device device) {
         this.device = device;
@@ -234,49 +244,41 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         update_identity ();
     }
 
-    private void update_identity () {
-        switch (mode) {
-            case IdentityMode.SERIAL:
-                identity_key_label.label = _("Serial Number:");
-                identity_value_label.label = device.get_serial_number () ?? "";
-                break;
-            case IdentityMode.IMEI:
-                identity_key_label.label = _("IMEI:");
-                identity_value_label.label = device.get_imei () ?? "";
-                break;
-            case IdentityMode.MODEL:
-                identity_key_label.label = _("Model:");
-                identity_value_label.label = device.get_model_identifier () ?? "";
-                break;
-        }
-    }
-
     private bool has_text (string? s) {
         return s != null && s.strip ().length > 0;
     }
 
-    private void apply_visibility () {
-        // Fancy / model — blank if empty
-        var model = device.get_model_identifier ();
-        if (!has_text (model)) {
-            model = device.get_fancy_description ();
+    private void update_identity () {
+        string serial = has_text (device.get_serial_number ()) ? device.get_serial_number () : DEMO_SERIAL;
+        string imei = has_text (device.get_imei ()) ? device.get_imei () : DEMO_IMEI;
+        string model = has_text (device.get_model_identifier ()) ? device.get_model_identifier () : DEMO_MODEL_ID;
+
+        switch (mode) {
+            case IdentityMode.SERIAL:
+                identity_key_label.label = _("Serial Number:");
+                identity_value_label.label = serial;
+                break;
+            case IdentityMode.IMEI:
+                identity_key_label.label = _("IMEI:");
+                identity_value_label.label = imei;
+                break;
+            case IdentityMode.MODEL:
+                identity_key_label.label = _("Model:");
+                identity_value_label.label = model;
+                break;
         }
+    }
 
-        fancy_label.visible = has_text (model);
+    private void apply_visibility () {
+        // Full layout for sign-off — all rows visible
+        fancy_label.visible = true;
+        space_label.visible = true;
+        capacity_label.visible = true;
+        battery_label.visible = true;
+        identity_row.visible = true;
+        os_label.visible = true;
+        patch_label.visible = true;
 
-        space_label.visible = device.get_capacity () > 0;
-        capacity_label.visible = device.get_capacity () > 0;
-        battery_label.visible = device.get_battery_percent () >= 0;
-
-        bool any_id = has_text (device.get_serial_number ())
-            || has_text (device.get_imei ())
-            || has_text (device.get_model_identifier ());
-        identity_row.visible = any_id;
-
-        os_label.visible = has_text (device.get_os_version ());
-        patch_label.visible = has_text (device.get_security_patch ());
-
-        // Capability-gated buttons
         reset_button.visible = device.can_reset ();
         restore_button.visible = device.can_restore ();
         actions_box.visible = device.can_reset () || device.can_restore ();
@@ -288,53 +290,62 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
             model = device.get_fancy_description ();
         }
 
-        fancy_label.label = has_text (model) ? model.strip () : "";
+        if (!has_text (model)) {
+            model = DEMO_MODEL;
+        }
+
+        fancy_label.label = model.strip ();
 
         device_image.set_from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
 
+        var display = device.get_display_name ();
+        if (!has_text (display) || display.down () == "mtp") {
+            display = DEMO_NAME;
+        }
+
         if (name_stack.visible_child_name == "label") {
-            name_label.label = device.get_display_name ();
+            name_label.label = display;
         }
 
         var cap = device.get_capacity ();
         var free = device.get_free_space ();
-        if (cap > 0) {
-            space_label.label = _("Space: %s").printf (GLib.format_size (cap));
-            capacity_label.label = _("Capacity: %s (%s free)").printf (
-                GLib.format_size (cap),
-                GLib.format_size (free)
-            );
-        } else {
-            space_label.label = "";
-            capacity_label.label = "";
+        if (cap == 0) {
+            cap = DEMO_CAPACITY;
+            free = DEMO_FREE;
         }
 
+        space_label.label = _("Space: %s").printf (GLib.format_size (cap));
+        capacity_label.label = _("Capacity: %s (%s free)").printf (
+            GLib.format_size (cap),
+            GLib.format_size (free)
+        );
+
         int bat = device.get_battery_percent ();
-        if (bat >= 0) {
-            battery_label.label = _("Battery: %d%%").printf (bat);
-        } else {
-            battery_label.label = "";
+        if (bat < 0) {
+            bat = DEMO_BATTERY;
         }
+
+        battery_label.label = _("Battery: %d%%").printf (bat);
 
         update_identity ();
 
         var os = device.get_os_version ();
-        if (has_text (os)) {
-            if (device.get_content_type ().has_prefix ("android")) {
-                os_label.label = _("Android %s").printf (os);
-            } else {
-                os_label.label = os;
-            }
+        if (!has_text (os)) {
+            os = DEMO_OS;
+        }
+
+        if (device.get_content_type ().has_prefix ("android")) {
+            os_label.label = _("Android %s").printf (os);
         } else {
-            os_label.label = "";
+            os_label.label = os;
         }
 
         var patch = device.get_security_patch ();
-        if (has_text (patch)) {
-            patch_label.label = _("Security patch: %s").printf (patch);
-        } else {
-            patch_label.label = "";
+        if (!has_text (patch)) {
+            patch = DEMO_PATCH;
         }
+
+        patch_label.label = _("Security patch: %s").printf (patch);
 
         apply_visibility ();
     }

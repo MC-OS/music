@@ -1,7 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
  * Hardware info strip above the stock DeviceSummaryWidget.
- * Used for all devices; empty fields are hidden.
+ * Center: OS + patch, Backup, then Reset | Restore side-by-side.
  */
 
 public class Music.DeviceHardwareInfo : Gtk.Grid {
@@ -16,7 +16,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     private Gtk.Widget identity_row;
     private Gtk.Label os_label;
     private Gtk.Label patch_label;
-    private Gtk.Widget software_box;
+    private Gtk.Widget center_box;
 
     private Gtk.Button backup_button;
     private Gtk.Button reset_button;
@@ -86,6 +86,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         left.pack_start (device_image, false, false, 0);
         left.pack_start (facts, false, false, 0);
 
+        // —— Center: OS, patch, Backup, then Reset | Restore ——
         os_label = new Gtk.Label ("");
         os_label.xalign = 0.5f;
         os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
@@ -94,21 +95,17 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         patch_label.xalign = 0.5f;
         patch_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
 
-        var software = new Gtk.Box (Gtk.Orientation.VERTICAL, 4);
-        software.valign = Gtk.Align.CENTER;
-        software.pack_start (os_label, false, false, 0);
-        software.pack_start (patch_label, false, false, 0);
-        software_box = software;
-
         backup_button = new Gtk.Button.with_label (_("Backup"));
-        reset_button = new Gtk.Button.with_label (_("Reset"));
-        restore_button = new Gtk.Button.with_label (_("Restore"));
+        backup_button.halign = Gtk.Align.CENTER;
         backup_button.clicked.connect (() => {
             NotificationManager.get_default ().show_alert (
                 _("Backup"),
                 _("Device backup is not implemented for this device type yet.")
             );
         });
+
+        reset_button = new Gtk.Button.with_label (_("Reset"));
+        restore_button = new Gtk.Button.with_label (_("Restore"));
         reset_button.clicked.connect (() => {
             NotificationManager.get_default ().show_alert (
                 _("Reset"),
@@ -122,16 +119,23 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
             );
         });
 
-        var actions = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
-        actions.valign = Gtk.Align.START;
-        actions.pack_start (backup_button, false, false, 0);
-        actions.pack_start (reset_button, false, false, 0);
-        actions.pack_start (restore_button, false, false, 0);
+        var reset_restore = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
+        reset_restore.halign = Gtk.Align.CENTER;
+        reset_restore.pack_start (reset_button, false, false, 0);
+        reset_restore.pack_start (restore_button, false, false, 0);
+
+        var center = new Gtk.Box (Gtk.Orientation.VERTICAL, 8);
+        center.valign = Gtk.Align.CENTER;
+        center.halign = Gtk.Align.CENTER;
+        center.pack_start (os_label, false, false, 0);
+        center.pack_start (patch_label, false, false, 0);
+        center.pack_start (backup_button, false, false, 0);
+        center.pack_start (reset_restore, false, false, 0);
+        center_box = center;
 
         var row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 32);
         row.pack_start (left, false, false, 0);
-        row.pack_start (software_box, false, false, 0);
-        row.pack_end (actions, false, false, 0);
+        row.pack_start (center_box, false, false, 0);
 
         attach (row, 0, 0, 1, 1);
 
@@ -192,7 +196,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
         os_label.visible = device.get_os_version () != null;
         patch_label.visible = device.get_security_patch () != null;
-        software_box.visible = os_label.visible || patch_label.visible;
     }
 
     public void refresh () {

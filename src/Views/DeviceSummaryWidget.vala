@@ -2,7 +2,8 @@
 /*-
  * Copyright (c) 2012-2018 elementary LLC. (https://elementary.io)
  *
- * Stock device summary UI (original layout).
+ * Stock device summary — sync options + storage bar.
+ * Device name lives in DeviceHardwareInfo (click to rename).
  */
 
 public class Music.DeviceSummaryWidget : Gtk.EventBox {
@@ -25,22 +26,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
     construct {
         get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
-
-        var device_name_title_label = new Gtk.Label (device.get_display_name () ?? "");
-        device_name_title_label.halign = Gtk.Align.END;
-        device_name_title_label.margin = 20;
-        device_name_title_label.margin_end = 0;
-        device_name_title_label.get_style_context ().add_class (Granite.STYLE_CLASS_H1_LABEL);
-
-        var device_name_description_label = new Gtk.Label (device.get_fancy_description () ?? "");
-        device_name_description_label.halign = Gtk.Align.START;
-        device_name_description_label.get_style_context ().add_class (Granite.STYLE_CLASS_H2_LABEL);
-
-        var device_name_label = new Gtk.Label (_("Device Name:"));
-        device_name_label.halign = Gtk.Align.END;
-
-        var device_name_entry = new Gtk.Entry ();
-        device_name_entry.placeholder_text = _("Device Name");
 
         var auto_sync_label = new Gtk.Label (_("Automatically sync when plugged in:"));
         auto_sync_label.halign = Gtk.Align.END;
@@ -103,31 +88,17 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         content_grid.column_spacing = 12;
         content_grid.margin_top = 12;
 
-        if (device_name_description_label.label == "") {
-            content_grid.attach (device_name_title_label, 0, 0, 5, 1);
-            device_name_title_label.halign = Gtk.Align.FILL;
-        } else {
-            content_grid.attach (device_name_title_label, 0, 0, 2, 1);
-        }
-
-        content_grid.attach (device_name_description_label, 2, 0, 3, 1);
-        content_grid.attach (device_name_label, 1, 1, 1, 1);
-        content_grid.attach (device_name_entry, 2, 1, 2, 1);
-        content_grid.attach (auto_sync_label, 1, 2, 1, 1);
-        content_grid.attach (auto_sync_switch, 2, 2, 2, 1);
-        content_grid.attach (sync_options_label, 1, 3, 1, 1);
-        content_grid.attach (sync_music_check, 2, 3, 1, 1);
-        content_grid.attach (sync_music_combobox, 3, 3, 1, 1);
+        content_grid.attach (auto_sync_label, 1, 0, 1, 1);
+        content_grid.attach (auto_sync_switch, 2, 0, 2, 1);
+        content_grid.attach (sync_options_label, 1, 1, 1, 1);
+        content_grid.attach (sync_music_check, 2, 1, 1, 1);
+        content_grid.attach (sync_music_combobox, 3, 1, 1, 1);
 
         var main_grid = new Gtk.Grid ();
         main_grid.attach (content_grid, 0, 0, 1, 1);
         main_grid.attach (storage_toolbar, 0, 1, 1, 1);
 
         add (main_grid);
-
-        if (device.get_display_name () != "") {
-            device_name_entry.text = device.get_display_name ();
-        }
 
         refresh_lists ();
 
@@ -149,10 +120,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_music_check.toggled.connect (save_preferences);
         sync_music_combobox.changed.connect (save_preferences);
 
-        device_name_entry.changed.connect (() => {
-            device.set_display_name (device_name_entry.text);
-        });
-
         sync_button.clicked.connect (sync_clicked);
 
         device.get_library ().file_operations_done.connect (() => {
@@ -161,12 +128,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         });
 
         device.initialized.connect (() => {
-            device_name_title_label.label = device.get_display_name () ?? "";
-            device_name_description_label.label = device.get_fancy_description () ?? "";
-            if (device.get_display_name () != "") {
-                device_name_entry.text = device.get_display_name ();
-            }
-
             refresh_space_widget ();
         });
 

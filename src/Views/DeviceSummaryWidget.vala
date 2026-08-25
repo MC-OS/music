@@ -1,7 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*-
- * Stock device summary — sync + backups + storage bar.
- * Device name lives in DeviceHardwareInfo (click to rename).
+ * Stock device summary — sync + optional backups + storage bar.
+ * Backup controls shown only when device.can_backup ().
  */
 
 public class Music.DeviceSummaryWidget : Gtk.EventBox {
@@ -13,6 +13,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     private Gtk.ComboBox sync_music_combobox;
     private Gtk.ListStore music_list;
     private Gtk.Switch auto_sync_switch;
+    private Gtk.Label encrypt_label;
     private Gtk.Switch encrypt_switch;
     private Gtk.Button backup_button;
     private Granite.Widgets.StorageBar storagebar;
@@ -33,7 +34,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         auto_sync_switch = new Gtk.Switch ();
         auto_sync_switch.halign = Gtk.Align.START;
 
-        var encrypt_label = new Gtk.Label (_("Encrypt local backup:"));
+        encrypt_label = new Gtk.Label (_("Encrypt local backup:"));
         encrypt_label.halign = Gtk.Align.END;
 
         encrypt_switch = new Gtk.Switch ();
@@ -75,15 +76,10 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
-            capacity = 32ULL * 1024 * 1024 * 1024; // demo 32 GB
+            capacity = 1;
         }
 
-        uint64 used = device.get_used_space ();
-        if (used == 0) {
-            used = 20ULL * 1024 * 1024 * 1024; // demo used
-        }
-
-        storagebar = new Granite.Widgets.StorageBar.with_total_usage (capacity, used);
+        storagebar = new Granite.Widgets.StorageBar.with_total_usage (capacity, device.get_used_space ());
 
         sync_button = new Gtk.Button.with_label (_("Sync"));
         sync_button.valign = Gtk.Align.CENTER;
@@ -153,6 +149,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         device.initialized.connect (() => {
             refresh_space_widget ();
+            apply_backup_visibility ();
         });
 
         libraries_manager.local_library.playlist_added.connect (() => {refresh_lists ();});
@@ -161,7 +158,16 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         libraries_manager.local_library.smartplaylist_added.connect (() => {refresh_lists ();});
         libraries_manager.local_library.smartplaylist_name_updated.connect (() => {refresh_lists ();});
         libraries_manager.local_library.smartplaylist_removed.connect (() => {refresh_lists ();});
+
         show_all ();
+        apply_backup_visibility ();
+    }
+
+    private void apply_backup_visibility () {
+        bool show = device.can_backup ();
+        encrypt_label.visible = show;
+        encrypt_switch.visible = show;
+        backup_button.visible = show;
     }
 
     private void refresh_space_widget () {
@@ -195,25 +201,13 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
             }
         }
 
-        // Demo slices if library is empty (testing layout)
-        if (audio + video + photo + app == 0) {
-            audio = 4ULL * 1024 * 1024 * 1024;
-            video = 3ULL * 1024 * 1024 * 1024;
-            photo = 2ULL * 1024 * 1024 * 1024;
-            app = 1ULL * 1024 * 1024 * 1024;
-        }
-
         uint64 accounted = audio + video + photo + app;
         uint64 used = device.get_used_space ();
-        if (used == 0) {
-            used = accounted + (2ULL * 1024 * 1024 * 1024);
-        }
-
         uint64 other = used > accounted ? used - accounted : 0;
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
-            capacity = 32ULL * 1024 * 1024 * 1024;
+            capacity = 1;
         }
 
         storagebar.storage = capacity;

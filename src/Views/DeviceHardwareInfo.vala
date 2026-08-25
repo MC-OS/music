@@ -1,11 +1,9 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
  * Upper hardware panel:
- *   Top:  fancy name / model
+ *   Top:  fancy name / model (blanked if empty)
  *   Left: icon + click-to-rename name / space / capacity / battery / identity
- *   Right (far right): OS version, security patch, linked Reset|Restore
- *
- * When real data is missing, demo values are shown so the full layout is visible while testing.
+ *   Right: OS / patch (blanked if empty), Reset|Restore only if can_reset/can_restore
  */
 
 public class Music.DeviceHardwareInfo : Gtk.Grid {
@@ -23,11 +21,13 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     private Gtk.Label battery_label;
     private Gtk.Label identity_key_label;
     private Gtk.Label identity_value_label;
+    private Gtk.Widget identity_row;
 
     private Gtk.Label os_label;
     private Gtk.Label patch_label;
     private Gtk.Button reset_button;
     private Gtk.Button restore_button;
+    private Gtk.Widget actions_box;
 
     private enum IdentityMode {
         SERIAL,
@@ -43,7 +43,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
         hexpand = true;
 
-        // —— Top: fancy name / model ——
         fancy_label = new Gtk.Label ("");
         fancy_label.xalign = 0;
         fancy_label.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
@@ -52,7 +51,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         fancy_label.margin_end = 24;
         attach (fancy_label, 0, 0, 1, 1);
 
-        // —— Left ——
         device_image = new Gtk.Image.from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
         device_image.pixel_size = 128;
         device_image.xalign = 0;
@@ -126,6 +124,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
             cycle_identity ();
             return true;
         });
+        identity_row = identity_event;
 
         var facts = new Gtk.Grid ();
         facts.row_spacing = 4;
@@ -133,13 +132,12 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         facts.attach (space_label, 0, 1, 1, 1);
         facts.attach (capacity_label, 0, 2, 1, 1);
         facts.attach (battery_label, 0, 3, 1, 1);
-        facts.attach (identity_event, 0, 4, 1, 1);
+        facts.attach (identity_row, 0, 4, 1, 1);
 
         var left = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 16);
         left.pack_start (device_image, false, false, 0);
         left.pack_start (facts, false, false, 0);
 
-        // —— Right (far right): OS, patch, linked Reset|Restore ——
         os_label = new Gtk.Label ("");
         os_label.xalign = 1;
         os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
@@ -163,19 +161,19 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
             );
         });
 
-        // GTK/Granite linked style — buttons look joined (like Check for Update | Restore)
         var actions = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
         actions.halign = Gtk.Align.END;
         actions.get_style_context ().add_class (Gtk.STYLE_CLASS_LINKED);
         actions.pack_start (reset_button, false, false, 0);
         actions.pack_start (restore_button, false, false, 0);
+        actions_box = actions;
 
         var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
         right.halign = Gtk.Align.END;
         right.valign = Gtk.Align.START;
         right.pack_start (os_label, false, false, 0);
         right.pack_start (patch_label, false, false, 0);
-        right.pack_start (actions, false, false, 0);
+        right.pack_start (actions_box, false, false, 0);
 
         var columns = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
         columns.margin = 24;
@@ -192,6 +190,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
         refresh ();
         show_all ();
+        apply_visibility ();
     }
 
     private void begin_rename () {
@@ -236,85 +235,107 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     }
 
     private void update_identity () {
-        string serial = device.get_serial_number () ?? "R58M30DEMO01";
-        string imei = device.get_imei () ?? "359999999999999";
-        string model = device.get_model_identifier () ?? "SM-T510";
-
         switch (mode) {
             case IdentityMode.SERIAL:
                 identity_key_label.label = _("Serial Number:");
-                identity_value_label.label = serial;
+                identity_value_label.label = device.get_serial_number () ?? "";
                 break;
             case IdentityMode.IMEI:
                 identity_key_label.label = _("IMEI:");
-                identity_value_label.label = imei;
+                identity_value_label.label = device.get_imei () ?? "";
                 break;
             case IdentityMode.MODEL:
                 identity_key_label.label = _("Model:");
-                identity_value_label.label = model;
+                identity_value_label.label = device.get_model_identifier () ?? "";
                 break;
         }
     }
 
-    public void refresh () {
+    private bool has_text (string? s) {
+        return s != null && s.strip ().length > 0;
+    }
+
+    private void apply_visibility () {
+        // Fancy / model — blank if empty
         var model = device.get_model_identifier ();
-        if (model == null || model.strip ().length == 0) {
-            var fancy = device.get_fancy_description ();
-            model = (fancy != null && fancy.strip ().length > 0) ? fancy.strip () : "Galaxy Tab A (2019)";
+        if (!has_text (model)) {
+            model = device.get_fancy_description ();
         }
 
-        fancy_label.label = model;
-        fancy_label.visible = true;
+        fancy_label.visible = has_text (model);
+
+        space_label.visible = device.get_capacity () > 0;
+        capacity_label.visible = device.get_capacity () > 0;
+        battery_label.visible = device.get_battery_percent () >= 0;
+
+        bool any_id = has_text (device.get_serial_number ())
+            || has_text (device.get_imei ())
+            || has_text (device.get_model_identifier ());
+        identity_row.visible = any_id;
+
+        os_label.visible = has_text (device.get_os_version ());
+        patch_label.visible = has_text (device.get_security_patch ());
+
+        // Capability-gated buttons
+        reset_button.visible = device.can_reset ();
+        restore_button.visible = device.can_restore ();
+        actions_box.visible = device.can_reset () || device.can_restore ();
+    }
+
+    public void refresh () {
+        var model = device.get_model_identifier ();
+        if (!has_text (model)) {
+            model = device.get_fancy_description ();
+        }
+
+        fancy_label.label = has_text (model) ? model.strip () : "";
 
         device_image.set_from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
 
-        var display = device.get_display_name ();
-        if (display == null || display.strip ().length == 0 || display.down () == "mtp") {
-            display = "DJ’s Tablet";
-        }
-
         if (name_stack.visible_child_name == "label") {
-            name_label.label = display;
+            name_label.label = device.get_display_name ();
         }
 
         var cap = device.get_capacity ();
         var free = device.get_free_space ();
-        if (cap == 0) {
-            cap = 32ULL * 1024 * 1024 * 1024;
-            free = 12ULL * 1024 * 1024 * 1024;
+        if (cap > 0) {
+            space_label.label = _("Space: %s").printf (GLib.format_size (cap));
+            capacity_label.label = _("Capacity: %s (%s free)").printf (
+                GLib.format_size (cap),
+                GLib.format_size (free)
+            );
+        } else {
+            space_label.label = "";
+            capacity_label.label = "";
         }
-
-        space_label.label = _("Space: %s").printf (GLib.format_size (cap));
-        capacity_label.label = _("Capacity: %s (%s free)").printf (
-            GLib.format_size (cap),
-            GLib.format_size (free)
-        );
 
         int bat = device.get_battery_percent ();
-        if (bat < 0) {
-            bat = 87;
+        if (bat >= 0) {
+            battery_label.label = _("Battery: %d%%").printf (bat);
+        } else {
+            battery_label.label = "";
         }
-
-        battery_label.label = _("Battery: %d%%").printf (bat);
 
         update_identity ();
 
         var os = device.get_os_version ();
-        if (os == null || os.strip ().length == 0) {
-            os = "10";
-        }
-
-        if (device.get_content_type ().has_prefix ("android")) {
-            os_label.label = _("Android %s").printf (os);
+        if (has_text (os)) {
+            if (device.get_content_type ().has_prefix ("android")) {
+                os_label.label = _("Android %s").printf (os);
+            } else {
+                os_label.label = os;
+            }
         } else {
-            os_label.label = os;
+            os_label.label = "";
         }
 
         var patch = device.get_security_patch ();
-        if (patch == null || patch.strip ().length == 0) {
-            patch = "2020-05-01";
+        if (has_text (patch)) {
+            patch_label.label = _("Security patch: %s").printf (patch);
+        } else {
+            patch_label.label = "";
         }
 
-        patch_label.label = _("Security patch: %s").printf (patch);
+        apply_visibility ();
     }
 }

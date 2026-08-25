@@ -1,12 +1,11 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
- * Hardware strip above stock DeviceSummaryWidget.
+ * Upper hardware panel only:
+ *   Top:  fancy name / model
+ *   Left: icon + click-to-rename name / space / capacity / battery / identity
+ *   Right: OS version, security patch, Reset | Restore
  *
- *   Top:    fancy name / model
- *   Left:   icon + click-to-rename name / space / capacity / battery / identity
- *   Middle: encrypt-backups switch + Back Up button
- *   Right:  OS version, security patch, Reset | Restore
- *   Strong dividers between columns and under the panel
+ * Backups controls live in DeviceView (middle of the page).
  */
 
 public class Music.DeviceHardwareInfo : Gtk.Grid {
@@ -24,9 +23,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     private Gtk.Label battery_label;
     private Gtk.Label identity_key_label;
     private Gtk.Label identity_value_label;
-
-    private Gtk.Switch encrypt_switch;
-    private Gtk.Button backup_button;
 
     private Gtk.Label os_label;
     private Gtk.Label patch_label;
@@ -142,34 +138,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         left.pack_start (device_image, false, false, 0);
         left.pack_start (facts, false, false, 0);
 
-        // —— Middle: encrypt + Back Up ——
-        var encrypt_label = new Gtk.Label (_("Encrypt local backup"));
-        encrypt_label.xalign = 0;
-
-        encrypt_switch = new Gtk.Switch ();
-        encrypt_switch.halign = Gtk.Align.START;
-        encrypt_switch.tooltip_text = _("Encrypt backups with a password");
-
-        var encrypt_row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
-        encrypt_row.pack_start (encrypt_label, false, false, 0);
-        encrypt_row.pack_start (encrypt_switch, false, false, 0);
-
-        backup_button = new Gtk.Button.with_label (_("Back Up Now"));
-        backup_button.halign = Gtk.Align.START;
-        backup_button.clicked.connect (() => {
-            NotificationManager.get_default ().show_alert (
-                _("Back Up Now"),
-                _("Device backup is not implemented for this device type yet.")
-            );
-        });
-
-        var middle = new Gtk.Box (Gtk.Orientation.VERTICAL, 10);
-        middle.valign = Gtk.Align.CENTER;
-        middle.margin_start = 8;
-        middle.margin_end = 8;
-        middle.pack_start (encrypt_row, false, false, 0);
-        middle.pack_start (backup_button, false, false, 0);
-
         // —— Right: OS, patch, Reset | Restore ——
         os_label = new Gtk.Label ("");
         os_label.xalign = 0;
@@ -204,36 +172,19 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         right.pack_start (patch_label, false, false, 0);
         right.pack_start (actions, false, false, 0);
 
-        // Noticeable vertical dividers between columns
-        var vsep1 = new Gtk.Separator (Gtk.Orientation.VERTICAL);
-        vsep1.margin_start = 16;
-        vsep1.margin_end = 16;
-        vsep1.width_request = 2;
-
-        var vsep2 = new Gtk.Separator (Gtk.Orientation.VERTICAL);
-        vsep2.margin_start = 16;
-        vsep2.margin_end = 16;
-        vsep2.width_request = 2;
+        var vsep = new Gtk.Separator (Gtk.Orientation.VERTICAL);
+        vsep.margin_start = 24;
+        vsep.margin_end = 24;
+        vsep.width_request = 2;
 
         var columns = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
         columns.margin = 24;
         columns.margin_top = 8;
         columns.pack_start (left, false, false, 0);
-        columns.pack_start (vsep1, false, true, 0);
-        columns.pack_start (middle, false, false, 0);
-        columns.pack_start (vsep2, false, true, 0);
+        columns.pack_start (vsep, false, true, 0);
         columns.pack_start (right, false, false, 0);
 
         attach (columns, 0, 1, 1, 1);
-
-        // Strong divider under the hardware panel (before summary)
-        var bottom_sep = new Gtk.Separator (Gtk.Orientation.HORIZONTAL);
-        bottom_sep.margin_top = 16;
-        bottom_sep.margin_bottom = 8;
-        bottom_sep.margin_start = 12;
-        bottom_sep.margin_end = 12;
-        bottom_sep.height_request = 2;
-        attach (bottom_sep, 0, 2, 1, 1);
 
         device.initialized.connect (() => {
             refresh ();

@@ -157,11 +157,11 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         left.pack_start (facts, false, false, 0);
 
         os_label = new Gtk.Label ("");
-        os_label.xalign = 1;
+        os_label.xalign = 0;
         os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
 
         patch_label = new Gtk.Label ("");
-        patch_label.xalign = 1;
+        patch_label.xalign = 0;
         patch_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
 
         reset_button = new Gtk.Button.with_label (_("Reset"));

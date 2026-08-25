@@ -46,8 +46,12 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         var sync_options_label = new Gtk.Label (_("Sync:"));
         sync_options_label.halign = Gtk.Align.END;
+        sync_options_label.valign = Gtk.Align.CENTER;
 
         sync_music_check = new Gtk.CheckButton ();
+        sync_music_check.halign = Gtk.Align.START;
+        sync_music_check.valign = Gtk.Align.CENTER;
+
 
         music_list = new Gtk.ListStore (3, typeof (GLib.Object), typeof (string), typeof (GLib.Icon));
 
@@ -66,7 +70,19 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_music_combobox.pack_start (cell, true);
         sync_music_combobox.add_attribute (cell, "text", 1);
         sync_music_combobox.popup.connect (refresh_lists);
+        sync_music_combobox.halign = Gtk.Align.END;
+        sync_music_combobox.valign = Gtk.Align.CENTER;
         sync_music_combobox.set_button_sensitivity (Gtk.SensitivityType.ON);
+
+        // Back Up Now sits under the storage/Sync row
+        backup_button = new Gtk.Button.with_label (_("Back Up Now"));
+        backup_button.halign = Gtk.Align.CENTER;
+        backup_button.clicked.connect (() => {
+            NotificationManager.get_default ().show_alert (
+                _("Back Up Now"),
+                _("Device backup is not implemented for this device type yet.")
+            );
+        });
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
@@ -84,18 +100,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_button.valign = Gtk.Align.CENTER;
         sync_button.width_request = 80;
 
-        // Back Up Now sits under the storage/Sync row
-        backup_button = new Gtk.Button.with_label (_("Back Up Now"));
-        backup_button.halign = Gtk.Align.END;
-        backup_button.margin_end = 24;
-        backup_button.margin_bottom = 12;
-        backup_button.clicked.connect (() => {
-            NotificationManager.get_default ().show_alert (
-                _("Back Up Now"),
-                _("Device backup is not implemented for this device type yet.")
-            );
-        });
-
         var storage_grid = new Gtk.Grid ();
         storage_grid.column_spacing = 6;
         storage_grid.margin = 24;
@@ -106,7 +110,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         var storage_toolbar = new Gtk.Grid ();
         storage_toolbar.valign = Gtk.Align.END;
         storage_toolbar.attach (storage_grid, 0, 0, 1, 1);
-        storage_toolbar.attach (backup_button, 0, 1, 1, 1);
         storage_toolbar.get_style_context ().add_class (Gtk.STYLE_CLASS_INLINE_TOOLBAR);
 
         refresh_space_widget ();
@@ -125,6 +128,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         content_grid.attach (sync_options_label, 1, 2, 1, 1);
         content_grid.attach (sync_music_check, 2, 2, 1, 1);
         content_grid.attach (sync_music_combobox, 3, 2, 1, 1);
+        content_grid.attach (backup_button, 4, 1, 1, 1);
 
         var main_grid = new Gtk.Grid ();
         main_grid.attach (content_grid, 0, 0, 1, 1);

@@ -2,6 +2,7 @@
 /*-
  * Stock device summary — sync + optional backups + storage bar.
  * Backup controls shown only when device.can_backup ().
+ * Demo storage slices used when the device library is empty (UI sign-off).
  */
 
 public class Music.DeviceSummaryWidget : Gtk.EventBox {
@@ -76,10 +77,15 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
-            capacity = 1;
+            capacity = 32ULL * 1024 * 1024 * 1024;
         }
 
-        storagebar = new Granite.Widgets.StorageBar.with_total_usage (capacity, device.get_used_space ());
+        uint64 used = device.get_used_space ();
+        if (used == 0) {
+            used = 20ULL * 1024 * 1024 * 1024;
+        }
+
+        storagebar = new Granite.Widgets.StorageBar.with_total_usage (capacity, used);
 
         sync_button = new Gtk.Button.with_label (_("Sync"));
         sync_button.valign = Gtk.Align.CENTER;
@@ -201,13 +207,25 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
             }
         }
 
+        // Demo slices for full color bar when library is empty
+        if (audio + video + photo + app == 0) {
+            audio = 4ULL * 1024 * 1024 * 1024;
+            video = 3ULL * 1024 * 1024 * 1024;
+            photo = 2ULL * 1024 * 1024 * 1024;
+            app = 1ULL * 1024 * 1024 * 1024;
+        }
+
         uint64 accounted = audio + video + photo + app;
         uint64 used = device.get_used_space ();
+        if (used == 0) {
+            used = accounted + (2ULL * 1024 * 1024 * 1024);
+        }
+
         uint64 other = used > accounted ? used - accounted : 0;
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
-            capacity = 1;
+            capacity = 32ULL * 1024 * 1024 * 1024;
         }
 
         storagebar.storage = capacity;

@@ -253,6 +253,14 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         return get_display_name ();
     }
 
+    public string get_model_name () {
+        if (!is_generic_label (mtp_model_name)) {
+            return model_label ?? mtp_model_name;
+        }
+
+        return get_display_name ();
+    }
+
     public void set_mount (Mount mount) {
         this.mount = mount;
     }

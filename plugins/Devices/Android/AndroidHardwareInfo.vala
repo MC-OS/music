@@ -11,8 +11,10 @@
 public class Music.Plugins.AndroidHardwareInfo : Gtk.Grid {
     private AndroidDevice device;
 
+    private Gtk.Label fancy_label;
     private Gtk.Image device_image;
     private Gtk.Label name_label;
+    private Gtk.Label space_label;
     private Gtk.Label capacity_label;
     private Gtk.Label battery_label;
     private Gtk.Label identity_key_label;
@@ -30,6 +32,11 @@ public class Music.Plugins.AndroidHardwareInfo : Gtk.Grid {
 
     public AndroidHardwareInfo (AndroidDevice device) {
         this.device = device;
+
+        fancy_label = new Gtk.Label ("");
+        fancy_label.xalign = 0;
+        fancy_label.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
+        attach (fancy_label, 0, 0, 1, 1);
     
         get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
 
@@ -41,6 +48,9 @@ public class Music.Plugins.AndroidHardwareInfo : Gtk.Grid {
         name_label = new Gtk.Label (device.get_display_name ());
         name_label.xalign = 0;
         name_label.get_style_context ().add_class (Granite.STYLE_CLASS_H2_LABEL);
+
+        space_label = new Gtk.Label ("");
+        space_label.xalign = 0;
 
         capacity_label = new Gtk.Label ("");
         capacity_label.xalign = 0;
@@ -73,9 +83,10 @@ public class Music.Plugins.AndroidHardwareInfo : Gtk.Grid {
         facts.row_spacing = 4;
         facts.column_spacing = 8;
         facts.attach (name_label, 0, 0, 2, 1);
-        facts.attach (capacity_label, 0, 1, 2, 1);
-        facts.attach (battery_label, 0, 2, 2, 1);
-        facts.attach (identity_event, 0, 3, 2, 1);
+        facts.attach (space_label, 0, 1, 2, 1);
+        facts.attach (capacity_label, 0, 2, 2, 1);
+        facts.attach (battery_label, 0, 3, 2, 1);
+        facts.attach (identity_event, 0, 4, 2, 1);
 
         var left = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 16);
         left.pack_start (device_image, false, false, 0);
@@ -100,11 +111,12 @@ public class Music.Plugins.AndroidHardwareInfo : Gtk.Grid {
         main_info.column_spacing = 12;
         main_info.attach (left, 0, 0, 1, 1);
         main_info.attach (right, 1, 0, 1, 1);
-        attach (main_info, 0, 0, 1, 1);
+        attach (main_info, 0, 1, 1, 1);
 
         var sep = new Gtk.Separator (Gtk.Orientation.HORIZONTAL);
         sep.margin_top = 12;
-        attach (sep, 0, 1, 1, 1);
+        sep.margin_bottom = 12;
+        attach (sep, 0, 2, 1, 1);
 
         refresh ();
         show_all ();
@@ -144,16 +156,22 @@ public class Music.Plugins.AndroidHardwareInfo : Gtk.Grid {
     }
 
     public void refresh () {
+        fancy_label.label = device.get_model_name ();
         name_label.label = device.get_display_name ();
 
         var cap = device.get_capacity ();
         var free = device.get_free_space ();
         if (cap > 0) {
+            space_label.label = _("Space: %s").printf (
+                GLib.format_size (cap)
+            );
+
             capacity_label.label = _("Capacity: %s (%s free)").printf (
                 GLib.format_size (cap),
                 GLib.format_size (free)
             );
         } else {
+            space_label.label = _("Space: Not available");
             capacity_label.label = _("Capacity: Not available");
         }
 

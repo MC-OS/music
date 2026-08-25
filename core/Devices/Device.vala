@@ -51,6 +51,14 @@ public interface Music.Device : GLib.Object {
         return -1;
     }
 
+    public virtual string? get_os_version () {
+        return null;
+    }
+
+    public virtual string? get_security_patch () {
+        return null;
+    }
+
     public Gee.Collection<Music.Media> delete_doubles (Gee.Collection<Music.Media> source_list, Gee.Collection<Music.Media> to_remove) {
         var new_list = new Gee.LinkedList<Music.Media> ();
         foreach (var m in source_list) {

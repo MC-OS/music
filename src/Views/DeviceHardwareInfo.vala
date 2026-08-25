@@ -2,6 +2,7 @@
 /*
  * Hardware strip modeled on classic iTunes device Summary:
  *
+ *   Top:   plain model / fancy name label
  *   Left:  device icon + capacity / battery / serial cycle
  *   Right: OS version + patch, then Reset | Restore
  *   Below: Backups panel — encrypt option, Back Up Now | Restore Backup
@@ -10,6 +11,7 @@
 public class Music.DeviceHardwareInfo : Gtk.Grid {
     private Device device;
 
+    private Gtk.Label model_label;
     private Gtk.Image device_image;
     private Gtk.Label name_label;
     private Gtk.Label capacity_label;
@@ -43,6 +45,12 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         margin = 24;
         margin_bottom = 8;
         halign = Gtk.Align.CENTER;
+
+        // ── Very top: plain model / fancy name ──
+        model_label = new Gtk.Label ("");
+        model_label.xalign = 0;
+        model_label.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
+        attach (model_label, 0, 0, 1, 1);
 
         // ── Top row: left facts + right software / restore ──
         device_image = new Gtk.Image.from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
@@ -92,7 +100,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         left.pack_start (device_image, false, false, 0);
         left.pack_start (facts, false, false, 0);
 
-        // Right: OS + patch, then Reset | Restore (like Check for Update | Restore iPhone)
         os_label = new Gtk.Label ("");
         os_label.xalign = 0;
         os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
@@ -117,12 +124,13 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         right.pack_start (software_actions, false, false, 0);
 
         var top = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 48);
+        top.margin_top = 8;
         top.pack_start (left, false, false, 0);
         top.pack_start (right, false, false, 0);
 
-        attach (top, 0, 0, 1, 1);
+        attach (top, 0, 1, 1, 1);
 
-        // ── Backups panel (middle of Summary, like iTunes) ──
+        // ── Backups panel ──
         var backups_title = new Gtk.Label (_("<b>Backups</b>"));
         backups_title.use_markup = true;
         backups_title.xalign = 0;
@@ -147,11 +155,11 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         backups_grid.attach (encrypt_backup_check, 0, 1, 2, 1);
         backups_grid.attach (backup_buttons, 0, 2, 2, 1);
 
-        attach (backups_grid, 0, 1, 1, 1);
+        attach (backups_grid, 0, 2, 1, 1);
 
         var sep = new Gtk.Separator (Gtk.Orientation.HORIZONTAL);
         sep.margin_top = 16;
-        attach (sep, 0, 2, 1, 1);
+        attach (sep, 0, 3, 1, 1);
 
         device.initialized.connect (() => {
             refresh ();
@@ -160,6 +168,21 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         refresh ();
         show_all ();
         apply_visibility ();
+    }
+
+    private string? resolve_model_label () {
+        // Prefer hardware model (iPhone-style fancy name), then fancy description
+        var model = device.get_model_identifier ();
+        if (model != null && model.strip ().length > 0) {
+            return model.strip ();
+        }
+
+        var fancy = device.get_fancy_description ();
+        if (fancy != null && fancy.strip ().length > 0) {
+            return fancy.strip ();
+        }
+
+        return null;
     }
 
     private void on_backup_now () {
@@ -224,6 +247,9 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     }
 
     private void apply_visibility () {
+        var model = resolve_model_label ();
+        model_label.visible = model != null;
+
         capacity_label.visible = device.get_capacity () > 0;
         battery_label.visible = device.get_battery_percent () >= 0;
 
@@ -237,6 +263,9 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     }
 
     public void refresh () {
+        var model = resolve_model_label ();
+        model_label.label = model ?? "";
+
         device_image.set_from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
         name_label.label = device.get_display_name ();
 

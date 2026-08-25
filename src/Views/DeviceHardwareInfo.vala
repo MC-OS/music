@@ -1,7 +1,10 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
- * Hardware info strip above the stock DeviceSummaryWidget.
- * Center: OS + patch, Backup, then Reset | Restore side-by-side.
+ * Hardware strip modeled on classic iTunes device Summary:
+ *
+ *   Left:  device icon + capacity / battery / serial cycle
+ *   Right: OS version + patch, then Reset | Restore
+ *   Below: Backups panel — encrypt option, Back Up Now | Restore Backup
  */
 
 public class Music.DeviceHardwareInfo : Gtk.Grid {
@@ -14,13 +17,15 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     private Gtk.Label identity_key_label;
     private Gtk.Label identity_value_label;
     private Gtk.Widget identity_row;
+
     private Gtk.Label os_label;
     private Gtk.Label patch_label;
-    private Gtk.Widget center_box;
 
-    private Gtk.Button backup_button;
     private Gtk.Button reset_button;
-    private Gtk.Button restore_button;
+    private Gtk.Button restore_device_button;
+    private Gtk.Button backup_now_button;
+    private Gtk.Button restore_backup_button;
+    private Gtk.CheckButton encrypt_backup_check;
 
     private enum IdentityMode {
         SERIAL,
@@ -33,12 +38,13 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     public DeviceHardwareInfo (Device device) {
         this.device = device;
 
-        column_spacing = 24;
-        row_spacing = 4;
+        orientation = Gtk.Orientation.VERTICAL;
+        row_spacing = 0;
         margin = 24;
         margin_bottom = 8;
         halign = Gtk.Align.CENTER;
 
+        // ── Top row: left facts + right software / restore ──
         device_image = new Gtk.Image.from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
         device_image.pixel_size = 96;
         device_image.valign = Gtk.Align.START;
@@ -86,62 +92,66 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         left.pack_start (device_image, false, false, 0);
         left.pack_start (facts, false, false, 0);
 
-        // —— Center: OS, patch, Backup, then Reset | Restore ——
+        // Right: OS + patch, then Reset | Restore (like Check for Update | Restore iPhone)
         os_label = new Gtk.Label ("");
-        os_label.xalign = 0.5f;
+        os_label.xalign = 0;
         os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
 
         patch_label = new Gtk.Label ("");
-        patch_label.xalign = 0.5f;
+        patch_label.xalign = 0;
         patch_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
 
-        backup_button = new Gtk.Button.with_label (_("Backup"));
-        backup_button.halign = Gtk.Align.CENTER;
-        backup_button.clicked.connect (() => {
-            NotificationManager.get_default ().show_alert (
-                _("Backup"),
-                _("Device backup is not implemented for this device type yet.")
-            );
-        });
-
         reset_button = new Gtk.Button.with_label (_("Reset"));
-        restore_button = new Gtk.Button.with_label (_("Restore"));
-        reset_button.clicked.connect (() => {
-            NotificationManager.get_default ().show_alert (
-                _("Reset"),
-                _("Device reset is not implemented for this device type yet.")
-            );
-        });
-        restore_button.clicked.connect (() => {
-            NotificationManager.get_default ().show_alert (
-                _("Restore"),
-                _("Device restore is not implemented for this device type yet.")
-            );
-        });
+        restore_device_button = new Gtk.Button.with_label (_("Restore"));
+        reset_button.clicked.connect (on_reset);
+        restore_device_button.clicked.connect (on_restore_device);
 
-        var reset_restore = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
-        reset_restore.halign = Gtk.Align.CENTER;
-        reset_restore.pack_start (reset_button, false, false, 0);
-        reset_restore.pack_start (restore_button, false, false, 0);
+        var software_actions = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
+        software_actions.pack_start (reset_button, false, false, 0);
+        software_actions.pack_start (restore_device_button, false, false, 0);
 
-        var center = new Gtk.Box (Gtk.Orientation.VERTICAL, 8);
-        center.valign = Gtk.Align.CENTER;
-        center.halign = Gtk.Align.CENTER;
-        center.pack_start (os_label, false, false, 0);
-        center.pack_start (patch_label, false, false, 0);
-        center.pack_start (backup_button, false, false, 0);
-        center.pack_start (reset_restore, false, false, 0);
-        center_box = center;
+        var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
+        right.valign = Gtk.Align.START;
+        right.pack_start (os_label, false, false, 0);
+        right.pack_start (patch_label, false, false, 0);
+        right.pack_start (software_actions, false, false, 0);
 
-        var row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 32);
-        row.pack_start (left, false, false, 0);
-        row.pack_start (center_box, false, false, 0);
+        var top = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 48);
+        top.pack_start (left, false, false, 0);
+        top.pack_start (right, false, false, 0);
 
-        attach (row, 0, 0, 1, 1);
+        attach (top, 0, 0, 1, 1);
+
+        // ── Backups panel (middle of Summary, like iTunes) ──
+        var backups_title = new Gtk.Label (_("<b>Backups</b>"));
+        backups_title.use_markup = true;
+        backups_title.xalign = 0;
+
+        encrypt_backup_check = new Gtk.CheckButton.with_label (_("Encrypt local backup"));
+        encrypt_backup_check.tooltip_text = _("Encrypt backups with a password");
+
+        backup_now_button = new Gtk.Button.with_label (_("Back Up Now"));
+        restore_backup_button = new Gtk.Button.with_label (_("Restore Backup"));
+        backup_now_button.clicked.connect (on_backup_now);
+        restore_backup_button.clicked.connect (on_restore_backup);
+
+        var backup_buttons = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
+        backup_buttons.pack_start (backup_now_button, false, false, 0);
+        backup_buttons.pack_start (restore_backup_button, false, false, 0);
+
+        var backups_grid = new Gtk.Grid ();
+        backups_grid.row_spacing = 8;
+        backups_grid.column_spacing = 12;
+        backups_grid.margin_top = 16;
+        backups_grid.attach (backups_title, 0, 0, 2, 1);
+        backups_grid.attach (encrypt_backup_check, 0, 1, 2, 1);
+        backups_grid.attach (backup_buttons, 0, 2, 2, 1);
+
+        attach (backups_grid, 0, 1, 1, 1);
 
         var sep = new Gtk.Separator (Gtk.Orientation.HORIZONTAL);
-        sep.margin_top = 12;
-        attach (sep, 0, 1, 1, 1);
+        sep.margin_top = 16;
+        attach (sep, 0, 2, 1, 1);
 
         device.initialized.connect (() => {
             refresh ();
@@ -150,6 +160,34 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         refresh ();
         show_all ();
         apply_visibility ();
+    }
+
+    private void on_backup_now () {
+        NotificationManager.get_default ().show_alert (
+            _("Back Up Now"),
+            _("Device backup is not implemented for this device type yet.")
+        );
+    }
+
+    private void on_restore_backup () {
+        NotificationManager.get_default ().show_alert (
+            _("Restore Backup"),
+            _("Restoring from a backup is not implemented for this device type yet.")
+        );
+    }
+
+    private void on_reset () {
+        NotificationManager.get_default ().show_alert (
+            _("Reset"),
+            _("Device reset is not implemented for this device type yet.")
+        );
+    }
+
+    private void on_restore_device () {
+        NotificationManager.get_default ().show_alert (
+            _("Restore"),
+            _("Restoring this device is not implemented for this device type yet.")
+        );
     }
 
     private void cycle_identity () {

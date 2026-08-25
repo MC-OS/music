@@ -1,11 +1,11 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
- * Upper hardware panel only:
+ * Upper hardware panel:
  *   Top:  fancy name / model
  *   Left: icon + click-to-rename name / space / capacity / battery / identity
- *   Right: OS version, security patch, Reset | Restore
+ *   Right (far right): OS version, security patch, Reset | Restore
  *
- * Backups controls live in DeviceView (middle of the page).
+ * When real data is missing, demo values are shown so the full layout is visible while testing.
  */
 
 public class Music.DeviceHardwareInfo : Gtk.Grid {
@@ -41,6 +41,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         this.device = device;
 
         get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
+        hexpand = true;
 
         // —— Top: fancy name / model ——
         fancy_label = new Gtk.Label ("");
@@ -138,13 +139,13 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         left.pack_start (device_image, false, false, 0);
         left.pack_start (facts, false, false, 0);
 
-        // —— Right: OS, patch, Reset | Restore ——
+        // —— Right (far right): OS, patch, Reset | Restore ——
         os_label = new Gtk.Label ("");
-        os_label.xalign = 0;
+        os_label.xalign = 1;
         os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
 
         patch_label = new Gtk.Label ("");
-        patch_label.xalign = 0;
+        patch_label.xalign = 1;
         patch_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
 
         reset_button = new Gtk.Button.with_label (_("Reset"));
@@ -163,26 +164,23 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         });
 
         var actions = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
+        actions.halign = Gtk.Align.END;
         actions.pack_start (reset_button, false, false, 0);
         actions.pack_start (restore_button, false, false, 0);
 
         var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
+        right.halign = Gtk.Align.END;
         right.valign = Gtk.Align.START;
         right.pack_start (os_label, false, false, 0);
         right.pack_start (patch_label, false, false, 0);
         right.pack_start (actions, false, false, 0);
 
-        var vsep = new Gtk.Separator (Gtk.Orientation.VERTICAL);
-        vsep.margin_start = 24;
-        vsep.margin_end = 24;
-        vsep.width_request = 2;
-
         var columns = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
         columns.margin = 24;
         columns.margin_top = 8;
+        columns.hexpand = true;
         columns.pack_start (left, false, false, 0);
-        columns.pack_start (vsep, false, true, 0);
-        columns.pack_start (right, false, false, 0);
+        columns.pack_end (right, false, false, 0);
 
         attach (columns, 0, 1, 1, 1);
 
@@ -195,7 +193,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     }
 
     private void begin_rename () {
-        name_entry.text = device.get_display_name ();
+        name_entry.text = name_label.label;
         name_stack.visible_child_name = "entry";
         name_entry.grab_focus ();
         name_entry.select_region (0, -1);
@@ -210,15 +208,12 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         if (text.length > 0) {
             device.set_display_name (text);
             name_label.label = text;
-        } else {
-            name_label.label = device.get_display_name ();
         }
 
         name_stack.visible_child_name = "label";
     }
 
     private void cancel_rename () {
-        name_entry.text = device.get_display_name ();
         name_stack.visible_child_name = "label";
     }
 
@@ -239,76 +234,88 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     }
 
     private void update_identity () {
+        // Demo values when real data is absent (testing)
+        string serial = device.get_serial_number () ?? "R58M30DEMO01";
+        string imei = device.get_imei () ?? "359999999999999";
+        string model = device.get_model_identifier () ?? "SM-T510";
+
         switch (mode) {
             case IdentityMode.SERIAL:
                 identity_key_label.label = _("Serial Number:");
-                identity_value_label.label = device.get_serial_number () ?? _("Not available");
+                identity_value_label.label = serial;
                 break;
             case IdentityMode.IMEI:
                 identity_key_label.label = _("IMEI:");
-                identity_value_label.label = device.get_imei () ?? _("Not available");
+                identity_value_label.label = imei;
                 break;
             case IdentityMode.MODEL:
                 identity_key_label.label = _("Model:");
-                identity_value_label.label = device.get_model_identifier () ?? _("Not available");
+                identity_value_label.label = model;
                 break;
         }
     }
 
     public void refresh () {
+        // Fancy / model label — demo if empty
         var model = device.get_model_identifier ();
         if (model == null || model.strip ().length == 0) {
             var fancy = device.get_fancy_description ();
-            model = (fancy != null && fancy.strip ().length > 0) ? fancy.strip () : null;
+            model = (fancy != null && fancy.strip ().length > 0) ? fancy.strip () : "Galaxy Tab A (2019)";
         }
 
-        fancy_label.label = model ?? "";
-        fancy_label.visible = model != null;
+        fancy_label.label = model;
+        fancy_label.visible = true;
 
         device_image.set_from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
 
+        var display = device.get_display_name ();
+        if (display == null || display.strip ().length == 0 || display.down () == "mtp") {
+            display = "DJ’s Tablet";
+        }
+
         if (name_stack.visible_child_name == "label") {
-            name_label.label = device.get_display_name ();
+            name_label.label = display;
         }
 
         var cap = device.get_capacity ();
         var free = device.get_free_space ();
-        if (cap > 0) {
-            space_label.label = _("Space: %s").printf (GLib.format_size (cap));
-            capacity_label.label = _("Capacity: %s (%s free)").printf (
-                GLib.format_size (cap),
-                GLib.format_size (free)
-            );
-        } else {
-            space_label.label = _("Space: Not available");
-            capacity_label.label = _("Capacity: Not available");
+        if (cap == 0) {
+            // ~32 GB device, ~12 GB free — demo
+            cap = 32ULL * 1024 * 1024 * 1024;
+            free = 12ULL * 1024 * 1024 * 1024;
         }
 
+        space_label.label = _("Space: %s").printf (GLib.format_size (cap));
+        capacity_label.label = _("Capacity: %s (%s free)").printf (
+            GLib.format_size (cap),
+            GLib.format_size (free)
+        );
+
         int bat = device.get_battery_percent ();
-        if (bat >= 0) {
-            battery_label.label = _("Battery: %d%%").printf (bat);
-        } else {
-            battery_label.label = _("Battery: —");
+        if (bat < 0) {
+            bat = 87;
         }
+
+        battery_label.label = _("Battery: %d%%").printf (bat);
 
         update_identity ();
 
         var os = device.get_os_version ();
-        if (os != null) {
-            if (device.get_content_type ().has_prefix ("android")) {
-                os_label.label = _("Android %s").printf (os);
-            } else {
-                os_label.label = os;
-            }
+        if (os == null || os.strip ().length == 0) {
+            os = "10";
+        }
+
+        if (device.get_content_type ().has_prefix ("android")) {
+            os_label.label = _("Android %s").printf (os);
         } else {
-            os_label.label = "";
+            os_label.label = os;
         }
 
         var patch = device.get_security_patch ();
-        if (patch != null) {
-            patch_label.label = _("Security patch: %s").printf (patch);
-        } else {
-            patch_label.label = "";
+        if (patch == null || patch.strip ().length == 0) {
+            patch = "2020-05-01";
         }
+
+        patch_label.label = _("Security patch: %s").printf (patch);
     }
 }

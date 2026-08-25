@@ -1,8 +1,6 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*-
- * Copyright (c) 2012-2018 elementary LLC. (https://elementary.io)
- *
- * Stock device summary — sync options + storage bar.
+ * Stock device summary — sync + backups + storage bar.
  * Device name lives in DeviceHardwareInfo (click to rename).
  */
 
@@ -15,6 +13,8 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     private Gtk.ComboBox sync_music_combobox;
     private Gtk.ListStore music_list;
     private Gtk.Switch auto_sync_switch;
+    private Gtk.Switch encrypt_switch;
+    private Gtk.Button backup_button;
     private Granite.Widgets.StorageBar storagebar;
 
     public DeviceSummaryWidget (Device device, DevicePreferences preferences) {
@@ -32,6 +32,22 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         auto_sync_switch = new Gtk.Switch ();
         auto_sync_switch.halign = Gtk.Align.START;
+
+        var encrypt_label = new Gtk.Label (_("Encrypt local backup:"));
+        encrypt_label.halign = Gtk.Align.END;
+
+        encrypt_switch = new Gtk.Switch ();
+        encrypt_switch.halign = Gtk.Align.START;
+        encrypt_switch.tooltip_text = _("Encrypt backups with a password");
+
+        backup_button = new Gtk.Button.with_label (_("Back Up Now"));
+        backup_button.halign = Gtk.Align.START;
+        backup_button.clicked.connect (() => {
+            NotificationManager.get_default ().show_alert (
+                _("Back Up Now"),
+                _("Device backup is not implemented for this device type yet.")
+            );
+        });
 
         var sync_options_label = new Gtk.Label (_("Sync:"));
         sync_options_label.halign = Gtk.Align.END;
@@ -59,10 +75,15 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
-            capacity = 1;
+            capacity = 32ULL * 1024 * 1024 * 1024; // demo 32 GB
         }
 
-        storagebar = new Granite.Widgets.StorageBar.with_total_usage (capacity, device.get_used_space ());
+        uint64 used = device.get_used_space ();
+        if (used == 0) {
+            used = 20ULL * 1024 * 1024 * 1024; // demo used
+        }
+
+        storagebar = new Granite.Widgets.StorageBar.with_total_usage (capacity, used);
 
         sync_button = new Gtk.Button.with_label (_("Sync"));
         sync_button.valign = Gtk.Align.CENTER;
@@ -90,9 +111,12 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         content_grid.attach (auto_sync_label, 1, 0, 1, 1);
         content_grid.attach (auto_sync_switch, 2, 0, 2, 1);
-        content_grid.attach (sync_options_label, 1, 1, 1, 1);
-        content_grid.attach (sync_music_check, 2, 1, 1, 1);
-        content_grid.attach (sync_music_combobox, 3, 1, 1, 1);
+        content_grid.attach (encrypt_label, 1, 1, 1, 1);
+        content_grid.attach (encrypt_switch, 2, 1, 1, 1);
+        content_grid.attach (backup_button, 3, 1, 1, 1);
+        content_grid.attach (sync_options_label, 1, 2, 1, 1);
+        content_grid.attach (sync_music_check, 2, 2, 1, 1);
+        content_grid.attach (sync_music_combobox, 3, 2, 1, 1);
 
         var main_grid = new Gtk.Grid ();
         main_grid.attach (content_grid, 0, 0, 1, 1);
@@ -171,13 +195,25 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
             }
         }
 
+        // Demo slices if library is empty (testing layout)
+        if (audio + video + photo + app == 0) {
+            audio = 4ULL * 1024 * 1024 * 1024;
+            video = 3ULL * 1024 * 1024 * 1024;
+            photo = 2ULL * 1024 * 1024 * 1024;
+            app = 1ULL * 1024 * 1024 * 1024;
+        }
+
         uint64 accounted = audio + video + photo + app;
         uint64 used = device.get_used_space ();
+        if (used == 0) {
+            used = accounted + (2ULL * 1024 * 1024 * 1024);
+        }
+
         uint64 other = used > accounted ? used - accounted : 0;
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
-            capacity = 1;
+            capacity = 32ULL * 1024 * 1024 * 1024;
         }
 
         storagebar.storage = capacity;

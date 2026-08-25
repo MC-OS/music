@@ -1,32 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*-
  * Copyright (c) 2012-2018 elementary LLC. (https://elementary.io)
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The Music authors hereby grant permission for non-GPL compatible
- * GStreamer plugins to be used and distributed together with GStreamer
- * and Music. This permission is above and beyond the permissions granted
- * by the GPL license by which Music is covered. If you modify this code
- * you may extend this exception to your version of the code, but you are not
- * obligated to do so. If you do not wish to do so, delete this exception
- * statement from your version.
- *
- * Authored by: Scott Ringwelski <sgringwe@mtu.edu>
- *              Corentin Noël <corentin@elementary.io>
  */
-
 
 public interface Music.Device : GLib.Object {
     public signal void initialized (Device d);
@@ -54,9 +29,27 @@ public interface Music.Device : GLib.Object {
     public abstract void eject ();
     public abstract void synchronize ();
     public abstract bool only_use_custom_view ();
-    public abstract Gtk.Widget? get_custom_view (); // If it's null, use the standard device view
+    public abstract Gtk.Widget? get_custom_view ();
     public abstract bool read_only ();
     public abstract Library get_library ();
+
+    /** Optional hardware fields — plugins override when available. */
+    public virtual string? get_serial_number () {
+        return null;
+    }
+
+    public virtual string? get_imei () {
+        return null;
+    }
+
+    public virtual string? get_model_identifier () {
+        return null;
+    }
+
+    /** -1 = unknown / not reported */
+    public virtual int get_battery_percent () {
+        return -1;
+    }
 
     public Gee.Collection<Music.Media> delete_doubles (Gee.Collection<Music.Media> source_list, Gee.Collection<Music.Media> to_remove) {
         var new_list = new Gee.LinkedList<Music.Media> ();
@@ -65,7 +58,7 @@ public interface Music.Device : GLib.Object {
                 bool needed = true;
                 foreach (var med in to_remove) {
                     if (med != null && med.title != null) {
-                        if (med.album != null && m.album != null) { // If you don't have the album name, don't care of it
+                        if (med.album != null && m.album != null) {
                             if (med.title.down () == m.title.down () && med.artist.down () == m.artist.down () && med.album.down () == m.album.down ()) {
                                 needed = false;
                                 break;

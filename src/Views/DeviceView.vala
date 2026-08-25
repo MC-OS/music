@@ -1,10 +1,5 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
-/*-
- * Copyright (c) 2012-2018 elementary LLC. (https://elementary.io)
- *
- * If the device supplies a custom_view and only_use_custom_view is false,
- * the custom widget is shown above the stock DeviceSummaryWidget.
- */
+/* Stock DeviceSummaryWidget owns the hardware header for all devices. */
 
 public class Music.DeviceView : Gtk.Grid {
     public Device device { get; construct; }
@@ -33,27 +28,23 @@ public class Music.DeviceView : Gtk.Grid {
         var custom_view = device.get_custom_view ();
         if (custom_view != null && device.only_use_custom_view ()) {
             attach (custom_view, 0, 1, 1, 1);
-        } else if (custom_view != null) {
-            var box = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
-            box.pack_start (custom_view, false, false, 0);
-            box.pack_start (summary, true, true, 0);
-            attach (box, 0, 1, 1, 1);
         } else {
             attach (summary, 0, 1, 1, 1);
         }
 
         show_all ();
-
         infobar.hide ();
 
         ulong connector = NotificationManager.get_default ().progress_canceled.connect (() => {
             if (device.get_library ().doing_file_operations ()) {
-                NotificationManager.get_default ().show_alert (_("Cancelling…"), _("Device operation has been cancelled and will stop after this media."));
+                NotificationManager.get_default ().show_alert (
+                    _("Cancelling…"),
+                    _("Device operation has been cancelled and will stop after this media.")
+                );
             }
         });
 
         device.device_unmounted.connect (() => {
-            message ("device unmounted\n");
             device.disconnect (connector);
         });
 
@@ -63,7 +54,7 @@ public class Music.DeviceView : Gtk.Grid {
             infobar.show_all ();
         });
 
-        infobar.response.connect ((self, response) => {
+        infobar.response.connect (() => {
             infobar.hide ();
         });
 

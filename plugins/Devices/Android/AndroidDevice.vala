@@ -1,5 +1,5 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
-/* Device + hardware info for stock UI strip. */
+/* Device + optional hardware fields for core DeviceSummaryWidget. */
 
 public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     private Mount mount;
@@ -13,13 +13,9 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     private uint64 mtp_capacity = 0;
     private uint64 mtp_free = 0;
 
-    public string? serial_number { get; private set; default = null; }
-    public string? imei { get; private set; default = null; }
-    public string? device_version { get; private set; default = null; }
-    public string? android_version { get; private set; default = null; }
-    public string? security_patch { get; private set; default = null; }
-    /** -1 = unknown */
-    public int battery_percent { get; private set; default = -1; }
+    private string? _serial = null;
+    private string? _imei = null;
+    private int _battery = -1;
 
     public bool is_supported = true;
 
@@ -29,22 +25,31 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         library = new AndroidLibrary (this);
         libraries_manager.add_library (library);
         try_open_mtp ();
-        try_read_android_props ();
     }
 
-    public string? model_label {
-        owned get {
-            if (mtp_model_name != null && mtp_model_name.strip ().length > 0) {
-                if (mtp_manufacturer != null && mtp_manufacturer.strip ().length > 0
-                    && !mtp_model_name.down ().contains (mtp_manufacturer.down ())) {
-                    return "%s %s".printf (mtp_manufacturer, mtp_model_name);
-                }
+    public override string? get_serial_number () {
+        return _serial;
+    }
 
-                return mtp_model_name;
+    public override string? get_imei () {
+        return _imei;
+    }
+
+    public override string? get_model_identifier () {
+        if (mtp_model_name != null && mtp_model_name.strip ().length > 0) {
+            if (mtp_manufacturer != null && mtp_manufacturer.strip ().length > 0
+                && !mtp_model_name.down ().contains (mtp_manufacturer.down ())) {
+                return "%s %s".printf (mtp_manufacturer, mtp_model_name);
             }
 
-            return null;
+            return mtp_model_name;
         }
+
+        return null;
+    }
+
+    public override int get_battery_percent () {
+        return _battery;
     }
 
     private bool is_generic_label (string? name) {
@@ -65,7 +70,7 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         release_mtp ();
         mtp_capacity = 0;
         mtp_free = 0;
-        battery_percent = -1;
+        _battery = -1;
 
         Mtp.init ();
         mtp_device = Mtp.get_first_device ();
@@ -78,7 +83,6 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         var model = mtp_device.get_model_name ();
         var mfr = mtp_device.get_manufacturer_name ();
         var serial = mtp_device.get_serial_number ();
-        var version = mtp_device.get_device_version ();
 
         if (friendly != null && friendly.strip ().length > 0) {
             mtp_friendly_name = friendly.strip ();
@@ -90,24 +94,19 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
             mtp_manufacturer = mfr.strip ();
         }
         if (serial != null && serial.strip ().length > 0) {
-            serial_number = serial.strip ();
-        }
-        if (version != null && version.strip ().length > 0) {
-            device_version = version.strip ();
+            _serial = serial.strip ();
         }
 
-        // IMEI is not a standard MTP property — left null unless we find it later
-        imei = null;
+        _imei = null; // not available over standard MTP
 
         uint8 max_level = 0;
         uint8 cur_level = 0;
         if (mtp_device.get_battery_level (out max_level, out cur_level) == 0 && max_level > 0) {
-            battery_percent = (int) ((cur_level * 100) / max_level);
+            _battery = (int) ((cur_level * 100) / max_level);
         }
 
         if (mtp_device.get_storage (0) == 0 && mtp_device.storage != null) {
             unowned Mtp.Storage? store = mtp_device.storage;
-            int index = 0;
             while (store != null) {
                 var desc = (store.StorageDescription ?? "").down ();
                 bool external = desc.contains ("sd") || desc.contains ("card")
@@ -119,7 +118,6 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
                 }
 
                 store = store.next;
-                index++;
             }
 
             if (mtp_capacity == 0 && mtp_device.storage != null) {
@@ -129,43 +127,6 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         }
 
         DeviceManager.get_default ().device_name_changed (this);
-    }
-
-    /**
-     * Best-effort read of Android version / security patch from the MTP tree.
-     * Most modern devices do not expose build.prop; fields stay null then.
-     */
-    private void try_read_android_props () {
-        string[] candidates = {
-            get_uri () + "/system/build.prop",
-            get_uri () + "/Build.prop",
-            get_uri () + "/build.prop"
-        };
-
-        foreach (var path in candidates) {
-            var file = File.new_for_uri (path);
-            if (!file.query_exists ()) {
-                continue;
-            }
-
-            try {
-                uint8[] data;
-                file.load_contents (null, out data, null);
-                var text = (string) data;
-                foreach (var line in text.split ("\n")) {
-                    var t = line.strip ();
-                    if (t.has_prefix ("ro.build.version.release=")) {
-                        android_version = t.substring (t.index_of ("=") + 1).strip ();
-                    } else if (t.has_prefix ("ro.build.version.security_patch=")) {
-                        security_patch = t.substring (t.index_of ("=") + 1).strip ();
-                    }
-                }
-            } catch (Error e) {
-                debug ("build.prop read failed: %s", e.message);
-            }
-
-            break;
-        }
     }
 
     public void release_mtp () {
@@ -214,8 +175,9 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
             return mtp_friendly_name;
         }
 
-        if (!is_generic_label (mtp_model_name)) {
-            return model_label ?? mtp_model_name;
+        var model_id = get_model_identifier ();
+        if (model_id != null) {
+            return model_id;
         }
 
         var volume = mount.get_volume ();
@@ -238,27 +200,17 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     }
 
     public void set_display_name (string name) {
-        if (mtp_device.set_friendly_name (name) != 0) {
-            warning ("Could not set MTP device friendly name on hardware.");
-        }
         try {
             mount.get_default_location ().set_display_name (name);
-        } catch (GLib.Error err) {
-            critical ("Could not set Android Device Mount Display Name: %s\n", err.message);
+        } catch (Error err) {
+            warning ("set_display_name: %s", err.message);
         }
+
         DeviceManager.get_default ().device_name_changed (this);
     }
 
     public string get_fancy_description () {
-        return get_display_name ();
-    }
-
-    public string get_model_name () {
-        if (!is_generic_label (mtp_model_name)) {
-            return model_label ?? mtp_model_name;
-        }
-
-        return get_display_name ();
+        return "";
     }
 
     public void set_mount (Mount mount) {
@@ -337,7 +289,7 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     }
 
     public Gtk.Widget? get_custom_view () {
-        return new AndroidHardwareInfo (this);
+        return null; // core DeviceSummaryWidget owns the hardware header
     }
 
     public bool read_only () {

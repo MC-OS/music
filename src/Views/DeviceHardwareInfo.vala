@@ -3,7 +3,7 @@
  * Upper hardware panel:
  *   Top:  fancy name / model
  *   Left: icon + click-to-rename name / space / capacity / battery / identity
- *   Right (far right): OS version, security patch, Reset | Restore
+ *   Right (far right): OS version, security patch, linked Reset|Restore
  *
  * When real data is missing, demo values are shown so the full layout is visible while testing.
  */
@@ -139,7 +139,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         left.pack_start (device_image, false, false, 0);
         left.pack_start (facts, false, false, 0);
 
-        // —— Right (far right): OS, patch, Reset | Restore ——
+        // —— Right (far right): OS, patch, linked Reset|Restore ——
         os_label = new Gtk.Label ("");
         os_label.xalign = 1;
         os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
@@ -163,8 +163,10 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
             );
         });
 
-        var actions = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
+        // GTK/Granite linked style — buttons look joined (like Check for Update | Restore)
+        var actions = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
         actions.halign = Gtk.Align.END;
+        actions.get_style_context ().add_class (Gtk.STYLE_CLASS_LINKED);
         actions.pack_start (reset_button, false, false, 0);
         actions.pack_start (restore_button, false, false, 0);
 
@@ -234,7 +236,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     }
 
     private void update_identity () {
-        // Demo values when real data is absent (testing)
         string serial = device.get_serial_number () ?? "R58M30DEMO01";
         string imei = device.get_imei () ?? "359999999999999";
         string model = device.get_model_identifier () ?? "SM-T510";
@@ -256,7 +257,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     }
 
     public void refresh () {
-        // Fancy / model label — demo if empty
         var model = device.get_model_identifier ();
         if (model == null || model.strip ().length == 0) {
             var fancy = device.get_fancy_description ();
@@ -280,7 +280,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         var cap = device.get_capacity ();
         var free = device.get_free_space ();
         if (cap == 0) {
-            // ~32 GB device, ~12 GB free — demo
             cap = 32ULL * 1024 * 1024 * 1024;
             free = 12ULL * 1024 * 1024 * 1024;
         }

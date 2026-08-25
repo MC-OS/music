@@ -6,7 +6,7 @@
  *   Left:   icon + click-to-rename name / space / capacity / battery / identity
  *   Middle: encrypt-backups switch + Back Up button
  *   Right:  OS version, security patch, Reset | Restore
- *   Dividers between sections and under the whole panel
+ *   Strong dividers between columns and under the panel
  */
 
 public class Music.DeviceHardwareInfo : Gtk.Grid {
@@ -165,6 +165,8 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
         var middle = new Gtk.Box (Gtk.Orientation.VERTICAL, 10);
         middle.valign = Gtk.Align.CENTER;
+        middle.margin_start = 8;
+        middle.margin_end = 8;
         middle.pack_start (encrypt_row, false, false, 0);
         middle.pack_start (backup_button, false, false, 0);
 
@@ -202,30 +204,35 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         right.pack_start (patch_label, false, false, 0);
         right.pack_start (actions, false, false, 0);
 
-        // Dividers between left | middle | right
+        // Noticeable vertical dividers between columns
         var vsep1 = new Gtk.Separator (Gtk.Orientation.VERTICAL);
-        vsep1.margin_start = 12;
-        vsep1.margin_end = 12;
+        vsep1.margin_start = 16;
+        vsep1.margin_end = 16;
+        vsep1.width_request = 2;
 
         var vsep2 = new Gtk.Separator (Gtk.Orientation.VERTICAL);
-        vsep2.margin_start = 12;
-        vsep2.margin_end = 12;
+        vsep2.margin_start = 16;
+        vsep2.margin_end = 16;
+        vsep2.width_request = 2;
 
         var columns = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
         columns.margin = 24;
         columns.margin_top = 8;
         columns.pack_start (left, false, false, 0);
-        columns.pack_start (vsep1, false, false, 0);
+        columns.pack_start (vsep1, false, true, 0);
         columns.pack_start (middle, false, false, 0);
-        columns.pack_start (vsep2, false, false, 0);
+        columns.pack_start (vsep2, false, true, 0);
         columns.pack_start (right, false, false, 0);
 
         attach (columns, 0, 1, 1, 1);
 
-        // Divider under the whole hardware panel
+        // Strong divider under the hardware panel (before summary)
         var bottom_sep = new Gtk.Separator (Gtk.Orientation.HORIZONTAL);
-        bottom_sep.margin_top = 12;
-        bottom_sep.margin_bottom = 12;
+        bottom_sep.margin_top = 16;
+        bottom_sep.margin_bottom = 8;
+        bottom_sep.margin_start = 12;
+        bottom_sep.margin_end = 12;
+        bottom_sep.height_request = 2;
         attach (bottom_sep, 0, 2, 1, 1);
 
         device.initialized.connect (() => {

@@ -1,8 +1,6 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*-
- * Copyright (c) 2012-2018 elementary LLC. (https://elementary.io)
- *
- * Hardware strip (DeviceHardwareInfo) above stock DeviceSummaryWidget.
+ * Hardware strip above stock DeviceSummaryWidget, clearly separated.
  */
 
 public class Music.DeviceView : Gtk.Grid {
@@ -34,8 +32,15 @@ public class Music.DeviceView : Gtk.Grid {
         if (custom_view != null && device.only_use_custom_view ()) {
             attach (custom_view, 0, 1, 1, 1);
         } else {
+            // Clear band between the two panels
+            var panel_sep = new Gtk.Separator (Gtk.Orientation.HORIZONTAL);
+            panel_sep.margin_top = 4;
+            panel_sep.margin_bottom = 4;
+            panel_sep.height_request = 2;
+
             var box = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
             box.pack_start (hardware, false, false, 0);
+            box.pack_start (panel_sep, false, false, 0);
             if (custom_view != null) {
                 box.pack_start (custom_view, false, false, 0);
             }

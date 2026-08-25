@@ -20,6 +20,7 @@ public interface Music.Device : GLib.Object {
     public abstract Mount? get_mount ();
     public abstract string get_uri ();
     public abstract void set_icon (GLib.Icon icon);
+    /** Sidebar / list icon */
     public abstract GLib.Icon get_icon ();
     public abstract uint64 get_capacity ();
     public abstract string get_fancy_capacity ();
@@ -32,6 +33,16 @@ public interface Music.Device : GLib.Object {
     public abstract Gtk.Widget? get_custom_view ();
     public abstract bool read_only ();
     public abstract Library get_library ();
+
+    /**
+     * Icon for the hardware summary panel.
+     * Defaults to the same icon as the sidebar (get_icon).
+     * Override when a device wants a larger or product-specific image
+     * in the panel without changing the sidebar icon.
+     */
+    public virtual GLib.Icon get_panel_icon () {
+        return get_icon ();
+    }
 
     /** Optional hardware fields — plugins override when available. */
     public virtual string? get_serial_number () {

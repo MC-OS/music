@@ -20,6 +20,9 @@ namespace Mtp {
         [CCode (cname = "LIBMTP_Get_Friendlyname")]
         public string? get_friendly_name ();
 
+        [CCode (cname = "LIBMTP_Set_Friendlyname")]
+        public int set_friendly_name (string name);
+
         [CCode (cname = "LIBMTP_Get_Modelname")]
         public string? get_model_name ();
 
@@ -34,6 +37,9 @@ namespace Mtp {
 
         [CCode (cname = "LIBMTP_Get_Storage")]
         public int get_storage (int sortby);
+
+        [CCode (cname = "LIBMTP_Dump_Device_Info")]
+        public void dump_device_info ();
 
         /* Returns 0 on success; levels are 0–100 style on most devices */
         [CCode (cname = "LIBMTP_Get_Batterylevel")]

@@ -238,12 +238,14 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     }
 
     public void set_display_name (string name) {
+        if (mtp_device.set_friendly_name (name) != 0) {
+            warning ("Could not set MTP device friendly name on hardware.");
+        }
         try {
             mount.get_default_location ().set_display_name (name);
-        } catch (Error err) {
-            warning ("set_display_name: %s", err.message);
+        } catch (GLib.Error err) {
+            critical ("Could not set Android Device Mount Display Name: %s\n", err.message);
         }
-
         DeviceManager.get_default ().device_name_changed (this);
     }
 

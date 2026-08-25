@@ -30,17 +30,13 @@ public class Music.Plugins.AndroidHardwareInfo : Gtk.Grid {
 
     public AndroidHardwareInfo (AndroidDevice device) {
         this.device = device;
-
-        column_spacing = 24;
-        row_spacing = 4;
-        margin = 24;
-        margin_bottom = 8;
-        halign = Gtk.Align.CENTER;
+    
+        get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
 
         // —— Left: product icon + facts ——
         device_image = new Gtk.Image.from_icon_name ("phone", Gtk.IconSize.DIALOG);
-        device_image.pixel_size = 96;
-        device_image.valign = Gtk.Align.START;
+        device_image.pixel_size = 128;
+        device_image.xalign = 0;
 
         name_label = new Gtk.Label (device.get_display_name ());
         name_label.xalign = 0;
@@ -87,7 +83,7 @@ public class Music.Plugins.AndroidHardwareInfo : Gtk.Grid {
 
         // —— Right: software ——
         os_label = new Gtk.Label ("");
-        os_label.xalign = 1;
+        os_label.xalign = 0;
         os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
 
         patch_label = new Gtk.Label ("");
@@ -95,17 +91,20 @@ public class Music.Plugins.AndroidHardwareInfo : Gtk.Grid {
         patch_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
 
         var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 4);
-        right.halign = Gtk.Align.END;
-        right.valign = Gtk.Align.START;
         right.pack_start (os_label, false, false, 0);
         right.pack_start (patch_label, false, false, 0);
 
-        attach (left, 0, 0, 1, 1);
-        attach (right, 1, 0, 1, 1);
+        var main_info = new Gtk.Grid ();
+        main_info.margin = 24;
+        main_info.row_spacing = 4;
+        main_info.column_spacing = 12;
+        main_info.attach (left, 0, 0, 1, 1);
+        main_info.attach (right, 1, 0, 1, 1);
+        attach (main_info, 0, 0, 1, 1);
 
         var sep = new Gtk.Separator (Gtk.Orientation.HORIZONTAL);
         sep.margin_top = 12;
-        attach (sep, 0, 1, 2, 1);
+        attach (sep, 0, 1, 1, 1);
 
         refresh ();
         show_all ();

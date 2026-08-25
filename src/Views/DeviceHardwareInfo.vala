@@ -1,7 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
- * Upper hardware panel — demo fallbacks fill empty fields so the full UI
- * can be reviewed. Real device values always win when present.
+ * Fancy name sits above the info panel (with a gap).
+ * Panel: text left, OS + larger linked Reset|Restore on the right.
  */
 
 public class Music.DeviceHardwareInfo : Gtk.Grid {
@@ -35,7 +35,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
     private IdentityMode mode = IdentityMode.SERIAL;
 
-    // Temporary demo data for UI sign-off (remove later if desired)
     private const string DEMO_MODEL = "Galaxy Tab A (2019)";
     private const string DEMO_NAME = "DJ’s Tablet";
     private const string DEMO_SERIAL = "R58M30DEMO01";
@@ -50,16 +49,24 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     public DeviceHardwareInfo (Device device) {
         this.device = device;
 
-        get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
+        orientation = Gtk.Orientation.VERTICAL;
         hexpand = true;
 
+        // —— Fancy name ABOVE the panel, with a gap ——
         fancy_label = new Gtk.Label ("");
         fancy_label.xalign = 0;
         fancy_label.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
         fancy_label.margin_start = 24;
-        fancy_label.margin_top = 16;
         fancy_label.margin_end = 24;
+        fancy_label.margin_top = 16;
+        fancy_label.margin_bottom = 0;
         attach (fancy_label, 0, 0, 1, 1);
+
+        // —— Info panel (separate from fancy name) ——
+        var panel = new Gtk.Grid ();
+        panel.get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
+        panel.margin_top = 12; // gap under fancy name
+        panel.hexpand = true;
 
         device_image = new Gtk.Image.from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
         device_image.pixel_size = 128;
@@ -94,6 +101,14 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         name_entry.activate.connect (commit_rename);
         name_entry.focus_out_event.connect (() => {
             commit_rename ();
+            return false;
+        });
+        name_event.key_press_event.connect ((e) => {
+            if (e.keyval == Gdk.Key.Escape) {
+                cancel_rename ();
+                return true;
+            }
+
             return false;
         });
         name_entry.key_press_event.connect ((e) => {
@@ -144,10 +159,13 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         facts.attach (battery_label, 0, 3, 1, 1);
         facts.attach (identity_row, 0, 4, 1, 1);
 
+        // Text / facts pinned left
         var left = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 16);
+        left.halign = Gtk.Align.START;
         left.pack_start (device_image, false, false, 0);
         left.pack_start (facts, false, false, 0);
 
+        // Controls pinned right
         os_label = new Gtk.Label ("");
         os_label.xalign = 1;
         os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
@@ -158,6 +176,8 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
         reset_button = new Gtk.Button.with_label (_("Reset"));
         restore_button = new Gtk.Button.with_label (_("Restore"));
+        reset_button.width_request = 100;
+        restore_button.width_request = 100;
         reset_button.clicked.connect (() => {
             NotificationManager.get_default ().show_alert (
                 _("Reset"),
@@ -178,7 +198,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         actions.pack_start (restore_button, false, false, 0);
         actions_box = actions;
 
-        var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
+        var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 8);
         right.halign = Gtk.Align.END;
         right.valign = Gtk.Align.START;
         right.pack_start (os_label, false, false, 0);
@@ -187,12 +207,12 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
         var columns = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
         columns.margin = 24;
-        columns.margin_top = 8;
         columns.hexpand = true;
         columns.pack_start (left, false, false, 0);
         columns.pack_end (right, false, false, 0);
 
-        attach (columns, 0, 1, 1, 1);
+        panel.attach (columns, 0, 0, 1, 1);
+        attach (panel, 0, 1, 1, 1);
 
         device.initialized.connect (() => {
             refresh ();
@@ -270,7 +290,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     }
 
     private void apply_visibility () {
-        // Full layout for sign-off — all rows visible
         fancy_label.visible = true;
         space_label.visible = true;
         capacity_label.visible = true;

@@ -1,7 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
  * Fancy name sits above the info panel (with a gap).
- * Panel: text left, OS + larger linked Reset|Restore on the right.
+ * Panel icon comes from get_panel_icon() — same as sidebar by default.
  */
 
 public class Music.DeviceHardwareInfo : Gtk.Grid {
@@ -68,7 +68,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         panel.margin_top = 12; // gap under fancy name
         panel.hexpand = true;
 
-        device_image = new Gtk.Image.from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
+        device_image = new Gtk.Image.from_gicon (device.get_panel_icon (), Gtk.IconSize.DIALOG);
         device_image.pixel_size = 128;
         device_image.xalign = 0;
 
@@ -101,14 +101,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         name_entry.activate.connect (commit_rename);
         name_entry.focus_out_event.connect (() => {
             commit_rename ();
-            return false;
-        });
-        name_event.key_press_event.connect ((e) => {
-            if (e.keyval == Gdk.Key.Escape) {
-                cancel_rename ();
-                return true;
-            }
-
             return false;
         });
         name_entry.key_press_event.connect ((e) => {
@@ -159,13 +151,11 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         facts.attach (battery_label, 0, 3, 1, 1);
         facts.attach (identity_row, 0, 4, 1, 1);
 
-        // Text / facts pinned left
         var left = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 16);
         left.halign = Gtk.Align.START;
         left.pack_start (device_image, false, false, 0);
         left.pack_start (facts, false, false, 0);
 
-        // Controls pinned right
         os_label = new Gtk.Label ("");
         os_label.xalign = 1;
         os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
@@ -315,7 +305,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
         fancy_label.label = model.strip ();
 
-        device_image.set_from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
+        device_image.set_from_gicon (device.get_panel_icon (), Gtk.IconSize.DIALOG);
 
         var display = device.get_display_name ();
         if (!has_text (display) || display.down () == "mtp") {

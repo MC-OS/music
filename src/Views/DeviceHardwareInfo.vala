@@ -1,11 +1,10 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
- * Hardware strip — same layout as the earlier AndroidHardwareInfo
- * the user approved, moved into core for all devices.
+ * Hardware strip above stock DeviceSummaryWidget.
  *
- * Top:   plain model / fancy name
- * Left:  device icon + name / space / capacity / battery / identity
- * Right: OS version + security patch
+ *   Top of panel:  fancy name / model (iPhone, iPod, Android model, …)
+ *   Left:          icon + name / space / capacity / battery / identity cycle
+ *   Right:         OS version, security patch, Reset | Restore
  */
 
 public class Music.DeviceHardwareInfo : Gtk.Grid {
@@ -19,8 +18,11 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     private Gtk.Label battery_label;
     private Gtk.Label identity_key_label;
     private Gtk.Label identity_value_label;
+
     private Gtk.Label os_label;
     private Gtk.Label patch_label;
+    private Gtk.Button reset_button;
+    private Gtk.Button restore_button;
 
     private enum IdentityMode {
         SERIAL,
@@ -33,12 +35,16 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     public DeviceHardwareInfo (Device device) {
         this.device = device;
 
+        get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
+
+        // —— Top of whole panel: fancy name / model ——
         fancy_label = new Gtk.Label ("");
         fancy_label.xalign = 0;
         fancy_label.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
+        fancy_label.margin_start = 24;
+        fancy_label.margin_top = 16;
+        fancy_label.margin_end = 24;
         attach (fancy_label, 0, 0, 1, 1);
-
-        get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
 
         // —— Left: product icon + facts ——
         device_image = new Gtk.Image.from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
@@ -92,7 +98,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         left.pack_start (device_image, false, false, 0);
         left.pack_start (facts, false, false, 0);
 
-        // —— Right: software ——
+        // —— Right: OS, patch, Reset | Restore ——
         os_label = new Gtk.Label ("");
         os_label.xalign = 0;
         os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
@@ -101,14 +107,36 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         patch_label.xalign = 0;
         patch_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
 
-        var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 4);
+        reset_button = new Gtk.Button.with_label (_("Reset"));
+        restore_button = new Gtk.Button.with_label (_("Restore"));
+        reset_button.clicked.connect (() => {
+            NotificationManager.get_default ().show_alert (
+                _("Reset"),
+                _("Device reset is not implemented for this device type yet.")
+            );
+        });
+        restore_button.clicked.connect (() => {
+            NotificationManager.get_default ().show_alert (
+                _("Restore"),
+                _("Device restore is not implemented for this device type yet.")
+            );
+        });
+
+        var actions = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
+        actions.pack_start (reset_button, false, false, 0);
+        actions.pack_start (restore_button, false, false, 0);
+
+        var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
+        right.valign = Gtk.Align.START;
         right.pack_start (os_label, false, false, 0);
         right.pack_start (patch_label, false, false, 0);
+        right.pack_start (actions, false, false, 0);
 
         var main_info = new Gtk.Grid ();
         main_info.margin = 24;
+        main_info.margin_top = 8;
         main_info.row_spacing = 4;
-        main_info.column_spacing = 12;
+        main_info.column_spacing = 48;
         main_info.attach (left, 0, 0, 1, 1);
         main_info.attach (right, 1, 0, 1, 1);
         attach (main_info, 0, 1, 1, 1);
@@ -160,6 +188,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     }
 
     public void refresh () {
+        // Fancy name on top of the whole panel
         var model = device.get_model_identifier ();
         if (model == null || model.strip ().length == 0) {
             var fancy = device.get_fancy_description ();
@@ -175,10 +204,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         var cap = device.get_capacity ();
         var free = device.get_free_space ();
         if (cap > 0) {
-            space_label.label = _("Space: %s").printf (
-                GLib.format_size (cap)
-            );
-
+            space_label.label = _("Space: %s").printf (GLib.format_size (cap));
             capacity_label.label = _("Capacity: %s (%s free)").printf (
                 GLib.format_size (cap),
                 GLib.format_size (free)

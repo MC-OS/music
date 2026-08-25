@@ -1,28 +1,13 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
-/* Device summary: click-to-edit name, OS/patch, Backup/Reset/Restore, StorageBar. */
+/*-
+ * Copyright (c) 2012-2018 elementary LLC. (https://elementary.io)
+ *
+ * Stock device summary UI (original layout).
+ */
 
 public class Music.DeviceSummaryWidget : Gtk.EventBox {
     public Device device { get; construct; }
     public DevicePreferences preferences { get; construct; }
-
-    private Gtk.Image device_image;
-    private Gtk.Stack name_stack;
-    private Gtk.Label name_label;
-    private Gtk.Entry name_entry;
-    private Gtk.Label capacity_label;
-    private Gtk.Label battery_label;
-    private Gtk.Label identity_key_label;
-    private Gtk.Label identity_value_label;
-    private Gtk.Widget identity_row;
-
-    private Gtk.Label os_label;
-    private Gtk.Label patch_label;
-    private Gtk.Widget software_box;
-
-    private Gtk.Button backup_button;
-    private Gtk.Button reset_button;
-    private Gtk.Button restore_button;
-    private Gtk.Switch encrypt_backups_switch;
 
     private Gtk.Button sync_button;
     private Gtk.CheckButton sync_music_check;
@@ -30,14 +15,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     private Gtk.ListStore music_list;
     private Gtk.Switch auto_sync_switch;
     private Granite.Widgets.StorageBar storagebar;
-
-    private enum IdentityMode {
-        SERIAL,
-        IMEI,
-        MODEL
-    }
-
-    private IdentityMode identity_mode = IdentityMode.SERIAL;
 
     public DeviceSummaryWidget (Device device, DevicePreferences preferences) {
         Object (
@@ -49,143 +26,27 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     construct {
         get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
 
-        // —— Left: icon + facts ——
-        device_image = new Gtk.Image.from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
-        device_image.pixel_size = 96;
-        device_image.valign = Gtk.Align.START;
+        var device_name_title_label = new Gtk.Label (device.get_display_name () ?? "");
+        device_name_title_label.halign = Gtk.Align.END;
+        device_name_title_label.margin = 20;
+        device_name_title_label.margin_end = 0;
+        device_name_title_label.get_style_context ().add_class (Granite.STYLE_CLASS_H1_LABEL);
 
-        name_label = new Gtk.Label (device.get_display_name ());
-        name_label.xalign = 0;
-        name_label.get_style_context ().add_class (Granite.STYLE_CLASS_H2_LABEL);
-        name_label.tooltip_text = _("Click to rename");
+        var device_name_description_label = new Gtk.Label (device.get_fancy_description () ?? "");
+        device_name_description_label.halign = Gtk.Align.START;
+        device_name_description_label.get_style_context ().add_class (Granite.STYLE_CLASS_H2_LABEL);
 
-        name_entry = new Gtk.Entry ();
-        name_entry.text = device.get_display_name ();
-        name_entry.width_chars = 24;
+        var device_name_label = new Gtk.Label (_("Device Name:"));
+        device_name_label.halign = Gtk.Align.END;
 
-        name_stack = new Gtk.Stack ();
-        name_stack.add_named (name_label, "label");
-        name_stack.add_named (name_entry, "entry");
-        name_stack.visible_child_name = "label";
+        var device_name_entry = new Gtk.Entry ();
+        device_name_entry.placeholder_text = _("Device Name");
 
-        var name_event = new Gtk.EventBox ();
-        name_event.visible_window = false;
-        name_event.add (name_stack);
-        name_event.button_press_event.connect ((e) => {
-            if (name_stack.visible_child_name == "label") {
-                begin_rename ();
-                return true;
-            }
-
-            return false;
-        });
-
-        name_entry.activate.connect (commit_rename);
-        name_entry.focus_out_event.connect (() => {
-            commit_rename ();
-            return false;
-        });
-        name_entry.key_press_event.connect ((e) => {
-            if (e.keyval == Gdk.Key.Escape) {
-                cancel_rename ();
-                return true;
-            }
-
-            return false;
-        });
-
-        capacity_label = new Gtk.Label ("");
-        capacity_label.xalign = 0;
-
-        battery_label = new Gtk.Label ("");
-        battery_label.xalign = 0;
-
-        identity_key_label = new Gtk.Label ("");
-        identity_key_label.xalign = 0;
-        identity_key_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
-
-        identity_value_label = new Gtk.Label ("");
-        identity_value_label.xalign = 0;
-        identity_value_label.selectable = true;
-
-        var identity_box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
-        identity_box.add (identity_key_label);
-        identity_box.add (identity_value_label);
-
-        var identity_event = new Gtk.EventBox ();
-        identity_event.visible_window = false;
-        identity_event.add (identity_box);
-        identity_event.tooltip_text = _("Click to cycle Serial number, IMEI, and Model");
-        identity_event.button_press_event.connect (() => {
-            cycle_identity ();
-            return true;
-        });
-        identity_row = identity_event;
-
-        var facts = new Gtk.Grid ();
-        facts.row_spacing = 4;
-        facts.attach (name_event, 0, 0, 1, 1);
-        facts.attach (capacity_label, 0, 1, 1, 1);
-        facts.attach (battery_label, 0, 2, 1, 1);
-        facts.attach (identity_row, 0, 3, 1, 1);
-
-        var left = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 16);
-        left.pack_start (device_image, false, false, 0);
-        left.pack_start (facts, false, false, 0);
-
-        // —— Center: OS version + security patch ——
-        os_label = new Gtk.Label ("");
-        os_label.xalign = 0.5f;
-        os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
-
-        patch_label = new Gtk.Label ("");
-        patch_label.xalign = 0.5f;
-        patch_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
-
-        var software = new Gtk.Box (Gtk.Orientation.VERTICAL, 4);
-        software.valign = Gtk.Align.CENTER;
-        software.halign = Gtk.Align.CENTER;
-        software.pack_start (os_label, false, false, 0);
-        software.pack_start (patch_label, false, false, 0);
-        software_box = software;
-
-        // —— Right: Backup / Reset / Restore ——
-        backup_button = new Gtk.Button.with_label (_("Backup"));
-        reset_button = new Gtk.Button.with_label (_("Reset"));
-        restore_button = new Gtk.Button.with_label (_("Restore"));
-        backup_button.clicked.connect (on_backup_clicked);
-        reset_button.clicked.connect (on_reset_clicked);
-        restore_button.clicked.connect (on_restore_clicked);
-
-        var action_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
-        action_box.valign = Gtk.Align.START;
-        action_box.pack_start (backup_button, false, false, 0);
-        action_box.pack_start (reset_button, false, false, 0);
-        action_box.pack_start (restore_button, false, false, 0);
-
-        var header = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 32);
-        header.margin = 24;
-        header.margin_bottom = 8;
-        header.halign = Gtk.Align.CENTER;
-        header.pack_start (left, false, false, 0);
-        header.pack_start (software_box, false, false, 0);
-        header.pack_end (action_box, false, false, 0);
-
-        var sep = new Gtk.Separator (Gtk.Orientation.HORIZONTAL);
-
-        // —— Options (no separate device-name row) ——
         var auto_sync_label = new Gtk.Label (_("Automatically sync when plugged in:"));
         auto_sync_label.halign = Gtk.Align.END;
 
         auto_sync_switch = new Gtk.Switch ();
         auto_sync_switch.halign = Gtk.Align.START;
-
-        var encrypt_label = new Gtk.Label (_("Encrypt backups with a password:"));
-        encrypt_label.halign = Gtk.Align.END;
-
-        encrypt_backups_switch = new Gtk.Switch ();
-        encrypt_backups_switch.halign = Gtk.Align.START;
-        encrypt_backups_switch.tooltip_text = _("When enabled, device backups are encrypted with a password you provide.");
 
         var sync_options_label = new Gtk.Label (_("Sync:"));
         sync_options_label.halign = Gtk.Align.END;
@@ -233,6 +94,8 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         storage_toolbar.add (storage_grid);
         storage_toolbar.get_style_context ().add_class (Gtk.STYLE_CLASS_INLINE_TOOLBAR);
 
+        refresh_space_widget ();
+
         var content_grid = new Gtk.Grid ();
         content_grid.expand = true;
         content_grid.halign = Gtk.Align.CENTER;
@@ -240,24 +103,32 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         content_grid.column_spacing = 12;
         content_grid.margin_top = 12;
 
-        content_grid.attach (auto_sync_label, 1, 0, 1, 1);
-        content_grid.attach (auto_sync_switch, 2, 0, 2, 1);
-        content_grid.attach (encrypt_label, 1, 1, 1, 1);
-        content_grid.attach (encrypt_backups_switch, 2, 1, 2, 1);
-        content_grid.attach (sync_options_label, 1, 2, 1, 1);
-        content_grid.attach (sync_music_check, 2, 2, 1, 1);
-        content_grid.attach (sync_music_combobox, 3, 2, 1, 1);
+        if (device_name_description_label.label == "") {
+            content_grid.attach (device_name_title_label, 0, 0, 5, 1);
+            device_name_title_label.halign = Gtk.Align.FILL;
+        } else {
+            content_grid.attach (device_name_title_label, 0, 0, 2, 1);
+        }
+
+        content_grid.attach (device_name_description_label, 2, 0, 3, 1);
+        content_grid.attach (device_name_label, 1, 1, 1, 1);
+        content_grid.attach (device_name_entry, 2, 1, 2, 1);
+        content_grid.attach (auto_sync_label, 1, 2, 1, 1);
+        content_grid.attach (auto_sync_switch, 2, 2, 2, 1);
+        content_grid.attach (sync_options_label, 1, 3, 1, 1);
+        content_grid.attach (sync_music_check, 2, 3, 1, 1);
+        content_grid.attach (sync_music_combobox, 3, 3, 1, 1);
 
         var main_grid = new Gtk.Grid ();
-        main_grid.attach (header, 0, 0, 1, 1);
-        main_grid.attach (sep, 0, 1, 1, 1);
-        main_grid.attach (content_grid, 0, 2, 1, 1);
-        main_grid.attach (storage_toolbar, 0, 3, 1, 1);
+        main_grid.attach (content_grid, 0, 0, 1, 1);
+        main_grid.attach (storage_toolbar, 0, 1, 1, 1);
 
         add (main_grid);
 
-        refresh_header ();
-        refresh_space_widget ();
+        if (device.get_display_name () != "") {
+            device_name_entry.text = device.get_display_name ();
+        }
+
         refresh_lists ();
 
         auto_sync_switch.active = preferences.sync_when_mounted;
@@ -278,6 +149,10 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_music_check.toggled.connect (save_preferences);
         sync_music_combobox.changed.connect (save_preferences);
 
+        device_name_entry.changed.connect (() => {
+            device.set_display_name (device_name_entry.text);
+        });
+
         sync_button.clicked.connect (sync_clicked);
 
         device.get_library ().file_operations_done.connect (() => {
@@ -286,7 +161,12 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         });
 
         device.initialized.connect (() => {
-            refresh_header ();
+            device_name_title_label.label = device.get_display_name () ?? "";
+            device_name_description_label.label = device.get_fancy_description () ?? "";
+            if (device.get_display_name () != "") {
+                device_name_entry.text = device.get_display_name ();
+            }
+
             refresh_space_widget ();
         });
 
@@ -296,190 +176,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         libraries_manager.local_library.smartplaylist_added.connect (() => {refresh_lists ();});
         libraries_manager.local_library.smartplaylist_name_updated.connect (() => {refresh_lists ();});
         libraries_manager.local_library.smartplaylist_removed.connect (() => {refresh_lists ();});
-
         show_all ();
-        apply_empty_label_visibility ();
-
-        Timeout.add_seconds (2, () => {
-            refresh_header ();
-            refresh_space_widget ();
-            return false;
-        });
-    }
-
-    private void begin_rename () {
-        name_entry.text = device.get_display_name ();
-        name_stack.visible_child_name = "entry";
-        name_entry.grab_focus ();
-        name_entry.select_region (0, -1);
-    }
-
-    private void commit_rename () {
-        if (name_stack.visible_child_name != "entry") {
-            return;
-        }
-
-        var text = name_entry.text.strip ();
-        if (text.length > 0) {
-            device.set_display_name (text);
-            name_label.label = text;
-        } else {
-            name_label.label = device.get_display_name ();
-        }
-
-        name_stack.visible_child_name = "label";
-    }
-
-    private void cancel_rename () {
-        name_entry.text = device.get_display_name ();
-        name_stack.visible_child_name = "label";
-    }
-
-    private void cycle_identity () {
-        switch (identity_mode) {
-            case IdentityMode.SERIAL:
-                identity_mode = IdentityMode.IMEI;
-                break;
-            case IdentityMode.IMEI:
-                identity_mode = IdentityMode.MODEL;
-                break;
-            default:
-                identity_mode = IdentityMode.SERIAL;
-                break;
-        }
-
-        update_identity_labels ();
-    }
-
-    private void update_identity_labels () {
-        switch (identity_mode) {
-            case IdentityMode.SERIAL:
-                identity_key_label.label = _("Serial Number:");
-                identity_value_label.label = device.get_serial_number () ?? _("Not available");
-                break;
-            case IdentityMode.IMEI:
-                identity_key_label.label = _("IMEI:");
-                identity_value_label.label = device.get_imei () ?? _("Not available");
-                break;
-            case IdentityMode.MODEL:
-                identity_key_label.label = _("Model:");
-                identity_value_label.label = device.get_model_identifier () ?? _("Not available");
-                break;
-        }
-    }
-
-    private void apply_empty_label_visibility () {
-        capacity_label.visible = capacity_label.label != ""
-            && capacity_label.label != _("Capacity: Not available");
-
-        battery_label.visible = device.get_battery_percent () >= 0;
-
-        bool any_id = device.get_serial_number () != null
-            || device.get_imei () != null
-            || device.get_model_identifier () != null;
-        identity_row.visible = any_id;
-
-        bool any_soft = device.get_os_version () != null || device.get_security_patch () != null;
-        software_box.visible = any_soft;
-        os_label.visible = device.get_os_version () != null;
-        patch_label.visible = device.get_security_patch () != null;
-    }
-
-    private void refresh_header () {
-        device_image.set_from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
-
-        if (name_stack.visible_child_name == "label") {
-            name_label.label = device.get_display_name ();
-        }
-
-        var cap = device.get_capacity ();
-        var free = device.get_free_space ();
-        if (cap > 0) {
-            capacity_label.label = _("Capacity: %s (%s free)").printf (
-                GLib.format_size (cap),
-                GLib.format_size (free)
-            );
-        } else {
-            capacity_label.label = _("Capacity: Not available");
-        }
-
-        int bat = device.get_battery_percent ();
-        if (bat >= 0) {
-            battery_label.label = _("Battery: %d%%").printf (bat);
-        } else {
-            battery_label.label = "";
-        }
-
-        var os = device.get_os_version ();
-        if (os != null) {
-            // Android devices often return a bare version number
-            if (device.get_content_type ().has_prefix ("android")) {
-                os_label.label = _("Android %s").printf (os);
-            } else {
-                os_label.label = os;
-            }
-        } else {
-            os_label.label = "";
-        }
-
-        var patch = device.get_security_patch ();
-        if (patch != null) {
-            patch_label.label = _("Security patch: %s").printf (patch);
-        } else {
-            patch_label.label = "";
-        }
-
-        update_identity_labels ();
-        apply_empty_label_visibility ();
-    }
-
-    private void on_backup_clicked () {
-        NotificationManager.get_default ().show_alert (
-            _("Backup"),
-            _("Device backup is not implemented for this device type yet.")
-        );
-    }
-
-    private void on_reset_clicked () {
-        var dialog = new Granite.MessageDialog.with_image_from_icon_name (
-            _("Reset device?"),
-            _("This will erase content on “%s”. This cannot be undone.").printf (device.get_display_name ()),
-            "dialog-warning",
-            Gtk.ButtonsType.CANCEL
-        );
-        dialog.add_button (_("Reset"), Gtk.ResponseType.ACCEPT);
-        dialog.response.connect ((response) => {
-            if (response == Gtk.ResponseType.ACCEPT) {
-                NotificationManager.get_default ().show_alert (
-                    _("Reset"),
-                    _("Device reset is not implemented for this device type yet.")
-                );
-            }
-
-            dialog.destroy ();
-        });
-        dialog.show_all ();
-    }
-
-    private void on_restore_clicked () {
-        var dialog = new Granite.MessageDialog.with_image_from_icon_name (
-            _("Restore device?"),
-            _("Restore “%s” from a backup.").printf (device.get_display_name ()),
-            "document-open",
-            Gtk.ButtonsType.CANCEL
-        );
-        dialog.add_button (_("Restore"), Gtk.ResponseType.ACCEPT);
-        dialog.response.connect ((response) => {
-            if (response == Gtk.ResponseType.ACCEPT) {
-                NotificationManager.get_default ().show_alert (
-                    _("Restore"),
-                    _("Device restore is not implemented for this device type yet.")
-                );
-            }
-
-            dialog.destroy ();
-        });
-        dialog.show_all ();
     }
 
     private void refresh_space_widget () {

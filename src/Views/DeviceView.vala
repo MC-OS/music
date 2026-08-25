@@ -1,5 +1,9 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
-/* Stock DeviceSummaryWidget owns the hardware header for all devices. */
+/*-
+ * Copyright (c) 2012-2018 elementary LLC. (https://elementary.io)
+ *
+ * Hardware strip (DeviceHardwareInfo) above stock DeviceSummaryWidget.
+ */
 
 public class Music.DeviceView : Gtk.Grid {
     public Device device { get; construct; }
@@ -20,6 +24,7 @@ public class Music.DeviceView : Gtk.Grid {
         infobar.add_button (_("Close"), 0);
         infobar.get_content_area ().add (infobar_label);
 
+        var hardware = new DeviceHardwareInfo (device);
         var summary = new DeviceSummaryWidget (device, preferences);
 
         orientation = Gtk.Orientation.VERTICAL;
@@ -29,7 +34,14 @@ public class Music.DeviceView : Gtk.Grid {
         if (custom_view != null && device.only_use_custom_view ()) {
             attach (custom_view, 0, 1, 1, 1);
         } else {
-            attach (summary, 0, 1, 1, 1);
+            var box = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
+            box.pack_start (hardware, false, false, 0);
+            if (custom_view != null) {
+                box.pack_start (custom_view, false, false, 0);
+            }
+
+            box.pack_start (summary, true, true, 0);
+            attach (box, 0, 1, 1, 1);
         }
 
         show_all ();

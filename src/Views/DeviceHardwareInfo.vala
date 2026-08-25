@@ -2,9 +2,11 @@
 /*
  * Hardware strip above stock DeviceSummaryWidget.
  *
- *   Top of panel:  fancy name / model (iPhone, iPod, Android model, …)
- *   Left:          icon + name / space / capacity / battery / identity cycle
- *   Right:         OS version, security patch, Reset | Restore
+ *   Top:    fancy name / model
+ *   Left:   icon + click-to-rename name / space / capacity / battery / identity
+ *   Middle: encrypt-backups switch + Back Up button
+ *   Right:  OS version, security patch, Reset | Restore
+ *   Dividers between sections and under the whole panel
  */
 
 public class Music.DeviceHardwareInfo : Gtk.Grid {
@@ -12,12 +14,19 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
     private Gtk.Label fancy_label;
     private Gtk.Image device_image;
+
+    private Gtk.Stack name_stack;
     private Gtk.Label name_label;
+    private Gtk.Entry name_entry;
+
     private Gtk.Label space_label;
     private Gtk.Label capacity_label;
     private Gtk.Label battery_label;
     private Gtk.Label identity_key_label;
     private Gtk.Label identity_value_label;
+
+    private Gtk.Switch encrypt_switch;
+    private Gtk.Button backup_button;
 
     private Gtk.Label os_label;
     private Gtk.Label patch_label;
@@ -37,7 +46,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
         get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
 
-        // —— Top of whole panel: fancy name / model ——
+        // —— Top: fancy name / model ——
         fancy_label = new Gtk.Label ("");
         fancy_label.xalign = 0;
         fancy_label.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
@@ -46,7 +55,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         fancy_label.margin_end = 24;
         attach (fancy_label, 0, 0, 1, 1);
 
-        // —— Left: product icon + facts ——
+        // —— Left ——
         device_image = new Gtk.Image.from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
         device_image.pixel_size = 128;
         device_image.xalign = 0;
@@ -54,6 +63,42 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         name_label = new Gtk.Label (device.get_display_name ());
         name_label.xalign = 0;
         name_label.get_style_context ().add_class (Granite.STYLE_CLASS_H2_LABEL);
+        name_label.tooltip_text = _("Click to rename");
+
+        name_entry = new Gtk.Entry ();
+        name_entry.text = device.get_display_name ();
+        name_entry.width_chars = 20;
+
+        name_stack = new Gtk.Stack ();
+        name_stack.add_named (name_label, "label");
+        name_stack.add_named (name_entry, "entry");
+        name_stack.visible_child_name = "label";
+
+        var name_event = new Gtk.EventBox ();
+        name_event.visible_window = false;
+        name_event.add (name_stack);
+        name_event.button_press_event.connect (() => {
+            if (name_stack.visible_child_name == "label") {
+                begin_rename ();
+                return true;
+            }
+
+            return false;
+        });
+
+        name_entry.activate.connect (commit_rename);
+        name_entry.focus_out_event.connect (() => {
+            commit_rename ();
+            return false;
+        });
+        name_entry.key_press_event.connect ((e) => {
+            if (e.keyval == Gdk.Key.Escape) {
+                cancel_rename ();
+                return true;
+            }
+
+            return false;
+        });
 
         space_label = new Gtk.Label ("");
         space_label.xalign = 0;
@@ -87,16 +132,41 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
         var facts = new Gtk.Grid ();
         facts.row_spacing = 4;
-        facts.column_spacing = 8;
-        facts.attach (name_label, 0, 0, 2, 1);
-        facts.attach (space_label, 0, 1, 2, 1);
-        facts.attach (capacity_label, 0, 2, 2, 1);
-        facts.attach (battery_label, 0, 3, 2, 1);
-        facts.attach (identity_event, 0, 4, 2, 1);
+        facts.attach (name_event, 0, 0, 1, 1);
+        facts.attach (space_label, 0, 1, 1, 1);
+        facts.attach (capacity_label, 0, 2, 1, 1);
+        facts.attach (battery_label, 0, 3, 1, 1);
+        facts.attach (identity_event, 0, 4, 1, 1);
 
         var left = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 16);
         left.pack_start (device_image, false, false, 0);
         left.pack_start (facts, false, false, 0);
+
+        // —— Middle: encrypt + Back Up ——
+        var encrypt_label = new Gtk.Label (_("Encrypt local backup"));
+        encrypt_label.xalign = 0;
+
+        encrypt_switch = new Gtk.Switch ();
+        encrypt_switch.halign = Gtk.Align.START;
+        encrypt_switch.tooltip_text = _("Encrypt backups with a password");
+
+        var encrypt_row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
+        encrypt_row.pack_start (encrypt_label, false, false, 0);
+        encrypt_row.pack_start (encrypt_switch, false, false, 0);
+
+        backup_button = new Gtk.Button.with_label (_("Back Up Now"));
+        backup_button.halign = Gtk.Align.START;
+        backup_button.clicked.connect (() => {
+            NotificationManager.get_default ().show_alert (
+                _("Back Up Now"),
+                _("Device backup is not implemented for this device type yet.")
+            );
+        });
+
+        var middle = new Gtk.Box (Gtk.Orientation.VERTICAL, 10);
+        middle.valign = Gtk.Align.CENTER;
+        middle.pack_start (encrypt_row, false, false, 0);
+        middle.pack_start (backup_button, false, false, 0);
 
         // —— Right: OS, patch, Reset | Restore ——
         os_label = new Gtk.Label ("");
@@ -132,19 +202,31 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         right.pack_start (patch_label, false, false, 0);
         right.pack_start (actions, false, false, 0);
 
-        var main_info = new Gtk.Grid ();
-        main_info.margin = 24;
-        main_info.margin_top = 8;
-        main_info.row_spacing = 4;
-        main_info.column_spacing = 48;
-        main_info.attach (left, 0, 0, 1, 1);
-        main_info.attach (right, 1, 0, 1, 1);
-        attach (main_info, 0, 1, 1, 1);
+        // Dividers between left | middle | right
+        var vsep1 = new Gtk.Separator (Gtk.Orientation.VERTICAL);
+        vsep1.margin_start = 12;
+        vsep1.margin_end = 12;
 
-        var sep = new Gtk.Separator (Gtk.Orientation.HORIZONTAL);
-        sep.margin_top = 12;
-        sep.margin_bottom = 12;
-        attach (sep, 0, 2, 1, 1);
+        var vsep2 = new Gtk.Separator (Gtk.Orientation.VERTICAL);
+        vsep2.margin_start = 12;
+        vsep2.margin_end = 12;
+
+        var columns = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
+        columns.margin = 24;
+        columns.margin_top = 8;
+        columns.pack_start (left, false, false, 0);
+        columns.pack_start (vsep1, false, false, 0);
+        columns.pack_start (middle, false, false, 0);
+        columns.pack_start (vsep2, false, false, 0);
+        columns.pack_start (right, false, false, 0);
+
+        attach (columns, 0, 1, 1, 1);
+
+        // Divider under the whole hardware panel
+        var bottom_sep = new Gtk.Separator (Gtk.Orientation.HORIZONTAL);
+        bottom_sep.margin_top = 12;
+        bottom_sep.margin_bottom = 12;
+        attach (bottom_sep, 0, 2, 1, 1);
 
         device.initialized.connect (() => {
             refresh ();
@@ -152,6 +234,34 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
         refresh ();
         show_all ();
+    }
+
+    private void begin_rename () {
+        name_entry.text = device.get_display_name ();
+        name_stack.visible_child_name = "entry";
+        name_entry.grab_focus ();
+        name_entry.select_region (0, -1);
+    }
+
+    private void commit_rename () {
+        if (name_stack.visible_child_name != "entry") {
+            return;
+        }
+
+        var text = name_entry.text.strip ();
+        if (text.length > 0) {
+            device.set_display_name (text);
+            name_label.label = text;
+        } else {
+            name_label.label = device.get_display_name ();
+        }
+
+        name_stack.visible_child_name = "label";
+    }
+
+    private void cancel_rename () {
+        name_entry.text = device.get_display_name ();
+        name_stack.visible_child_name = "label";
     }
 
     private void cycle_identity () {
@@ -188,7 +298,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     }
 
     public void refresh () {
-        // Fancy name on top of the whole panel
         var model = device.get_model_identifier ();
         if (model == null || model.strip ().length == 0) {
             var fancy = device.get_fancy_description ();
@@ -199,7 +308,10 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         fancy_label.visible = model != null;
 
         device_image.set_from_gicon (device.get_icon (), Gtk.IconSize.DIALOG);
-        name_label.label = device.get_display_name ();
+
+        if (name_stack.visible_child_name == "label") {
+            name_label.label = device.get_display_name ();
+        }
 
         var cap = device.get_capacity ();
         var free = device.get_free_space ();

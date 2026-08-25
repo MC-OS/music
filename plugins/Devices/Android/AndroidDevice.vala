@@ -68,6 +68,19 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         return _security_patch;
     }
 
+    // Show Reset / Restore / Backup UI for Android (ops still stubbed)
+    public override bool can_reset () {
+        return true;
+    }
+
+    public override bool can_restore () {
+        return true;
+    }
+
+    public override bool can_backup () {
+        return true;
+    }
+
     private bool is_generic_label (string? name) {
         if (name == null || name.strip ().length == 0) {
             return true;

@@ -59,6 +59,19 @@ public interface Music.Device : GLib.Object {
         return null;
     }
 
+    /** Capability flags — UI only shows controls when these return true. */
+    public virtual bool can_reset () {
+        return false;
+    }
+
+    public virtual bool can_restore () {
+        return false;
+    }
+
+    public virtual bool can_backup () {
+        return false;
+    }
+
     public Gee.Collection<Music.Media> delete_doubles (Gee.Collection<Music.Media> source_list, Gee.Collection<Music.Media> to_remove) {
         var new_list = new Gee.LinkedList<Music.Media> ();
         foreach (var m in source_list) {

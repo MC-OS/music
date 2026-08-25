@@ -65,6 +65,7 @@ app_files = files(
   'src/Objects/HistoryPlaylist.vala',
   'src/Objects/MediaKeyListener.vala',
   'src/Objects/MPRIS.vala',
+  'src/Views/DeviceHardwareInfo.vala',
   'src/Views/DeviceSummaryWidget.vala',
   'src/Views/DeviceView.vala',
   'src/Views/AlbumsView.vala',

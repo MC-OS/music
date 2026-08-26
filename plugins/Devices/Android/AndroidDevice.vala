@@ -17,6 +17,7 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     private string? _imei = null;
     private int _battery = -1;
     private string? _os_version = null;
+    private string? _rom_name = null;
     private string? _security_patch = null;
     private string? _device_version = null;
 
@@ -64,11 +65,14 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         return _device_version;
     }
 
+    public override string? get_rom_name () {
+        return _rom_name;
+    }
+
     public override string? get_security_patch () {
         return _security_patch;
     }
 
-    // Show Reset / Restore / Backup UI for Android (ops still stubbed)
     public override bool can_reset () {
         return true;
     }
@@ -184,6 +188,23 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
                         _os_version = t.substring (t.index_of ("=") + 1).strip ();
                     } else if (t.has_prefix ("ro.build.version.security_patch=")) {
                         _security_patch = t.substring (t.index_of ("=") + 1).strip ();
+                    } else if (t.has_prefix ("ro.modversion=")) {
+                        // Generic custom ROM version string
+                        if (_rom_name == null) {
+                            _rom_name = t.substring (t.index_of ("=") + 1).strip ();
+                        }
+                    } else if (t.has_prefix ("ro.lineage.version=")) {
+                        _rom_name = "LineageOS " + t.substring (t.index_of ("=") + 1).strip ();
+                    } else if (t.has_prefix ("ro.lineage.display.version=")) {
+                        _rom_name = "LineageOS " + t.substring (t.index_of ("=") + 1).strip ();
+                    } else if (t.has_prefix ("ro.product.system.name=")) {
+                        if (_rom_name == null) {
+                            _rom_name = t.substring (t.index_of ("=") + 1).strip ();
+                        }
+                    } else if (t.has_prefix ("ro.build.display.id=")) {
+                        if (_rom_name == null) {
+                            _rom_name = t.substring (t.index_of ("=") + 1).strip ();
+                        }
                     }
                 }
             } catch (Error e) {

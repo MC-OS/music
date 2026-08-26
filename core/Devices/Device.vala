@@ -62,7 +62,16 @@ public interface Music.Device : GLib.Object {
         return -1;
     }
 
+    /** Platform version number (e.g. "10", "17.5") — not the ROM/product name. */
     public virtual string? get_os_version () {
+        return null;
+    }
+
+    /**
+     * Human-readable ROM / OS product name, distinct from the version number.
+     * Examples: "LineageOS", "LFR 17.1", "iOS" — not "10" or "17.5".
+     */
+    public virtual string? get_rom_name () {
         return null;
     }
 

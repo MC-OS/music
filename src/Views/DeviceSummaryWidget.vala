@@ -17,6 +17,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     private Gtk.Switch encrypt_switch;
     private Gtk.Button backup_button;
     private Gtk.Button restore_button;
+    private Gtk.Widget backup_row;
     private Granite.Widgets.StorageBar storagebar;
 
     public DeviceSummaryWidget (Device device, DevicePreferences preferences) {
@@ -73,7 +74,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_music_combobox.valign = Gtk.Align.CENTER;
         sync_music_combobox.set_button_sensitivity (Gtk.SensitivityType.ON);
 
-        // Back Up Now + Restore side by side, NOT linked
         backup_button = new Gtk.Button.with_label (_("Back Up Now"));
         backup_button.clicked.connect (() => {
             NotificationManager.get_default ().show_alert (
@@ -90,10 +90,11 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
             );
         });
 
-        var backup_row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
-        backup_row.halign = Gtk.Align.END;
-        backup_row.pack_start (backup_button, false, false, 0);
-        backup_row.pack_start (restore_button, false, false, 0);
+        var row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
+        row.halign = Gtk.Align.END;
+        row.pack_start (backup_button, false, false, 0);
+        row.pack_start (restore_button, false, false, 0);
+        backup_row = row;
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
@@ -176,7 +177,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         device.initialized.connect (() => {
             refresh_space_widget ();
-            apply_backup_visibility ();
+            apply_backup_section_visibility ();
         });
 
         libraries_manager.local_library.playlist_added.connect (() => {refresh_lists ();});
@@ -187,16 +188,22 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         libraries_manager.local_library.smartplaylist_removed.connect (() => {refresh_lists ();});
 
         show_all ();
-        apply_backup_visibility ();
+        apply_backup_section_visibility ();
     }
 
-    private void apply_backup_visibility () {
-        bool show_backup = device.can_backup ();
-        encrypt_label.visible = show_backup;
-        encrypt_switch.visible = show_backup;
-        backup_button.visible = show_backup;
+    /**
+     * Single place that shows/hides encrypt, Back Up Now, and Restore
+     * from device.can_backup () / device.can_restore ().
+     */
+    private void apply_backup_section_visibility () {
+        bool can_backup = device.can_backup ();
+        bool can_restore = device.can_restore ();
 
-        restore_button.visible = device.can_restore ();
+        encrypt_label.visible = can_backup;
+        encrypt_switch.visible = can_backup;
+        backup_button.visible = can_backup;
+        restore_button.visible = can_restore;
+        backup_row.visible = can_backup || can_restore;
     }
 
     private void refresh_space_widget () {

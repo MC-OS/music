@@ -2,6 +2,8 @@
 /*
  * Fancy name sits above the info panel (with a gap).
  * Panel icon comes from get_panel_icon() — same as sidebar by default.
+ * Reset spans full width (fills space where Check for Update would be).
+ * Restore lives next to Back Up Now in DeviceSummaryWidget.
  */
 
 public class Music.DeviceHardwareInfo : Gtk.Grid {
@@ -24,8 +26,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     private Gtk.Label os_label;
     private Gtk.Label patch_label;
     private Gtk.Button reset_button;
-    private Gtk.Button restore_button;
-    private Gtk.Widget actions_box;
 
     private enum IdentityMode {
         SERIAL,
@@ -65,7 +65,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         // —— Info panel (separate from fancy name) ——
         var panel = new Gtk.Grid ();
         panel.get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
-        panel.margin_top = 12; // gap under fancy name
+        panel.margin_top = 12;
         panel.hexpand = true;
 
         device_image = new Gtk.Image.from_gicon (device.get_panel_icon (), Gtk.IconSize.DIALOG);
@@ -157,49 +157,37 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         left.pack_start (facts, false, false, 0);
 
         os_label = new Gtk.Label ("");
-        os_label.xalign = 0;
+        os_label.xalign = 1;
         os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
 
         patch_label = new Gtk.Label ("");
-        patch_label.xalign = 0;
+        patch_label.xalign = 1;
         patch_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
 
+        // Full-width Reset (stands in for missing Check for Update + Restore pair)
         reset_button = new Gtk.Button.with_label (_("Reset"));
-        restore_button = new Gtk.Button.with_label (_("Restore"));
-        reset_button.width_request = 100;
-        restore_button.width_request = 100;
+        reset_button.hexpand = true;
+        reset_button.halign = Gtk.Align.FILL;
         reset_button.clicked.connect (() => {
             NotificationManager.get_default ().show_alert (
                 _("Reset"),
                 _("Device reset is not implemented for this device type yet.")
             );
         });
-        restore_button.clicked.connect (() => {
-            NotificationManager.get_default ().show_alert (
-                _("Restore"),
-                _("Device restore is not implemented for this device type yet.")
-            );
-        });
-
-        var actions = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
-        actions.halign = Gtk.Align.END;
-        actions.get_style_context ().add_class (Gtk.STYLE_CLASS_LINKED);
-        actions.pack_start (reset_button, false, false, 0);
-        actions.pack_start (restore_button, false, false, 0);
-        actions_box = actions;
 
         var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 8);
-        right.halign = Gtk.Align.END;
+        right.halign = Gtk.Align.FILL;
         right.valign = Gtk.Align.START;
+        right.hexpand = true;
         right.pack_start (os_label, false, false, 0);
         right.pack_start (patch_label, false, false, 0);
-        right.pack_start (actions_box, false, false, 0);
+        right.pack_start (reset_button, false, true, 0);
 
-        var columns = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
+        var columns = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 24);
         columns.margin = 24;
         columns.hexpand = true;
         columns.pack_start (left, false, false, 0);
-        columns.pack_end (right, false, false, 0);
+        columns.pack_end (right, true, true, 0);
 
         panel.attach (columns, 0, 0, 1, 1);
         attach (panel, 0, 1, 1, 1);
@@ -287,10 +275,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         identity_row.visible = true;
         os_label.visible = true;
         patch_label.visible = true;
-
         reset_button.visible = device.can_reset ();
-        restore_button.visible = device.can_restore ();
-        actions_box.visible = device.can_reset () || device.can_restore ();
     }
 
     public void refresh () {

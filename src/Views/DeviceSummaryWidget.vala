@@ -1,7 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*-
- * Summary: auto-sync, compact encrypt row, sync options,
- * storage bar + Sync, then Back Up Now under Sync.
+ * Summary: auto-sync, encrypt, sync options,
+ * storage bar + Sync, then Back Up Now | Restore (separate, not linked).
  */
 
 public class Music.DeviceSummaryWidget : Gtk.EventBox {
@@ -16,6 +16,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     private Gtk.Label encrypt_label;
     private Gtk.Switch encrypt_switch;
     private Gtk.Button backup_button;
+    private Gtk.Button restore_button;
     private Granite.Widgets.StorageBar storagebar;
 
     public DeviceSummaryWidget (Device device, DevicePreferences preferences) {
@@ -35,7 +36,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         auto_sync_switch.halign = Gtk.Align.START;
         auto_sync_switch.valign = Gtk.Align.CENTER;
 
-        // Compact encrypt row (label + thin switch only)
         encrypt_label = new Gtk.Label (_("Encrypt local backup:"));
         encrypt_label.halign = Gtk.Align.END;
 
@@ -51,7 +51,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_music_check = new Gtk.CheckButton ();
         sync_music_check.halign = Gtk.Align.START;
         sync_music_check.valign = Gtk.Align.CENTER;
-
 
         music_list = new Gtk.ListStore (3, typeof (GLib.Object), typeof (string), typeof (GLib.Icon));
 
@@ -74,15 +73,27 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_music_combobox.valign = Gtk.Align.CENTER;
         sync_music_combobox.set_button_sensitivity (Gtk.SensitivityType.ON);
 
-        // Back Up Now sits under the storage/Sync row
+        // Back Up Now + Restore side by side, NOT linked
         backup_button = new Gtk.Button.with_label (_("Back Up Now"));
-        backup_button.halign = Gtk.Align.CENTER;
         backup_button.clicked.connect (() => {
             NotificationManager.get_default ().show_alert (
                 _("Back Up Now"),
                 _("Device backup is not implemented for this device type yet.")
             );
         });
+
+        restore_button = new Gtk.Button.with_label (_("Restore"));
+        restore_button.clicked.connect (() => {
+            NotificationManager.get_default ().show_alert (
+                _("Restore"),
+                _("Device restore is not implemented for this device type yet.")
+            );
+        });
+
+        var backup_row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
+        backup_row.halign = Gtk.Align.END;
+        backup_row.pack_start (backup_button, false, false, 0);
+        backup_row.pack_start (restore_button, false, false, 0);
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
@@ -128,7 +139,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         content_grid.attach (sync_options_label, 1, 2, 1, 1);
         content_grid.attach (sync_music_check, 2, 2, 1, 1);
         content_grid.attach (sync_music_combobox, 3, 2, 1, 1);
-        content_grid.attach (backup_button, 4, 1, 1, 1);
+        content_grid.attach (backup_row, 1, 3, 3, 1);
 
         var main_grid = new Gtk.Grid ();
         main_grid.attach (content_grid, 0, 0, 1, 1);
@@ -180,10 +191,12 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     }
 
     private void apply_backup_visibility () {
-        bool show = device.can_backup ();
-        encrypt_label.visible = show;
-        encrypt_switch.visible = show;
-        backup_button.visible = show;
+        bool show_backup = device.can_backup ();
+        encrypt_label.visible = show_backup;
+        encrypt_switch.visible = show_backup;
+        backup_button.visible = show_backup;
+
+        restore_button.visible = device.can_restore ();
     }
 
     private void refresh_space_widget () {

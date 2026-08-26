@@ -1,8 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
  * Fancy name sits above the info panel (with a gap).
- * Panel icon comes from get_panel_icon() — same as sidebar by default.
- * Reset spans full width (fills space where Check for Update would be).
+ * Right side: ROM name, OS version, security patch, full-width Reset.
  * Restore lives next to Back Up Now in DeviceSummaryWidget.
  */
 
@@ -23,6 +22,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     private Gtk.Label identity_value_label;
     private Gtk.Widget identity_row;
 
+    private Gtk.Label rom_label;
     private Gtk.Label os_label;
     private Gtk.Label patch_label;
     private Gtk.Button reset_button;
@@ -40,6 +40,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     private const string DEMO_SERIAL = "R58M30DEMO01";
     private const string DEMO_IMEI = "359999999999999";
     private const string DEMO_MODEL_ID = "SM-T510";
+    private const string DEMO_ROM = "LFR 17.1";
     private const string DEMO_OS = "10";
     private const string DEMO_PATCH = "2020-05-01";
     private const int DEMO_BATTERY = 87;
@@ -52,7 +53,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         orientation = Gtk.Orientation.VERTICAL;
         hexpand = true;
 
-        // —— Fancy name ABOVE the panel, with a gap ——
         fancy_label = new Gtk.Label ("");
         fancy_label.xalign = 0;
         fancy_label.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
@@ -62,7 +62,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         fancy_label.margin_bottom = 0;
         attach (fancy_label, 0, 0, 1, 1);
 
-        // —— Info panel (separate from fancy name) ——
         var panel = new Gtk.Grid ();
         panel.get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
         panel.margin_top = 12;
@@ -156,15 +155,20 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         left.pack_start (device_image, false, false, 0);
         left.pack_start (facts, false, false, 0);
 
+        // ROM name (product) — distinct from version number
+        rom_label = new Gtk.Label ("");
+        rom_label.xalign = 1;
+        rom_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
+
+        // Platform version number only
         os_label = new Gtk.Label ("");
         os_label.xalign = 1;
-        os_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
+        os_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
 
         patch_label = new Gtk.Label ("");
         patch_label.xalign = 1;
         patch_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
 
-        // Full-width Reset (stands in for missing Check for Update + Restore pair)
         reset_button = new Gtk.Button.with_label (_("Reset"));
         reset_button.hexpand = true;
         reset_button.halign = Gtk.Align.FILL;
@@ -175,10 +179,11 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
             );
         });
 
-        var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 8);
+        var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
         right.halign = Gtk.Align.FILL;
         right.valign = Gtk.Align.START;
         right.hexpand = true;
+        right.pack_start (rom_label, false, false, 0);
         right.pack_start (os_label, false, false, 0);
         right.pack_start (patch_label, false, false, 0);
         right.pack_start (reset_button, false, true, 0);
@@ -273,6 +278,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         capacity_label.visible = true;
         battery_label.visible = true;
         identity_row.visible = true;
+        rom_label.visible = true;
         os_label.visible = true;
         patch_label.visible = true;
         reset_button.visible = device.can_reset ();
@@ -323,6 +329,21 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
         update_identity ();
 
+        // ROM name (product) vs version number
+        var rom = device.get_rom_name ();
+        if (!has_text (rom)) {
+            if (device.get_content_type ().has_prefix ("android")) {
+                rom = DEMO_ROM;
+            } else if (device.get_content_type ().has_prefix ("ipod")
+                || device.get_content_type ().has_prefix ("iphone")) {
+                rom = "iOS";
+            } else {
+                rom = "";
+            }
+        }
+
+        rom_label.label = rom;
+
         var os = device.get_os_version ();
         if (!has_text (os)) {
             os = DEMO_OS;
@@ -331,7 +352,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         if (device.get_content_type ().has_prefix ("android")) {
             os_label.label = _("Android %s").printf (os);
         } else {
-            os_label.label = os;
+            os_label.label = _("Version %s").printf (os);
         }
 
         var patch = device.get_security_patch ();

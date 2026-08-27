@@ -1,30 +1,48 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
- * Reusable device settings panel: H4 title above a framed content area.
- * Subclasses (or callers) pack widgets into {@link content}.
+ * Reusable section for the device / sync area — same structure as
+ * DeviceHardwareInfo:
+ *
+ *   [ section title label ]   ← outside, H4
+ *   ┌─────────────────────┐
+ *   │  STYLE_CLASS_VIEW   │   ← panel body
+ *   │   content box       │
+ *   └─────────────────────┘
+ *
+ * Pack widgets into {@link content}. Use anywhere under the device view.
  */
 
-public class Music.DevicePanel : Gtk.Box {
+public class Music.DevicePanel : Gtk.Grid {
+    /** Section name shown above the panel (like the fancy model label). */
     public Gtk.Label title_label { get; private set; }
+
+    /** VIEW-styled panel body (same class as the hardware info strip). */
+    public Gtk.Grid panel { get; private set; }
+
+    /** Vertical box inside {@link panel}; pack your controls here. */
     public Gtk.Box content { get; private set; }
-    public Gtk.Frame frame { get; private set; }
 
     public DevicePanel (string title) {
-        Object (orientation: Gtk.Orientation.VERTICAL, spacing: 6);
+        hexpand = true;
+        orientation = Gtk.Orientation.VERTICAL;
 
         title_label = new Gtk.Label (title);
         title_label.xalign = 0;
         title_label.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
+        title_label.margin_bottom = 0;
 
         content = new Gtk.Box (Gtk.Orientation.VERTICAL, 12);
         content.margin = 12;
+        content.hexpand = true;
 
-        frame = new Gtk.Frame (null);
-        frame.get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
-        frame.add (content);
+        panel = new Gtk.Grid ();
+        panel.hexpand = true;
+        panel.margin_top = 6;
+        panel.get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
+        panel.attach (content, 0, 0, 1, 1);
 
-        pack_start (title_label, false, false, 0);
-        pack_start (frame, false, false, 0);
+        attach (title_label, 0, 0, 1, 1);
+        attach (panel, 0, 1, 1, 1);
     }
 
     public void set_title (string title) {

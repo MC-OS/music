@@ -37,14 +37,11 @@ public interface Music.Device : GLib.Object {
     /**
      * Icon for the hardware summary panel.
      * Defaults to the same icon as the sidebar (get_icon).
-     * Override when a device wants a larger or product-specific image
-     * in the panel without changing the sidebar icon.
      */
     public virtual GLib.Icon get_panel_icon () {
         return get_icon ();
     }
 
-    /** Optional hardware fields — plugins override when available. */
     public virtual string? get_serial_number () {
         return null;
     }
@@ -62,15 +59,10 @@ public interface Music.Device : GLib.Object {
         return -1;
     }
 
-    /** Platform version number (e.g. "10", "17.5") — not the ROM/product name. */
     public virtual string? get_os_version () {
         return null;
     }
 
-    /**
-     * Human-readable ROM / OS product name, distinct from the version number.
-     * Examples: "LineageOS", "LFR 17.1", "iOS" — not "10" or "17.5".
-     */
     public virtual string? get_rom_name () {
         return null;
     }
@@ -79,17 +71,39 @@ public interface Music.Device : GLib.Object {
         return null;
     }
 
-    /** Capability flags — UI only shows controls when these return true. */
+    /** Show Reset when true. */
     public virtual bool can_reset () {
         return false;
     }
 
-    public virtual bool can_restore () {
+    /**
+     * Single capability for backup + restore (+ encrypt UI).
+     * When false, encrypt switch, Back Up Now, and Restore are hidden.
+     */
+    public virtual bool can_recover () {
         return false;
     }
 
-    public virtual bool can_backup () {
-        return false;
+    /** Overridable actions — plugins implement real work. */
+    public virtual void reset_device () {
+        infobar_message (
+            _("Device reset is not implemented for this device type yet."),
+            Gtk.MessageType.INFO
+        );
+    }
+
+    public virtual void backup_device (bool encrypt) {
+        infobar_message (
+            _("Device backup is not implemented for this device type yet."),
+            Gtk.MessageType.INFO
+        );
+    }
+
+    public virtual void restore_device () {
+        infobar_message (
+            _("Device restore is not implemented for this device type yet."),
+            Gtk.MessageType.INFO
+        );
     }
 
     public Gee.Collection<Music.Media> delete_doubles (Gee.Collection<Music.Media> source_list, Gee.Collection<Music.Media> to_remove) {

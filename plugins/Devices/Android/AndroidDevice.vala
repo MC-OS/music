@@ -77,13 +77,12 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         return true;
     }
 
-    public override bool can_restore () {
+    /** Backup + restore (+ encrypt) UI for Android. */
+    public override bool can_recover () {
         return true;
     }
 
-    public override bool can_backup () {
-        return true;
-    }
+    // Actions stay overridable; defaults on Device show infobar until implemented.
 
     private bool is_generic_label (string? name) {
         if (name == null || name.strip ().length == 0) {
@@ -189,7 +188,6 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
                     } else if (t.has_prefix ("ro.build.version.security_patch=")) {
                         _security_patch = t.substring (t.index_of ("=") + 1).strip ();
                     } else if (t.has_prefix ("ro.modversion=")) {
-                        // Generic custom ROM version string
                         if (_rom_name == null) {
                             _rom_name = t.substring (t.index_of ("=") + 1).strip ();
                         }

@@ -69,20 +69,28 @@ public interface Music.Device : GLib.Object {
         return false;
     }
 
-    /**
-     * Single capability for backup + restore (+ encrypt UI).
-     */
     public virtual bool can_recover () {
         return false;
     }
 
-    /**
-     * Status line under manual backup controls, e.g.
-     * "Last backed up to this computer: Aug 27, 2026 1:32 PM"
-     * or "Last restored: …". Return null to hide.
-     */
     public virtual string? get_last_backup_status () {
         return null;
+    }
+
+    /** True when a dedicated backup encryption password is already stored. */
+    public virtual bool has_backup_password () {
+        return false;
+    }
+
+    /**
+     * Prompt to set or change the backup password.
+     * Plugins may later also offer “use system password” on Linux.
+     */
+    public virtual void configure_backup_password () {
+        infobar_message (
+            _("Backup password setup is not implemented for this device type yet."),
+            Gtk.MessageType.INFO
+        );
     }
 
     public virtual void reset_device () {

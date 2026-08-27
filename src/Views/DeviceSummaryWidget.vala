@@ -1,9 +1,8 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*-
  * Summary: auto-sync + sync options, then an iTunes-style Backups frame:
- *   left  = encrypt local backup
+ *   left  = encrypt local backup + Set/Change Password
  *   right = manual Back Up Now / Restore + last status line
- * Storage bar at the bottom. Recovery UI gated by device.can_recover ().
  */
 
 public class Music.DeviceSummaryWidget : Gtk.EventBox {
@@ -18,6 +17,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
     private Gtk.Widget backups_frame;
     private Gtk.CheckButton encrypt_check;
+    private Gtk.Button password_button;
     private Gtk.Button backup_button;
     private Gtk.Button restore_button;
     private Gtk.Label last_backup_label;
@@ -80,14 +80,13 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_controls.pack_start (sync_music_check, false, false, 0);
         sync_controls.pack_start (sync_music_combobox, true, true, 0);
 
-        // —— Backups frame (iTunes-inspired two-column panel) ——
         var backups_heading = new Gtk.Label (_("Backups"));
         backups_heading.xalign = 0;
         backups_heading.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
 
-        // Left: encrypt
         encrypt_check = new Gtk.CheckButton.with_label (_("Encrypt local backup"));
         encrypt_check.halign = Gtk.Align.START;
+        encrypt_check.toggled.connect (update_password_button);
 
         var encrypt_hint = new Gtk.Label (
             _("This will also back up account passwords used on this device.")
@@ -98,6 +97,14 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         encrypt_hint.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
         encrypt_hint.margin_start = 24;
 
+        password_button = new Gtk.Button.with_label (_("Set Password…"));
+        password_button.halign = Gtk.Align.START;
+        password_button.margin_start = 24;
+        password_button.clicked.connect (() => {
+            device.configure_backup_password ();
+            update_password_button ();
+        });
+
         var left_title = new Gtk.Label (_("Local Backup"));
         left_title.xalign = 0;
         left_title.get_style_context ().add_class ("h4");
@@ -106,8 +113,8 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         left_col.pack_start (left_title, false, false, 0);
         left_col.pack_start (encrypt_check, false, false, 0);
         left_col.pack_start (encrypt_hint, false, false, 0);
+        left_col.pack_start (password_button, false, false, 0);
 
-        // Right: manual backup / restore
         var right_title = new Gtk.Label (_("Manually Back Up and Restore"));
         right_title.xalign = 0;
         right_title.get_style_context ().add_class ("h4");
@@ -246,6 +253,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
             refresh_space_widget ();
             apply_recover_section_visibility ();
             refresh_backup_status ();
+            update_password_button ();
         });
 
         libraries_manager.local_library.playlist_added.connect (() => {refresh_lists ();});
@@ -258,6 +266,18 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         show_all ();
         apply_recover_section_visibility ();
         refresh_backup_status ();
+        update_password_button ();
+    }
+
+    private void update_password_button () {
+        bool encrypt_on = encrypt_check.active;
+        password_button.sensitive = encrypt_on;
+
+        if (device.has_backup_password ()) {
+            password_button.label = _("Change Password…");
+        } else {
+            password_button.label = _("Set Password…");
+        }
     }
 
     private void apply_recover_section_visibility () {
@@ -267,7 +287,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     private void refresh_backup_status () {
         var status = device.get_last_backup_status ();
         if (status == null || status.strip ().length == 0) {
-            // Demo line so the UI is visible while plugins implement storage
             status = _("Last backed up to this computer: Never");
         }
 

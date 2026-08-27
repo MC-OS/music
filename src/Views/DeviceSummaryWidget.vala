@@ -1,10 +1,6 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*-
- * Summary: auto-sync, encrypt, sync options,
- * storage bar + Sync, then Back Up Now | Restore.
- *
- * Form is a compact 2-column grid centered in the panel
- * (iTunes-like balance, not edge-hugging).
+ * Summary panel: vertical Gtk.Box, form centered on both axes.
  * Recovery UI gated by device.can_recover ().
  */
 
@@ -21,7 +17,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     private Gtk.Switch encrypt_switch;
     private Gtk.Button backup_button;
     private Gtk.Button restore_button;
-    private Gtk.Grid backup_grid;
+    private Gtk.Box backup_box;
     private Granite.Widgets.StorageBar storagebar;
 
     public DeviceSummaryWidget (Device device, DevicePreferences preferences) {
@@ -34,7 +30,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     construct {
         get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
 
-        // Labels right-aligned into a shared gutter (settings / iTunes feel)
         var auto_sync_label = new Gtk.Label (_("Automatically sync when plugged in:"));
         auto_sync_label.halign = Gtk.Align.END;
         auto_sync_label.xalign = 1;
@@ -100,12 +95,38 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
             device.restore_device ();
         });
 
-        backup_grid = new Gtk.Grid ();
-        backup_grid.column_spacing = 6;
-        backup_grid.column_homogeneous = true;
-        backup_grid.halign = Gtk.Align.START;
-        backup_grid.attach (backup_button, 0, 0, 1, 1);
-        backup_grid.attach (restore_button, 1, 0, 1, 1);
+        backup_box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
+        backup_box.halign = Gtk.Align.START;
+        backup_box.pack_start (backup_button, false, false, 0);
+        backup_box.pack_start (restore_button, false, false, 0);
+
+        // Form rows as horizontal boxes inside a vertical form box
+        var row_auto = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12);
+        row_auto.halign = Gtk.Align.CENTER;
+        row_auto.pack_start (auto_sync_label, false, false, 0);
+        row_auto.pack_start (auto_sync_switch, false, false, 0);
+
+        var row_encrypt = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12);
+        row_encrypt.halign = Gtk.Align.CENTER;
+        row_encrypt.pack_start (encrypt_label, false, false, 0);
+        row_encrypt.pack_start (encrypt_switch, false, false, 0);
+
+        var row_sync = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12);
+        row_sync.halign = Gtk.Align.CENTER;
+        row_sync.pack_start (sync_options_label, false, false, 0);
+        row_sync.pack_start (sync_controls, false, false, 0);
+
+        var row_backup = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12);
+        row_backup.halign = Gtk.Align.CENTER;
+        row_backup.pack_start (backup_box, false, false, 0);
+
+        var form_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 8);
+        form_box.halign = Gtk.Align.CENTER;
+        form_box.valign = Gtk.Align.CENTER;
+        form_box.pack_start (row_auto, false, false, 0);
+        form_box.pack_start (row_encrypt, false, false, 0);
+        form_box.pack_start (row_sync, false, false, 0);
+        form_box.pack_start (row_backup, false, false, 0);
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
@@ -123,47 +144,24 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_button.valign = Gtk.Align.CENTER;
         sync_button.width_request = 80;
 
-        var storage_grid = new Gtk.Grid ();
-        storage_grid.column_spacing = 6;
-        storage_grid.margin = 24;
-        storage_grid.margin_bottom = 6;
-        storage_grid.add (storagebar);
-        storage_grid.add (sync_button);
+        var storage_row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
+        storage_row.margin = 24;
+        storage_row.margin_bottom = 6;
+        storage_row.pack_start (storagebar, true, true, 0);
+        storage_row.pack_start (sync_button, false, false, 0);
 
-        var storage_toolbar = new Gtk.Grid ();
-        storage_toolbar.valign = Gtk.Align.END;
-        storage_toolbar.attach (storage_grid, 0, 0, 1, 1);
+        var storage_toolbar = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
         storage_toolbar.get_style_context ().add_class (Gtk.STYLE_CLASS_INLINE_TOOLBAR);
+        storage_toolbar.pack_start (storage_row, false, false, 0);
 
         refresh_space_widget ();
 
-        // Compact centered form — not stretched to the window edge
-        var content_grid = new Gtk.Grid ();
-        content_grid.halign = Gtk.Align.CENTER;
-        content_grid.hexpand = true;
-        content_grid.row_spacing = 8;
-        content_grid.column_spacing = 12;
-        content_grid.margin_top = 16;
-        content_grid.margin_bottom = 8;
-        content_grid.margin_start = 24;
-        content_grid.margin_end = 24;
+        // Outer: form expands and centers both ways; storage stays at bottom
+        var main_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
+        main_box.pack_start (form_box, true, true, 0);
+        main_box.pack_end (storage_toolbar, false, false, 0);
 
-        content_grid.attach (auto_sync_label,    0, 0, 1, 1);
-        content_grid.attach (auto_sync_switch,   1, 0, 1, 1);
-
-        content_grid.attach (encrypt_label,      0, 1, 1, 1);
-        content_grid.attach (encrypt_switch,     1, 1, 1, 1);
-
-        content_grid.attach (sync_options_label, 0, 2, 1, 1);
-        content_grid.attach (sync_controls,      1, 2, 1, 1);
-
-        content_grid.attach (backup_grid,        1, 3, 1, 1);
-
-        var main_grid = new Gtk.Grid ();
-        main_grid.attach (content_grid, 0, 0, 1, 1);
-        main_grid.attach (storage_toolbar, 0, 1, 1, 1);
-
-        add (main_grid);
+        add (main_box);
 
         refresh_lists ();
 
@@ -215,7 +213,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         encrypt_switch.visible = show;
         backup_button.visible = show;
         restore_button.visible = show;
-        backup_grid.visible = show;
+        backup_box.visible = show;
     }
 
     private void refresh_space_widget () {

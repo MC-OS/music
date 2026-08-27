@@ -20,7 +20,6 @@ public interface Music.Device : GLib.Object {
     public abstract Mount? get_mount ();
     public abstract string get_uri ();
     public abstract void set_icon (GLib.Icon icon);
-    /** Sidebar / list icon */
     public abstract GLib.Icon get_icon ();
     public abstract uint64 get_capacity ();
     public abstract string get_fancy_capacity ();
@@ -34,10 +33,6 @@ public interface Music.Device : GLib.Object {
     public abstract bool read_only ();
     public abstract Library get_library ();
 
-    /**
-     * Icon for the hardware summary panel.
-     * Defaults to the same icon as the sidebar (get_icon).
-     */
     public virtual GLib.Icon get_panel_icon () {
         return get_icon ();
     }
@@ -54,7 +49,6 @@ public interface Music.Device : GLib.Object {
         return null;
     }
 
-    /** -1 = unknown / not reported */
     public virtual int get_battery_percent () {
         return -1;
     }
@@ -71,20 +65,26 @@ public interface Music.Device : GLib.Object {
         return null;
     }
 
-    /** Show Reset when true. */
     public virtual bool can_reset () {
         return false;
     }
 
     /**
      * Single capability for backup + restore (+ encrypt UI).
-     * When false, encrypt switch, Back Up Now, and Restore are hidden.
      */
     public virtual bool can_recover () {
         return false;
     }
 
-    /** Overridable actions — plugins implement real work. */
+    /**
+     * Status line under manual backup controls, e.g.
+     * "Last backed up to this computer: Aug 27, 2026 1:32 PM"
+     * or "Last restored: …". Return null to hide.
+     */
+    public virtual string? get_last_backup_status () {
+        return null;
+    }
+
     public virtual void reset_device () {
         infobar_message (
             _("Device reset is not implemented for this device type yet."),

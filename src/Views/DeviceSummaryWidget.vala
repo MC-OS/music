@@ -1,13 +1,9 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*-
- * Summary: auto-sync, encrypt, sync options,
- * storage bar + Sync, then Back Up Now | Restore (separate, not linked).
- *
- * Center panel uses a strict 2-column form grid:
- *   col 0 = labels, col 1 = controls (no colspan stair-steps).
- *
- * Backup section visibility is gated by device.can_recover ().
- * Buttons call overridable device.backup_device / restore_device.
+ * Summary: auto-sync + sync options, then an iTunes-style Backups frame:
+ *   left  = encrypt local backup
+ *   right = manual Back Up Now / Restore + last status line
+ * Storage bar at the bottom. Recovery UI gated by device.can_recover ().
  */
 
 public class Music.DeviceSummaryWidget : Gtk.EventBox {
@@ -19,11 +15,13 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     private Gtk.ComboBox sync_music_combobox;
     private Gtk.ListStore music_list;
     private Gtk.Switch auto_sync_switch;
-    private Gtk.Label encrypt_label;
-    private Gtk.Switch encrypt_switch;
+
+    private Gtk.Widget backups_frame;
+    private Gtk.CheckButton encrypt_check;
     private Gtk.Button backup_button;
     private Gtk.Button restore_button;
-    private Gtk.Grid backup_grid;
+    private Gtk.Label last_backup_label;
+
     private Granite.Widgets.StorageBar storagebar;
 
     public DeviceSummaryWidget (Device device, DevicePreferences preferences) {
@@ -44,16 +42,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         auto_sync_switch = new Gtk.Switch ();
         auto_sync_switch.halign = Gtk.Align.START;
         auto_sync_switch.valign = Gtk.Align.CENTER;
-
-        encrypt_label = new Gtk.Label (_("Encrypt local backup:"));
-        encrypt_label.halign = Gtk.Align.START;
-        encrypt_label.xalign = 0;
-        encrypt_label.valign = Gtk.Align.CENTER;
-
-        encrypt_switch = new Gtk.Switch ();
-        encrypt_switch.halign = Gtk.Align.START;
-        encrypt_switch.valign = Gtk.Align.CENTER;
-        encrypt_switch.tooltip_text = _("Encrypt backups with a password");
 
         var sync_options_label = new Gtk.Label (_("Sync:"));
         sync_options_label.halign = Gtk.Align.START;
@@ -92,22 +80,89 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_controls.pack_start (sync_music_check, false, false, 0);
         sync_controls.pack_start (sync_music_combobox, true, true, 0);
 
+        // —— Backups frame (iTunes-inspired two-column panel) ——
+        var backups_heading = new Gtk.Label (_("Backups"));
+        backups_heading.xalign = 0;
+        backups_heading.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
+
+        // Left: encrypt
+        encrypt_check = new Gtk.CheckButton.with_label (_("Encrypt local backup"));
+        encrypt_check.halign = Gtk.Align.START;
+
+        var encrypt_hint = new Gtk.Label (
+            _("This will also back up account passwords used on this device.")
+        );
+        encrypt_hint.xalign = 0;
+        encrypt_hint.wrap = true;
+        encrypt_hint.max_width_chars = 36;
+        encrypt_hint.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
+        encrypt_hint.margin_start = 24;
+
+        var left_title = new Gtk.Label (_("Local Backup"));
+        left_title.xalign = 0;
+        left_title.get_style_context ().add_class ("h4");
+
+        var left_col = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
+        left_col.pack_start (left_title, false, false, 0);
+        left_col.pack_start (encrypt_check, false, false, 0);
+        left_col.pack_start (encrypt_hint, false, false, 0);
+
+        // Right: manual backup / restore
+        var right_title = new Gtk.Label (_("Manually Back Up and Restore"));
+        right_title.xalign = 0;
+        right_title.get_style_context ().add_class ("h4");
+
+        var right_desc = new Gtk.Label (
+            _("Manually back up your device to this computer or restore a backup stored on this computer.")
+        );
+        right_desc.xalign = 0;
+        right_desc.wrap = true;
+        right_desc.max_width_chars = 40;
+        right_desc.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
+
         backup_button = new Gtk.Button.with_label (_("Back Up Now"));
         backup_button.clicked.connect (() => {
-            device.backup_device (encrypt_switch.active);
+            device.backup_device (encrypt_check.active);
+            refresh_backup_status ();
         });
 
-        restore_button = new Gtk.Button.with_label (_("Restore"));
+        restore_button = new Gtk.Button.with_label (_("Restore Backup…"));
         restore_button.clicked.connect (() => {
             device.restore_device ();
+            refresh_backup_status ();
         });
 
-        backup_grid = new Gtk.Grid ();
-        backup_grid.column_spacing = 6;
-        backup_grid.column_homogeneous = true;
-        backup_grid.halign = Gtk.Align.START;
-        backup_grid.attach (backup_button, 0, 0, 1, 1);
-        backup_grid.attach (restore_button, 1, 0, 1, 1);
+        var button_row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
+        button_row.halign = Gtk.Align.START;
+        button_row.pack_start (backup_button, false, false, 0);
+        button_row.pack_start (restore_button, false, false, 0);
+
+        last_backup_label = new Gtk.Label ("");
+        last_backup_label.xalign = 0;
+        last_backup_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
+
+        var right_col = new Gtk.Box (Gtk.Orientation.VERTICAL, 8);
+        right_col.pack_start (right_title, false, false, 0);
+        right_col.pack_start (right_desc, false, false, 0);
+        right_col.pack_start (button_row, false, false, 0);
+        right_col.pack_start (last_backup_label, false, false, 0);
+
+        var columns = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 32);
+        columns.pack_start (left_col, true, true, 0);
+        columns.pack_start (right_col, true, true, 0);
+
+        var backups_inner = new Gtk.Box (Gtk.Orientation.VERTICAL, 12);
+        backups_inner.margin = 12;
+        backups_inner.pack_start (columns, false, false, 0);
+
+        var frame = new Gtk.Frame (null);
+        frame.get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
+        frame.add (backups_inner);
+        backups_frame = frame;
+
+        var backups_block = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
+        backups_block.pack_start (backups_heading, false, false, 0);
+        backups_block.pack_start (frame, false, false, 0);
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
@@ -142,7 +197,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         var content_grid = new Gtk.Grid ();
         content_grid.halign = Gtk.Align.FILL;
         content_grid.hexpand = true;
-        content_grid.row_spacing = 6;
+        content_grid.row_spacing = 12;
         content_grid.column_spacing = 12;
         content_grid.margin_top = 12;
         content_grid.margin_start = 24;
@@ -150,14 +205,9 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         content_grid.attach (auto_sync_label,    0, 0, 1, 1);
         content_grid.attach (auto_sync_switch,   1, 0, 1, 1);
-
-        content_grid.attach (encrypt_label,      0, 1, 1, 1);
-        content_grid.attach (encrypt_switch,     1, 1, 1, 1);
-
-        content_grid.attach (sync_options_label, 0, 2, 1, 1);
-        content_grid.attach (sync_controls,      1, 2, 1, 1);
-
-        content_grid.attach (backup_grid,        1, 3, 1, 1);
+        content_grid.attach (sync_options_label, 0, 1, 1, 1);
+        content_grid.attach (sync_controls,      1, 1, 1, 1);
+        content_grid.attach (backups_block,      0, 2, 2, 1);
 
         var main_grid = new Gtk.Grid ();
         main_grid.attach (content_grid, 0, 0, 1, 1);
@@ -195,6 +245,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         device.initialized.connect (() => {
             refresh_space_widget ();
             apply_recover_section_visibility ();
+            refresh_backup_status ();
         });
 
         libraries_manager.local_library.playlist_added.connect (() => {refresh_lists ();});
@@ -206,19 +257,22 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         show_all ();
         apply_recover_section_visibility ();
+        refresh_backup_status ();
     }
 
-    /**
-     * Encrypt, Back Up Now, and Restore are all gated by device.can_recover ().
-     */
     private void apply_recover_section_visibility () {
-        bool show = device.can_recover ();
+        backups_frame.get_parent ().visible = device.can_recover ();
+    }
 
-        encrypt_label.visible = show;
-        encrypt_switch.visible = show;
-        backup_button.visible = show;
-        restore_button.visible = show;
-        backup_grid.visible = show;
+    private void refresh_backup_status () {
+        var status = device.get_last_backup_status ();
+        if (status == null || status.strip ().length == 0) {
+            // Demo line so the UI is visible while plugins implement storage
+            status = _("Last backed up to this computer: Never");
+        }
+
+        last_backup_label.label = status;
+        last_backup_label.visible = true;
     }
 
     private void refresh_space_widget () {

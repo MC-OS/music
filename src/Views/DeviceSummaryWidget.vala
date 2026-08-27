@@ -1,8 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*-
- * Two peer panels (same frame design):
- *   Sync    — auto-sync + music selection
- *   Backups — encrypt / password | manual backup & restore
+ * Device summary: peer DevicePanel sections for Sync and Backups,
+ * plus storage bar toolbar.
  */
 
 public class Music.DeviceSummaryWidget : Gtk.EventBox {
@@ -15,7 +14,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     private Gtk.ListStore music_list;
     private Gtk.Switch auto_sync_switch;
 
-    private Gtk.Widget backups_block;
+    private DevicePanel backups_panel;
     private Gtk.CheckButton encrypt_check;
     private Gtk.Button password_button;
     private Gtk.Button backup_button;
@@ -35,9 +34,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
 
         // —— Sync panel ——
-        var sync_heading = new Gtk.Label (_("Sync"));
-        sync_heading.xalign = 0;
-        sync_heading.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
+        var sync_panel = new DevicePanel (_("Sync"));
 
         auto_sync_switch = new Gtk.Switch ();
         auto_sync_switch.halign = Gtk.Align.START;
@@ -86,24 +83,12 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_hint.wrap = true;
         sync_hint.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
 
-        var sync_inner = new Gtk.Box (Gtk.Orientation.VERTICAL, 10);
-        sync_inner.margin = 12;
-        sync_inner.pack_start (auto_sync_row, false, false, 0);
-        sync_inner.pack_start (sync_hint, false, false, 0);
-        sync_inner.pack_start (music_row, false, false, 0);
+        sync_panel.content.pack_start (auto_sync_row, false, false, 0);
+        sync_panel.content.pack_start (sync_hint, false, false, 0);
+        sync_panel.content.pack_start (music_row, false, false, 0);
 
-        var sync_frame = new Gtk.Frame (null);
-        sync_frame.get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
-        sync_frame.add (sync_inner);
-
-        var sync_block = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
-        sync_block.pack_start (sync_heading, false, false, 0);
-        sync_block.pack_start (sync_frame, false, false, 0);
-
-        // —— Backups panel (same frame design) ——
-        var backups_heading = new Gtk.Label (_("Backups"));
-        backups_heading.xalign = 0;
-        backups_heading.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
+        // —— Backups panel ——
+        backups_panel = new DevicePanel (_("Backups"));
 
         encrypt_check = new Gtk.CheckButton.with_label (_("Encrypt local backup"));
         encrypt_check.halign = Gtk.Align.START;
@@ -179,17 +164,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         columns.pack_start (left_col, true, true, 0);
         columns.pack_start (right_col, true, true, 0);
 
-        var backups_inner = new Gtk.Box (Gtk.Orientation.VERTICAL, 12);
-        backups_inner.margin = 12;
-        backups_inner.pack_start (columns, false, false, 0);
-
-        var backups_frame = new Gtk.Frame (null);
-        backups_frame.get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
-        backups_frame.add (backups_inner);
-
-        backups_block = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
-        ((Gtk.Box) backups_block).pack_start (backups_heading, false, false, 0);
-        ((Gtk.Box) backups_block).pack_start (backups_frame, false, false, 0);
+        backups_panel.content.pack_start (columns, false, false, 0);
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
@@ -225,8 +200,8 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         content.margin_top = 12;
         content.margin_start = 24;
         content.margin_end = 24;
-        content.pack_start (sync_block, false, false, 0);
-        content.pack_start (backups_block, false, false, 0);
+        content.pack_start (sync_panel, false, false, 0);
+        content.pack_start (backups_panel, false, false, 0);
 
         var main_grid = new Gtk.Grid ();
         main_grid.attach (content, 0, 0, 1, 1);
@@ -292,7 +267,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     }
 
     private void apply_recover_section_visibility () {
-        backups_block.visible = device.can_recover ();
+        backups_panel.visible = device.can_recover ();
     }
 
     private void refresh_backup_status () {

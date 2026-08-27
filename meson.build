@@ -82,6 +82,7 @@ app_files = files(
   'src/Views/Wrappers/ViewWrapper.vala',
   'src/Widgets/AlbumListGrid.vala',
   'src/Widgets/ContractMenuItem.vala',
+  'src/Widgets/DevicePanel.vala',
   'src/Widgets/EqualizerPopover.vala',
   'src/Widgets/MediaMenu.vala',
   'src/Widgets/PresetList.vala',

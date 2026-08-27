@@ -1,6 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*-
- * Summary panel: vertical Gtk.Box, form centered on both axes.
+ * Compact 2-column form, centered horizontally and vertically.
+ * All binary prefs are switches. Storage bar stays at the bottom.
  * Recovery UI gated by device.can_recover ().
  */
 
@@ -9,7 +10,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     public DevicePreferences preferences { get; construct; }
 
     private Gtk.Button sync_button;
-    private Gtk.CheckButton sync_music_check;
+    private Gtk.Switch sync_music_switch;
     private Gtk.ComboBox sync_music_combobox;
     private Gtk.ListStore music_list;
     private Gtk.Switch auto_sync_switch;
@@ -54,9 +55,9 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_options_label.xalign = 1;
         sync_options_label.valign = Gtk.Align.CENTER;
 
-        sync_music_check = new Gtk.CheckButton ();
-        sync_music_check.halign = Gtk.Align.START;
-        sync_music_check.valign = Gtk.Align.CENTER;
+        sync_music_switch = new Gtk.Switch ();
+        sync_music_switch.halign = Gtk.Align.START;
+        sync_music_switch.valign = Gtk.Align.CENTER;
 
         music_list = new Gtk.ListStore (3, typeof (GLib.Object), typeof (string), typeof (GLib.Icon));
 
@@ -82,7 +83,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         var sync_controls = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
         sync_controls.halign = Gtk.Align.START;
-        sync_controls.pack_start (sync_music_check, false, false, 0);
+        sync_controls.pack_start (sync_music_switch, false, false, 0);
         sync_controls.pack_start (sync_music_combobox, false, false, 0);
 
         backup_button = new Gtk.Button.with_label (_("Back Up Now"));
@@ -100,33 +101,26 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         backup_box.pack_start (backup_button, false, false, 0);
         backup_box.pack_start (restore_button, false, false, 0);
 
-        // Form rows as horizontal boxes inside a vertical form box
-        var row_auto = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12);
-        row_auto.halign = Gtk.Align.CENTER;
-        row_auto.pack_start (auto_sync_label, false, false, 0);
-        row_auto.pack_start (auto_sync_switch, false, false, 0);
+        // Compact 2-column form
+        var form = new Gtk.Grid ();
+        form.column_spacing = 12;
+        form.row_spacing = 8;
+        form.halign = Gtk.Align.CENTER;
+        form.valign = Gtk.Align.CENTER;
 
-        var row_encrypt = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12);
-        row_encrypt.halign = Gtk.Align.CENTER;
-        row_encrypt.pack_start (encrypt_label, false, false, 0);
-        row_encrypt.pack_start (encrypt_switch, false, false, 0);
+        form.attach (auto_sync_label,    0, 0, 1, 1);
+        form.attach (auto_sync_switch,   1, 0, 1, 1);
+        form.attach (encrypt_label,      0, 1, 1, 1);
+        form.attach (encrypt_switch,     1, 1, 1, 1);
+        form.attach (sync_options_label, 0, 2, 1, 1);
+        form.attach (sync_controls,      1, 2, 1, 1);
+        form.attach (backup_box,         1, 3, 1, 1);
 
-        var row_sync = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12);
-        row_sync.halign = Gtk.Align.CENTER;
-        row_sync.pack_start (sync_options_label, false, false, 0);
-        row_sync.pack_start (sync_controls, false, false, 0);
-
-        var row_backup = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12);
-        row_backup.halign = Gtk.Align.CENTER;
-        row_backup.pack_start (backup_box, false, false, 0);
-
-        var form_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 8);
-        form_box.halign = Gtk.Align.CENTER;
-        form_box.valign = Gtk.Align.CENTER;
-        form_box.pack_start (row_auto, false, false, 0);
-        form_box.pack_start (row_encrypt, false, false, 0);
-        form_box.pack_start (row_sync, false, false, 0);
-        form_box.pack_start (row_backup, false, false, 0);
+        // Centers the form in remaining space above the storage bar
+        var form_area = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
+        form_area.hexpand = true;
+        form_area.vexpand = true;
+        form_area.pack_start (form, true, false, 0);
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
@@ -156,9 +150,8 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         refresh_space_widget ();
 
-        // Outer: form expands and centers both ways; storage stays at bottom
         var main_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
-        main_box.pack_start (form_box, true, true, 0);
+        main_box.pack_start (form_area, true, true, 0);
         main_box.pack_end (storage_toolbar, false, false, 0);
 
         add (main_box);
@@ -166,7 +159,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         refresh_lists ();
 
         auto_sync_switch.active = preferences.sync_when_mounted;
-        sync_music_check.active = preferences.sync_music;
+        sync_music_switch.active = preferences.sync_music;
 
         if (preferences.sync_all_music || preferences.music_playlist == null) {
             sync_music_combobox.set_active (0);
@@ -180,7 +173,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         }
 
         auto_sync_switch.notify["active"].connect (save_preferences);
-        sync_music_check.toggled.connect (save_preferences);
+        sync_music_switch.notify["active"].connect (save_preferences);
         sync_music_combobox.changed.connect (save_preferences);
 
         sync_button.clicked.connect (sync_clicked);
@@ -285,7 +278,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
     private void save_preferences () {
         preferences.sync_when_mounted = auto_sync_switch.active;
-        preferences.sync_music = sync_music_check.active;
+        preferences.sync_music = sync_music_switch.active;
         preferences.sync_all_music = sync_music_combobox.get_active () == 0;
         Gtk.TreeIter iter;
         if (sync_music_combobox.get_active () - 2 >= 0) {
@@ -295,7 +288,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
             preferences.music_playlist = (Music.Playlist) value.dup_object ();
         }
 
-        sync_music_combobox.sensitive = sync_music_check.active;
+        sync_music_combobox.sensitive = sync_music_switch.active;
     }
 
     private void refresh_lists () {

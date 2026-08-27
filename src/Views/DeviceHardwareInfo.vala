@@ -156,12 +156,10 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         left.pack_start (device_image, false, false, 0);
         left.pack_start (facts, false, false, 0);
 
-        // ROM name (product) — distinct from version number
         rom_label = new Gtk.Label ("");
         rom_label.xalign = 0;
         rom_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
 
-        // Platform version number only
         os_label = new Gtk.Label ("");
         os_label.xalign = 0;
         os_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
@@ -173,10 +171,7 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         reset_button = new Gtk.Button.with_label (_("Reset"));
         reset_button.hexpand = true;
         reset_button.clicked.connect (() => {
-            NotificationManager.get_default ().show_alert (
-                _("Reset"),
-                _("Device reset is not implemented for this device type yet.")
-            );
+            device.reset_device ();
         });
 
         var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
@@ -328,7 +323,6 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
         update_identity ();
 
-        // ROM name (product) vs version number
         var rom = device.get_rom_name ();
         if (!has_text (rom)) {
             if (device.get_content_type ().has_prefix ("android")) {

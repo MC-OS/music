@@ -2,6 +2,9 @@
 /*-
  * Summary: auto-sync, encrypt, sync options,
  * storage bar + Sync, then Back Up Now | Restore (separate, not linked).
+ *
+ * Center panel uses a strict 2-column form grid:
+ *   col 0 = labels, col 1 = controls (no colspan stair-steps).
  */
 
 public class Music.DeviceSummaryWidget : Gtk.EventBox {
@@ -31,14 +34,18 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
 
         var auto_sync_label = new Gtk.Label (_("Automatically sync when plugged in:"));
-        auto_sync_label.halign = Gtk.Align.END;
+        auto_sync_label.halign = Gtk.Align.START;
+        auto_sync_label.xalign = 0;
+        auto_sync_label.valign = Gtk.Align.CENTER;
 
         auto_sync_switch = new Gtk.Switch ();
         auto_sync_switch.halign = Gtk.Align.START;
         auto_sync_switch.valign = Gtk.Align.CENTER;
 
         encrypt_label = new Gtk.Label (_("Encrypt local backup:"));
-        encrypt_label.halign = Gtk.Align.END;
+        encrypt_label.halign = Gtk.Align.START;
+        encrypt_label.xalign = 0;
+        encrypt_label.valign = Gtk.Align.CENTER;
 
         encrypt_switch = new Gtk.Switch ();
         encrypt_switch.halign = Gtk.Align.START;
@@ -46,7 +53,8 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         encrypt_switch.tooltip_text = _("Encrypt backups with a password");
 
         var sync_options_label = new Gtk.Label (_("Sync:"));
-        sync_options_label.halign = Gtk.Align.END;
+        sync_options_label.halign = Gtk.Align.START;
+        sync_options_label.xalign = 0;
         sync_options_label.valign = Gtk.Align.CENTER;
 
         sync_music_check = new Gtk.CheckButton ();
@@ -72,7 +80,15 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_music_combobox.popup.connect (refresh_lists);
         sync_music_combobox.halign = Gtk.Align.START;
         sync_music_combobox.valign = Gtk.Align.CENTER;
+        sync_music_combobox.hexpand = true;
         sync_music_combobox.set_button_sensitivity (Gtk.SensitivityType.ON);
+
+        // Checkbox + combo share one control cell so labels stay aligned
+        var sync_controls = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
+        sync_controls.halign = Gtk.Align.START;
+        sync_controls.hexpand = true;
+        sync_controls.pack_start (sync_music_check, false, false, 0);
+        sync_controls.pack_start (sync_music_combobox, true, true, 0);
 
         backup_button = new Gtk.Button.with_label (_("Back Up Now"));
         backup_button.clicked.connect (() => {
@@ -93,8 +109,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         backup_grid = new Gtk.Grid ();
         backup_grid.column_spacing = 6;
         backup_grid.column_homogeneous = true;
-        backup_grid.halign = Gtk.Align.CENTER;
-        backup_grid.orientation = Gtk.Orientation.HORIZONTAL;
+        backup_grid.halign = Gtk.Align.START;
         backup_grid.attach (backup_button, 0, 0, 1, 1);
         backup_grid.attach (restore_button, 1, 0, 1, 1);
 
@@ -128,20 +143,26 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         refresh_space_widget ();
 
+        // Strict 2-column form: col 0 labels, col 1 controls
         var content_grid = new Gtk.Grid ();
-        content_grid.halign = Gtk.Align.CENTER;
+        content_grid.halign = Gtk.Align.FILL;
+        content_grid.hexpand = true;
         content_grid.row_spacing = 6;
         content_grid.column_spacing = 12;
         content_grid.margin_top = 12;
+        content_grid.margin_start = 24;
+        content_grid.margin_end = 24;
 
-        content_grid.attach (auto_sync_label, 1, 0, 1, 1);
-        content_grid.attach (auto_sync_switch, 2, 0, 2, 1);
-        content_grid.attach (encrypt_label, 1, 1, 1, 1);
-        content_grid.attach (encrypt_switch, 2, 1, 1, 1);
-        content_grid.attach (sync_options_label, 1, 2, 1, 1);
-        content_grid.attach (sync_music_check, 2, 2, 1, 1);
-        content_grid.attach (sync_music_combobox, 3, 2, 1, 1);
-        content_grid.attach (backup_grid, 1, 3, 3, 1);
+        content_grid.attach (auto_sync_label,    0, 0, 1, 1);
+        content_grid.attach (auto_sync_switch,   1, 0, 1, 1);
+
+        content_grid.attach (encrypt_label,      0, 1, 1, 1);
+        content_grid.attach (encrypt_switch,     1, 1, 1, 1);
+
+        content_grid.attach (sync_options_label, 0, 2, 1, 1);
+        content_grid.attach (sync_controls,      1, 2, 1, 1);
+
+        content_grid.attach (backup_grid,        1, 3, 1, 1);
 
         var main_grid = new Gtk.Grid ();
         main_grid.attach (content_grid, 0, 0, 1, 1);

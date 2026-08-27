@@ -17,7 +17,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     private Gtk.Switch encrypt_switch;
     private Gtk.Button backup_button;
     private Gtk.Button restore_button;
-    private Gtk.Widget backup_row;
+    private Gtk.Grid backup_grid;
     private Granite.Widgets.StorageBar storagebar;
 
     public DeviceSummaryWidget (Device device, DevicePreferences preferences) {
@@ -70,7 +70,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_music_combobox.pack_start (cell, true);
         sync_music_combobox.add_attribute (cell, "text", 1);
         sync_music_combobox.popup.connect (refresh_lists);
-        sync_music_combobox.halign = Gtk.Align.END;
+        sync_music_combobox.halign = Gtk.Align.START;
         sync_music_combobox.valign = Gtk.Align.CENTER;
         sync_music_combobox.set_button_sensitivity (Gtk.SensitivityType.ON);
 
@@ -90,11 +90,13 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
             );
         });
 
-        var row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
-        row.halign = Gtk.Align.END;
-        row.pack_start (backup_button, false, false, 0);
-        row.pack_start (restore_button, false, false, 0);
-        backup_row = row;
+        backup_grid = new Gtk.Grid ();
+        backup_grid.column_spacing = 6;
+        backup_grid.column_homogeneous = true;
+        backup_grid.halign = Gtk.Align.CENTER;
+        backup_grid.orientation = Gtk.Orientation.HORIZONTAL;
+        backup_grid.attach (backup_button, 0, 0, 1, 1);
+        backup_grid.attach (restore_button, 1, 0, 1, 1);
 
         uint64 capacity = device.get_capacity ();
         if (capacity == 0) {
@@ -127,7 +129,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         refresh_space_widget ();
 
         var content_grid = new Gtk.Grid ();
-        content_grid.expand = true;
         content_grid.halign = Gtk.Align.CENTER;
         content_grid.row_spacing = 6;
         content_grid.column_spacing = 12;
@@ -140,7 +141,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         content_grid.attach (sync_options_label, 1, 2, 1, 1);
         content_grid.attach (sync_music_check, 2, 2, 1, 1);
         content_grid.attach (sync_music_combobox, 3, 2, 1, 1);
-        content_grid.attach (backup_row, 1, 3, 3, 1);
+        content_grid.attach (backup_grid, 1, 3, 3, 1);
 
         var main_grid = new Gtk.Grid ();
         main_grid.attach (content_grid, 0, 0, 1, 1);
@@ -203,7 +204,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         encrypt_switch.visible = can_backup;
         backup_button.visible = can_backup;
         restore_button.visible = can_restore;
-        backup_row.visible = can_backup || can_restore;
+        backup_grid.visible = can_backup || can_restore;
     }
 
     private void refresh_space_widget () {

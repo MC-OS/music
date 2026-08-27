@@ -50,15 +50,16 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     public DeviceHardwareInfo (Device device) {
         this.device = device;
 
-        orientation = Gtk.Orientation.VERTICAL;
         hexpand = true;
+        column_homogeneous = true;
+        orientation = Gtk.Orientation.VERTICAL;
 
         fancy_label = new Gtk.Label ("");
         fancy_label.xalign = 0;
         fancy_label.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
-        fancy_label.margin_start = 24;
-        fancy_label.margin_end = 24;
-        fancy_label.margin_top = 16;
+        fancy_label.margin_start = 12;
+        fancy_label.margin_end = 12;
+        fancy_label.margin_top = 12;
         fancy_label.margin_bottom = 0;
         attach (fancy_label, 0, 0, 1, 1);
 
@@ -157,21 +158,20 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
 
         // ROM name (product) — distinct from version number
         rom_label = new Gtk.Label ("");
-        rom_label.xalign = 1;
+        rom_label.xalign = 0;
         rom_label.get_style_context ().add_class (Granite.STYLE_CLASS_H3_LABEL);
 
         // Platform version number only
         os_label = new Gtk.Label ("");
-        os_label.xalign = 1;
+        os_label.xalign = 0;
         os_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
 
         patch_label = new Gtk.Label ("");
-        patch_label.xalign = 1;
+        patch_label.xalign = 0;
         patch_label.get_style_context ().add_class (Gtk.STYLE_CLASS_DIM_LABEL);
 
         reset_button = new Gtk.Button.with_label (_("Reset"));
         reset_button.hexpand = true;
-        reset_button.halign = Gtk.Align.FILL;
         reset_button.clicked.connect (() => {
             NotificationManager.get_default ().show_alert (
                 _("Reset"),
@@ -180,9 +180,8 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         });
 
         var right = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
-        right.halign = Gtk.Align.FILL;
+        right.halign = Gtk.Align.END;
         right.valign = Gtk.Align.START;
-        right.hexpand = true;
         right.pack_start (rom_label, false, false, 0);
         right.pack_start (os_label, false, false, 0);
         right.pack_start (patch_label, false, false, 0);

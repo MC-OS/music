@@ -1,8 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
  * Fancy name sits above the info panel (with a gap).
- * Right side: ROM name, OS version, security patch, full-width Reset.
- * Restore lives next to Back Up Now in DeviceSummaryWidget.
+ * Capacity in a small bordered chip; battery uses system icon + % in center.
  */
 
 public class Music.DeviceHardwareInfo : Gtk.Grid {
@@ -15,9 +14,13 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
     private Gtk.Label name_label;
     private Gtk.Entry name_entry;
 
-    private Gtk.Label space_label;
+    private Gtk.Frame capacity_frame;
     private Gtk.Label capacity_label;
-    private Gtk.Label battery_label;
+
+    private Gtk.Image battery_icon;
+    private Gtk.Label battery_pct_label;
+    private Gtk.Widget battery_row;
+
     private Gtk.Label identity_key_label;
     private Gtk.Label identity_value_label;
     private Gtk.Widget identity_row;
@@ -112,14 +115,34 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
             return false;
         });
 
-        space_label = new Gtk.Label ("");
-        space_label.xalign = 0;
-
+        // Capacity: compact bordered chip
         capacity_label = new Gtk.Label ("");
-        capacity_label.xalign = 0;
+        capacity_label.xalign = 0.5f;
+        capacity_label.margin = 6;
+        capacity_label.margin_start = 8;
+        capacity_label.margin_end = 8;
 
-        battery_label = new Gtk.Label ("");
-        battery_label.xalign = 0;
+        capacity_frame = new Gtk.Frame (null);
+        capacity_frame.shadow_type = Gtk.ShadowType.IN;
+        capacity_frame.halign = Gtk.Align.START;
+        capacity_frame.get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
+        capacity_frame.add (capacity_label);
+
+        // Battery: system icon with percentage centered over it
+        battery_icon = new Gtk.Image ();
+        battery_icon.pixel_size = 48;
+
+        battery_pct_label = new Gtk.Label ("");
+        battery_pct_label.halign = Gtk.Align.CENTER;
+        battery_pct_label.valign = Gtk.Align.CENTER;
+        battery_pct_label.get_style_context ().add_class (Granite.STYLE_CLASS_H4_LABEL);
+
+        var battery_overlay = new Gtk.Overlay ();
+        battery_overlay.halign = Gtk.Align.START;
+        battery_overlay.add (battery_icon);
+        battery_overlay.add_overlay (battery_pct_label);
+
+        battery_row = battery_overlay;
 
         identity_key_label = new Gtk.Label ("");
         identity_key_label.xalign = 0;
@@ -144,12 +167,11 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         identity_row = identity_event;
 
         var facts = new Gtk.Grid ();
-        facts.row_spacing = 4;
+        facts.row_spacing = 8;
         facts.attach (name_event, 0, 0, 1, 1);
-        facts.attach (space_label, 0, 1, 1, 1);
-        facts.attach (capacity_label, 0, 2, 1, 1);
-        facts.attach (battery_label, 0, 3, 1, 1);
-        facts.attach (identity_row, 0, 4, 1, 1);
+        facts.attach (capacity_frame, 0, 1, 1, 1);
+        facts.attach (battery_row, 0, 2, 1, 1);
+        facts.attach (identity_row, 0, 3, 1, 1);
 
         var left = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 16);
         left.halign = Gtk.Align.START;
@@ -266,11 +288,33 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
         }
     }
 
+    private string battery_icon_name (int percent) {
+        // Prefer level icons when the theme provides them; fall back to classic names.
+        int stepped = (percent.clamp (0, 100) / 10) * 10;
+        var level = "battery-level-%d-symbolic".printf (stepped);
+
+        var theme = Gtk.IconTheme.get_default ();
+        if (theme.has_icon (level)) {
+            return level;
+        }
+
+        if (percent >= 90) {
+            return "battery-full-symbolic";
+        } else if (percent >= 40) {
+            return "battery-good-symbolic";
+        } else if (percent >= 20) {
+            return "battery-low-symbolic";
+        } else if (percent >= 5) {
+            return "battery-caution-symbolic";
+        }
+
+        return "battery-empty-symbolic";
+    }
+
     private void apply_visibility () {
         fancy_label.visible = true;
-        space_label.visible = true;
-        capacity_label.visible = true;
-        battery_label.visible = true;
+        capacity_frame.visible = true;
+        battery_row.visible = true;
         identity_row.visible = true;
         rom_label.visible = true;
         os_label.visible = true;
@@ -308,8 +352,11 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
             free = DEMO_FREE;
         }
 
-        space_label.label = _("Space: %s").printf (GLib.format_size (cap));
-        capacity_label.label = _("Capacity: %s (%s free)").printf (
+        capacity_label.label = _("%s free of %s").printf (
+            GLib.format_size (free),
+            GLib.format_size (cap)
+        );
+        capacity_frame.tooltip_text = _("Capacity: %s · Free: %s").printf (
             GLib.format_size (cap),
             GLib.format_size (free)
         );
@@ -319,7 +366,10 @@ public class Music.DeviceHardwareInfo : Gtk.Grid {
             bat = DEMO_BATTERY;
         }
 
-        battery_label.label = _("Battery: %d%%").printf (bat);
+        bat = bat.clamp (0, 100);
+        battery_icon.set_from_icon_name (battery_icon_name (bat), Gtk.IconSize.DIALOG);
+        battery_pct_label.label = "%d%%".printf (bat);
+        battery_row.tooltip_text = _("Battery: %d%%").printf (bat);
 
         update_identity ();
 

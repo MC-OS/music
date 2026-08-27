@@ -5,6 +5,9 @@
  *
  * Center panel uses a strict 2-column form grid:
  *   col 0 = labels, col 1 = controls (no colspan stair-steps).
+ *
+ * Backup section visibility is gated by device.can_recover ().
+ * Buttons call overridable device.backup_device / restore_device.
  */
 
 public class Music.DeviceSummaryWidget : Gtk.EventBox {
@@ -83,7 +86,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_music_combobox.hexpand = true;
         sync_music_combobox.set_button_sensitivity (Gtk.SensitivityType.ON);
 
-        // Checkbox + combo share one control cell so labels stay aligned
         var sync_controls = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
         sync_controls.halign = Gtk.Align.START;
         sync_controls.hexpand = true;
@@ -92,18 +94,12 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         backup_button = new Gtk.Button.with_label (_("Back Up Now"));
         backup_button.clicked.connect (() => {
-            NotificationManager.get_default ().show_alert (
-                _("Back Up Now"),
-                _("Device backup is not implemented for this device type yet.")
-            );
+            device.backup_device (encrypt_switch.active);
         });
 
         restore_button = new Gtk.Button.with_label (_("Restore"));
         restore_button.clicked.connect (() => {
-            NotificationManager.get_default ().show_alert (
-                _("Restore"),
-                _("Device restore is not implemented for this device type yet.")
-            );
+            device.restore_device ();
         });
 
         backup_grid = new Gtk.Grid ();
@@ -143,7 +139,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         refresh_space_widget ();
 
-        // Strict 2-column form: col 0 labels, col 1 controls
         var content_grid = new Gtk.Grid ();
         content_grid.halign = Gtk.Align.FILL;
         content_grid.hexpand = true;
@@ -199,7 +194,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         device.initialized.connect (() => {
             refresh_space_widget ();
-            apply_backup_section_visibility ();
+            apply_recover_section_visibility ();
         });
 
         libraries_manager.local_library.playlist_added.connect (() => {refresh_lists ();});
@@ -210,22 +205,20 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         libraries_manager.local_library.smartplaylist_removed.connect (() => {refresh_lists ();});
 
         show_all ();
-        apply_backup_section_visibility ();
+        apply_recover_section_visibility ();
     }
 
     /**
-     * Single place that shows/hides encrypt, Back Up Now, and Restore
-     * from device.can_backup () / device.can_restore ().
+     * Encrypt, Back Up Now, and Restore are all gated by device.can_recover ().
      */
-    private void apply_backup_section_visibility () {
-        bool can_backup = device.can_backup ();
-        bool can_restore = device.can_restore ();
+    private void apply_recover_section_visibility () {
+        bool show = device.can_recover ();
 
-        encrypt_label.visible = can_backup;
-        encrypt_switch.visible = can_backup;
-        backup_button.visible = can_backup;
-        restore_button.visible = can_restore;
-        backup_grid.visible = can_backup || can_restore;
+        encrypt_label.visible = show;
+        encrypt_switch.visible = show;
+        backup_button.visible = show;
+        restore_button.visible = show;
+        backup_grid.visible = show;
     }
 
     private void refresh_space_widget () {

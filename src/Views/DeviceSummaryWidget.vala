@@ -1,13 +1,11 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*-
  * Summary: auto-sync, encrypt, sync options,
- * storage bar + Sync, then Back Up Now | Restore (separate, not linked).
+ * storage bar + Sync, then Back Up Now | Restore.
  *
- * Center panel uses a strict 2-column form grid:
- *   col 0 = labels, col 1 = controls (no colspan stair-steps).
- *
- * Backup section visibility is gated by device.can_recover ().
- * Buttons call overridable device.backup_device / restore_device.
+ * Form is a compact 2-column grid centered in the panel
+ * (iTunes-like balance, not edge-hugging).
+ * Recovery UI gated by device.can_recover ().
  */
 
 public class Music.DeviceSummaryWidget : Gtk.EventBox {
@@ -36,9 +34,10 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     construct {
         get_style_context ().add_class (Gtk.STYLE_CLASS_VIEW);
 
+        // Labels right-aligned into a shared gutter (settings / iTunes feel)
         var auto_sync_label = new Gtk.Label (_("Automatically sync when plugged in:"));
-        auto_sync_label.halign = Gtk.Align.START;
-        auto_sync_label.xalign = 0;
+        auto_sync_label.halign = Gtk.Align.END;
+        auto_sync_label.xalign = 1;
         auto_sync_label.valign = Gtk.Align.CENTER;
 
         auto_sync_switch = new Gtk.Switch ();
@@ -46,8 +45,8 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         auto_sync_switch.valign = Gtk.Align.CENTER;
 
         encrypt_label = new Gtk.Label (_("Encrypt local backup:"));
-        encrypt_label.halign = Gtk.Align.START;
-        encrypt_label.xalign = 0;
+        encrypt_label.halign = Gtk.Align.END;
+        encrypt_label.xalign = 1;
         encrypt_label.valign = Gtk.Align.CENTER;
 
         encrypt_switch = new Gtk.Switch ();
@@ -56,8 +55,8 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         encrypt_switch.tooltip_text = _("Encrypt backups with a password");
 
         var sync_options_label = new Gtk.Label (_("Sync:"));
-        sync_options_label.halign = Gtk.Align.START;
-        sync_options_label.xalign = 0;
+        sync_options_label.halign = Gtk.Align.END;
+        sync_options_label.xalign = 1;
         sync_options_label.valign = Gtk.Align.CENTER;
 
         sync_music_check = new Gtk.CheckButton ();
@@ -83,14 +82,13 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         sync_music_combobox.popup.connect (refresh_lists);
         sync_music_combobox.halign = Gtk.Align.START;
         sync_music_combobox.valign = Gtk.Align.CENTER;
-        sync_music_combobox.hexpand = true;
+        sync_music_combobox.width_request = 220;
         sync_music_combobox.set_button_sensitivity (Gtk.SensitivityType.ON);
 
         var sync_controls = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
         sync_controls.halign = Gtk.Align.START;
-        sync_controls.hexpand = true;
         sync_controls.pack_start (sync_music_check, false, false, 0);
-        sync_controls.pack_start (sync_music_combobox, true, true, 0);
+        sync_controls.pack_start (sync_music_combobox, false, false, 0);
 
         backup_button = new Gtk.Button.with_label (_("Back Up Now"));
         backup_button.clicked.connect (() => {
@@ -139,12 +137,14 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         refresh_space_widget ();
 
+        // Compact centered form — not stretched to the window edge
         var content_grid = new Gtk.Grid ();
-        content_grid.halign = Gtk.Align.FILL;
+        content_grid.halign = Gtk.Align.CENTER;
         content_grid.hexpand = true;
-        content_grid.row_spacing = 6;
+        content_grid.row_spacing = 8;
         content_grid.column_spacing = 12;
-        content_grid.margin_top = 12;
+        content_grid.margin_top = 16;
+        content_grid.margin_bottom = 8;
         content_grid.margin_start = 24;
         content_grid.margin_end = 24;
 
@@ -208,9 +208,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         apply_recover_section_visibility ();
     }
 
-    /**
-     * Encrypt, Back Up Now, and Restore are all gated by device.can_recover ().
-     */
     private void apply_recover_section_visibility () {
         bool show = device.can_recover ();
 

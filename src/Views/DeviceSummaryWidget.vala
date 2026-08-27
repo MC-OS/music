@@ -1,7 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*-
  * Compact 2-column form, centered horizontally and vertically.
- * All binary prefs are switches. Storage bar stays at the bottom.
+ * All binary prefs are checkboxes. Storage bar stays at the bottom.
  * Recovery UI gated by device.can_recover ().
  */
 
@@ -10,12 +10,12 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     public DevicePreferences preferences { get; construct; }
 
     private Gtk.Button sync_button;
-    private Gtk.Switch sync_music_switch;
+    private Gtk.CheckButton sync_music_check;
     private Gtk.ComboBox sync_music_combobox;
     private Gtk.ListStore music_list;
-    private Gtk.Switch auto_sync_switch;
+    private Gtk.CheckButton auto_sync_check;
     private Gtk.Label encrypt_label;
-    private Gtk.Switch encrypt_switch;
+    private Gtk.CheckButton encrypt_check;
     private Gtk.Button backup_button;
     private Gtk.Button restore_button;
     private Gtk.Box backup_box;
@@ -36,28 +36,28 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         auto_sync_label.xalign = 1;
         auto_sync_label.valign = Gtk.Align.CENTER;
 
-        auto_sync_switch = new Gtk.Switch ();
-        auto_sync_switch.halign = Gtk.Align.START;
-        auto_sync_switch.valign = Gtk.Align.CENTER;
+        auto_sync_check = new Gtk.CheckButton ();
+        auto_sync_check.halign = Gtk.Align.START;
+        auto_sync_check.valign = Gtk.Align.CENTER;
 
         encrypt_label = new Gtk.Label (_("Encrypt local backup:"));
         encrypt_label.halign = Gtk.Align.END;
         encrypt_label.xalign = 1;
         encrypt_label.valign = Gtk.Align.CENTER;
 
-        encrypt_switch = new Gtk.Switch ();
-        encrypt_switch.halign = Gtk.Align.START;
-        encrypt_switch.valign = Gtk.Align.CENTER;
-        encrypt_switch.tooltip_text = _("Encrypt backups with a password");
+        encrypt_check = new Gtk.CheckButton ();
+        encrypt_check.halign = Gtk.Align.START;
+        encrypt_check.valign = Gtk.Align.CENTER;
+        encrypt_check.tooltip_text = _("Encrypt backups with a password");
 
         var sync_options_label = new Gtk.Label (_("Sync:"));
         sync_options_label.halign = Gtk.Align.END;
         sync_options_label.xalign = 1;
         sync_options_label.valign = Gtk.Align.CENTER;
 
-        sync_music_switch = new Gtk.Switch ();
-        sync_music_switch.halign = Gtk.Align.START;
-        sync_music_switch.valign = Gtk.Align.CENTER;
+        sync_music_check = new Gtk.CheckButton ();
+        sync_music_check.halign = Gtk.Align.START;
+        sync_music_check.valign = Gtk.Align.CENTER;
 
         music_list = new Gtk.ListStore (3, typeof (GLib.Object), typeof (string), typeof (GLib.Icon));
 
@@ -83,12 +83,12 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         var sync_controls = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
         sync_controls.halign = Gtk.Align.START;
-        sync_controls.pack_start (sync_music_switch, false, false, 0);
+        sync_controls.pack_start (sync_music_check, false, false, 0);
         sync_controls.pack_start (sync_music_combobox, false, false, 0);
 
         backup_button = new Gtk.Button.with_label (_("Back Up Now"));
         backup_button.clicked.connect (() => {
-            device.backup_device (encrypt_switch.active);
+            device.backup_device (encrypt_check.active);
         });
 
         restore_button = new Gtk.Button.with_label (_("Restore"));
@@ -101,7 +101,6 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         backup_box.pack_start (backup_button, false, false, 0);
         backup_box.pack_start (restore_button, false, false, 0);
 
-        // Compact 2-column form
         var form = new Gtk.Grid ();
         form.column_spacing = 12;
         form.row_spacing = 8;
@@ -109,14 +108,13 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         form.valign = Gtk.Align.CENTER;
 
         form.attach (auto_sync_label,    0, 0, 1, 1);
-        form.attach (auto_sync_switch,   1, 0, 1, 1);
+        form.attach (auto_sync_check,    1, 0, 1, 1);
         form.attach (encrypt_label,      0, 1, 1, 1);
-        form.attach (encrypt_switch,     1, 1, 1, 1);
+        form.attach (encrypt_check,      1, 1, 1, 1);
         form.attach (sync_options_label, 0, 2, 1, 1);
         form.attach (sync_controls,      1, 2, 1, 1);
         form.attach (backup_box,         1, 3, 1, 1);
 
-        // Centers the form in remaining space above the storage bar
         var form_area = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
         form_area.hexpand = true;
         form_area.vexpand = true;
@@ -158,8 +156,8 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
 
         refresh_lists ();
 
-        auto_sync_switch.active = preferences.sync_when_mounted;
-        sync_music_switch.active = preferences.sync_music;
+        auto_sync_check.active = preferences.sync_when_mounted;
+        sync_music_check.active = preferences.sync_music;
 
         if (preferences.sync_all_music || preferences.music_playlist == null) {
             sync_music_combobox.set_active (0);
@@ -172,8 +170,8 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
             }
         }
 
-        auto_sync_switch.notify["active"].connect (save_preferences);
-        sync_music_switch.notify["active"].connect (save_preferences);
+        auto_sync_check.toggled.connect (save_preferences);
+        sync_music_check.toggled.connect (save_preferences);
         sync_music_combobox.changed.connect (save_preferences);
 
         sync_button.clicked.connect (sync_clicked);
@@ -203,7 +201,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         bool show = device.can_recover ();
 
         encrypt_label.visible = show;
-        encrypt_switch.visible = show;
+        encrypt_check.visible = show;
         backup_button.visible = show;
         restore_button.visible = show;
         backup_box.visible = show;
@@ -277,8 +275,8 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     }
 
     private void save_preferences () {
-        preferences.sync_when_mounted = auto_sync_switch.active;
-        preferences.sync_music = sync_music_switch.active;
+        preferences.sync_when_mounted = auto_sync_check.active;
+        preferences.sync_music = sync_music_check.active;
         preferences.sync_all_music = sync_music_combobox.get_active () == 0;
         Gtk.TreeIter iter;
         if (sync_music_combobox.get_active () - 2 >= 0) {
@@ -288,7 +286,7 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
             preferences.music_playlist = (Music.Playlist) value.dup_object ();
         }
 
-        sync_music_combobox.sensitive = sync_music_switch.active;
+        sync_music_combobox.sensitive = sync_music_check.active;
     }
 
     private void refresh_lists () {

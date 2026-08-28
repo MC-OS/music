@@ -1,0 +1,8 @@
+[Plugin]
+Module=android-device
+Loader=C
+Name=Android MTP device support
+Description=Detect and browse music on Android devices over MTP
+Authors=MC-OS
+Copyright=Copyright © 2026 MC-OS
+Website=https://github.com/MC-OS/music

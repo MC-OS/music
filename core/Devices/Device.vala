@@ -1,32 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*-
  * Copyright (c) 2012-2018 elementary LLC. (https://elementary.io)
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The Music authors hereby grant permission for non-GPL compatible
- * GStreamer plugins to be used and distributed together with GStreamer
- * and Music. This permission is above and beyond the permissions granted
- * by the GPL license by which Music is covered. If you modify this code
- * you may extend this exception to your version of the code, but you are not
- * obligated to do so. If you do not wish to do so, delete this exception
- * statement from your version.
- *
- * Authored by: Scott Ringwelski <sgringwe@mtu.edu>
- *              Corentin Noël <corentin@elementary.io>
  */
-
 
 public interface Music.Device : GLib.Object {
     public signal void initialized (Device d);
@@ -41,6 +16,13 @@ public interface Music.Device : GLib.Object {
     public abstract string get_empty_device_description ();
     public abstract void set_display_name (string name);
     public abstract string get_fancy_description ();
+    public abstract string get_serial_number ();
+    public abstract string get_imei ();
+    public abstract string get_model_identifier ();
+    public abstract int get_battery_percent ();
+    public abstract string get_os_version ();
+    public abstract string get_rom_name ();
+    public abstract string get_security_patch ();
     public abstract void set_mount (Mount mount);
     public abstract Mount? get_mount ();
     public abstract string get_uri ();
@@ -54,9 +36,58 @@ public interface Music.Device : GLib.Object {
     public abstract void eject ();
     public abstract void synchronize ();
     public abstract bool only_use_custom_view ();
-    public abstract Gtk.Widget? get_custom_view (); // If it's null, use the standard device view
+    public abstract Gtk.Widget? get_custom_view ();
     public abstract bool read_only ();
     public abstract Library get_library ();
+
+    public virtual GLib.Icon get_panel_icon () {
+        return get_icon ();
+    }
+
+    public virtual bool can_recover () {
+        return false;
+    }
+
+    public virtual string? get_last_backup_status () {
+        return null;
+    }
+
+    /** True when a dedicated backup encryption password is already stored. */
+    public virtual bool has_backup_password () {
+        return false;
+    }
+
+    /**
+     * Prompt to set or change the backup password.
+     * Plugins may later also offer “use system password” on Linux.
+     */
+    public virtual void configure_backup_password () {
+        infobar_message (
+            _("Backup password setup is not implemented for this device type yet."),
+            Gtk.MessageType.INFO
+        );
+    }
+
+    public virtual void reset_device () {
+        infobar_message (
+            _("Device reset is not implemented for this device type yet."),
+            Gtk.MessageType.INFO
+        );
+    }
+
+    public virtual void backup_device (bool encrypt) {
+        infobar_message (
+            _("Device backup is not implemented for this device type yet."),
+            Gtk.MessageType.INFO
+        );
+    }
+
+    public virtual void restore_device () {
+        infobar_message (
+            _("Device restore is not implemented for this device type yet."),
+            Gtk.MessageType.INFO
+        );
+    }
 
     public Gee.Collection<Music.Media> delete_doubles (Gee.Collection<Music.Media> source_list, Gee.Collection<Music.Media> to_remove) {
         var new_list = new Gee.LinkedList<Music.Media> ();
@@ -65,7 +96,7 @@ public interface Music.Device : GLib.Object {
                 bool needed = true;
                 foreach (var med in to_remove) {
                     if (med != null && med.title != null) {
-                        if (med.album != null && m.album != null) { // If you don't have the album name, don't care of it
+                        if (med.album != null && m.album != null) {
                             if (med.title.down () == m.title.down () && med.artist.down () == m.artist.down () && med.album.down () == m.album.down ()) {
                                 needed = false;
                                 break;

@@ -153,6 +153,34 @@ public class Music.Plugins.AudioPlayerDevice : GLib.Object, Music.Device {
 
     }
 
+    public string get_serial_number () {
+        return "";
+    }
+
+    public string get_imei () {
+        return "";
+    }
+
+    public string get_model_identifier () {
+        return "";
+    }
+
+    public int get_battery_percent () {
+        return -1;
+    }
+
+    public string get_os_version () {
+        return "";
+    }
+
+    public string get_rom_name () {
+        return "";
+    }
+
+    public string get_security_patch () {
+        return "";
+    }
+
     public string get_fancy_description () {
         if (is_androphone) {
             return _("Android Phone");

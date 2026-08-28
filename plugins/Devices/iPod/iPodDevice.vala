@@ -83,6 +83,34 @@ public class Music.Plugins.iPodDevice : GLib.Object, Music.Device { //vala-lint=
         return db.playlist_mpl ().name;
     }
 
+    public string get_serial_number () {
+        return "";
+    }
+
+    public string get_imei () {
+        return "";
+    }
+
+    public string get_model_identifier () {
+        return "";
+    }
+
+    public int get_battery_percent () {
+        return -1;
+    }
+
+    public string get_os_version () {
+        return "";
+    }
+
+    public string get_rom_name () {
+        return "";
+    }
+
+    public string get_security_patch () {
+        return "";
+    }
+
     public void set_display_name (string name) {
         db.playlist_mpl ().name = name;
         try {

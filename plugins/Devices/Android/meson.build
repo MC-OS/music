@@ -1,5 +1,8 @@
 Android_files = files(
   'Android.vala',
+  'AndroidDeviceManager.vala',
+  'AndroidDevice.vala',
+  'AndroidLibrary.vala',
   'MtpConsoleProbe.vala',
 )
 

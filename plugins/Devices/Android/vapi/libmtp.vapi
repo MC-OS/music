@@ -1,4 +1,4 @@
-/* Minimal libmtp bindings — names, storage, serial, version, battery. */
+/* libmtp bindings for native MTP console probe (info dump / rename later). */
 [CCode (cheader_filename = "libmtp.h", cprefix = "LIBMTP_", lower_case_cprefix = "LIBMTP_")]
 namespace Mtp {
 
@@ -9,6 +9,7 @@ namespace Mtp {
         public uint64 MaxCapacity;
         public uint64 FreeSpaceInBytes;
         public unowned string? StorageDescription;
+        public unowned string? VolumeIdentifier;
         public unowned Storage? next;
     }
 
@@ -41,13 +42,22 @@ namespace Mtp {
         [CCode (cname = "LIBMTP_Dump_Device_Info")]
         public void dump_device_info ();
 
-        /* Returns 0 on success; levels are 0–100 style on most devices */
+        [CCode (cname = "LIBMTP_Dump_Errorstack")]
+        public void dump_errorstack ();
+
+        [CCode (cname = "LIBMTP_Clear_Errorstack")]
+        public void clear_errorstack ();
+
+        /* Returns 0 on success */
         [CCode (cname = "LIBMTP_Get_Batterylevel")]
         public int get_battery_level (out uint8 maxlevel, out uint8 curlevel);
     }
 
     [CCode (cname = "LIBMTP_Init")]
     public static void init ();
+
+    [CCode (cname = "LIBMTP_Set_Debug")]
+    public static void set_debug (int level);
 
     [CCode (cname = "LIBMTP_Get_First_Device")]
     public static Device? get_first_device ();

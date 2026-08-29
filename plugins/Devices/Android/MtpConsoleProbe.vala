@@ -4,6 +4,8 @@
  * print identity/storage/battery to the terminal (stdout). No UI.
  */
 
+namespace Music.Plugins {
+
 public class MtpConsoleProbe : GLib.Object {
     private static bool lib_ready = false;
     private bool probing = false;
@@ -124,3 +126,5 @@ public class MtpConsoleProbe : GLib.Object {
         return GLib.format_size (bytes);
     }
 }
+
+} // namespace Music.Plugins

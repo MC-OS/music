@@ -19,7 +19,6 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
         }
 
         volume_monitor = VolumeMonitor.get ();
-        /* Only use volume/mount as a hint to try once — never after we own a session */
         volume_monitor.volume_added.connect (on_hint);
         volume_monitor.mount_added.connect (on_hint);
 
@@ -108,7 +107,7 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
             return;
         }
 
-        var raw = Mtp.get_first_device ();
+        unowned Mtp.Device? raw = Mtp.get_first_device ();
         if (raw == null) {
             print ("[MTP manager] No libmtp device\n");
             return;
@@ -125,7 +124,6 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
             return;
         }
 
-        /* Connect before finish so we cannot miss initialized; announce at most once */
         added.initialized.connect ((d) => {
             if (announced) {
                 return;

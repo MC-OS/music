@@ -1,8 +1,10 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Native MTP test: no device UI registration yet — only terminal dumps. */
 
+namespace Music.Plugins {
+
 public class AndroidPlugin : Peas.ExtensionBase, Peas.Activatable {
-    Music.Plugins.Interface plugins;
+    Interface plugins;
     public GLib.Object object { owned get; construct; }
 
     private MtpConsoleProbe? probe;
@@ -14,9 +16,9 @@ public class AndroidPlugin : Peas.ExtensionBase, Peas.Activatable {
 
         Value value = Value (typeof (GLib.Object));
         get_property ("object", ref value);
-        plugins = (Music.Plugins.Interface) value.get_object ();
+        plugins = (Interface) value.get_object ();
 
-        plugins.register_function (Music.Plugins.Interface.Hook.WINDOW, () => {
+        plugins.register_function (Interface.Hook.WINDOW, () => {
             probe = new MtpConsoleProbe ();
             volume_monitor = VolumeMonitor.get ();
 
@@ -74,9 +76,11 @@ public class AndroidPlugin : Peas.ExtensionBase, Peas.Activatable {
     }
 }
 
+} // namespace Music.Plugins
+
 [ModuleInit]
 public void peas_register_types (GLib.TypeModule module) {
     var objmodule = module as Peas.ObjectModule;
     objmodule.register_extension_type (typeof (Peas.Activatable),
-                                     typeof (AndroidPlugin));
+                                     typeof (Music.Plugins.AndroidPlugin));
 }

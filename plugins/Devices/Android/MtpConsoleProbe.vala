@@ -1,7 +1,7 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
  * Native MTP probe: try to free the device from GVFS, open with libmtp,
- * print every useful field to the terminal (stdout). No UI.
+ * print identity/storage/battery to the terminal (stdout). No UI.
  */
 
 namespace Music.Plugins {
@@ -28,7 +28,6 @@ public class MtpConsoleProbe : GLib.Object {
 
         release_gvfs_mtp_async.begin ((obj, res) => {
             release_gvfs_mtp_async.end (res);
-            /* Brief settle after unmount */
             Timeout.add (500, () => {
                 open_and_dump ();
                 probing = false;
@@ -63,7 +62,7 @@ public class MtpConsoleProbe : GLib.Object {
     }
 
     private void open_and_dump () {
-        var device = Mtp.get_first_device ();
+        Mtp.Device? device = Mtp.get_first_device ();
         if (device == null) {
             print ("[MTP probe] LIBMTP_Get_First_Device returned NULL.\n");
             print ("[MTP probe] Usual cause: GVFS/KIO still owns USB, or phone not in file-transfer mode.\n");
@@ -73,11 +72,17 @@ public class MtpConsoleProbe : GLib.Object {
 
         print ("[MTP probe] Device session opened.\n");
 
-        print ("  Friendly name : %s\n", device.get_friendly_name () ?? "(null)");
-        print ("  Manufacturer  : %s\n", device.get_manufacturer_name () ?? "(null)");
-        print ("  Model         : %s\n", device.get_model_name () ?? "(null)");
-        print ("  Serial        : %s\n", device.get_serial_number () ?? "(null)");
-        print ("  Device version: %s\n", device.get_device_version () ?? "(null)");
+        unowned string? friendly = device.get_friendly_name ();
+        unowned string? mfr = device.get_manufacturer_name ();
+        unowned string? model = device.get_model_name ();
+        unowned string? serial = device.get_serial_number ();
+        unowned string? version = device.get_device_version ();
+
+        print ("  Friendly name : %s\n", (friendly != null && friendly.length > 0) ? friendly : "(empty)");
+        print ("  Manufacturer  : %s\n", mfr ?? "(null)");
+        print ("  Model         : %s\n", model ?? "(null)");
+        print ("  Serial        : %s\n", serial ?? "(null)");
+        print ("  Device version: %s\n", version ?? "(null)");
 
         uint8 max_level = 0;
         uint8 cur_level = 0;
@@ -90,8 +95,6 @@ public class MtpConsoleProbe : GLib.Object {
             print ("\n");
         } else {
             print ("  Battery       : (unsupported or error)\n");
-            device.dump_errorstack ();
-            device.clear_errorstack ();
         }
 
         if (device.get_storage (0) == 0 && device.storage != null) {
@@ -111,15 +114,12 @@ public class MtpConsoleProbe : GLib.Object {
             }
         } else {
             print ("  Storage       : (none / get_storage failed)\n");
-            device.dump_errorstack ();
-            device.clear_errorstack ();
         }
 
-        print ("--- libmtp Dump_Device_Info ---\n");
-        device.dump_device_info ();
-        print ("--- end Dump_Device_Info ---\n");
+        /* Skip Dump_Device_Info — huge and not needed for identity/storage tests */
 
         Mtp.release_device (device);
+        device = null;
         print ("[MTP probe] Session released.\n");
         print ("========== end probe ==========\n\n");
     }

@@ -50,6 +50,64 @@ namespace Mtp {
 
         [CCode (cname = "LIBMTP_Get_Batterylevel")]
         public int get_battery_level (out uint8 maxlevel, out uint8 curlevel);
+
+        /* File listing: requires an uncached device session. */
+        [CCode (cname = "LIBMTP_Get_Files_And_Folders")]
+        public unowned File? get_files_and_folders (uint32 storage_id, uint32 parent_id);
+    }
+
+    /* MTP file / folder entry. Strings are libmtp-owned; copy before use. */
+    [CCode (cname = "LIBMTP_file_t", free_function = "LIBMTP_destroy_file_t", has_type_id = false, copy_function = "")]
+    [Compact]
+    public class File {
+        public uint32 item_id;
+        public uint32 parent_id;
+        public uint32 storage_id;
+        public unowned string? filename;
+        public uint64 filesize;
+        public ulong modificationdate;
+        public Filetype filetype;
+        public unowned File? next;
+    }
+
+    [CCode (cname = "LIBMTP_destroy_file_t")]
+    public static void destroy_file_t (File file);
+
+    [CCode (cname = "LIBMTP_FILES_AND_FOLDERS_ROOT")]
+    public const uint32 FILES_AND_FOLDERS_ROOT;
+
+    [CCode (cname = "LIBMTP_filetype_t", cprefix = "LIBMTP_FILETYPE_", has_type_id = false)]
+    public enum Filetype {
+        FOLDER,
+        WAV,
+        MP3,
+        MPEG,
+        WMA,
+        OGG,
+        AUDIBLE,
+        MP4,
+        UNDEF_AUDIO,
+        WMV,
+        AVI,
+        ASF,
+        QT,
+        UNDEF_VIDEO,
+        JPEG,
+        JFIF,
+        TIFF,
+        BMP,
+        GIF,
+        PNG,
+        JP2,
+        JPX,
+        MHT,
+        WPL_PLAYLIST,
+        M3U_PLAYLIST,
+        PLS_PLAYLIST,
+        XML_DOCUMENT,
+        FLAC,
+        DNG,
+        UNKNOWN
     }
 
     [CCode (cname = "LIBMTP_Init")]

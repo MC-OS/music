@@ -4,8 +4,6 @@
  * print identity/storage/battery to the terminal (stdout). No UI.
  */
 
-namespace Music.Plugins {
-
 public class MtpConsoleProbe : GLib.Object {
     private static bool lib_ready = false;
     private bool probing = false;
@@ -116,8 +114,6 @@ public class MtpConsoleProbe : GLib.Object {
             print ("  Storage       : (none / get_storage failed)\n");
         }
 
-        /* Skip Dump_Device_Info — huge and not needed for identity/storage tests */
-
         Mtp.release_device (device);
         device = null;
         print ("[MTP probe] Session released.\n");
@@ -127,6 +123,4 @@ public class MtpConsoleProbe : GLib.Object {
     private static string format_size (uint64 bytes) {
         return GLib.format_size (bytes);
     }
-}
-
 }

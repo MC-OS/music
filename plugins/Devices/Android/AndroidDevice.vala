@@ -6,7 +6,10 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     private GLib.Icon icon;
     private AndroidLibrary library;
 
+    /* User-facing name from Android (MTP Friendly Device Name) */
     private string friendly = "";
+    /* GVFS/volume label captured before unmount (often the Android device name) */
+    private string system_label = "";
     private string manufacturer = "";
     private string model = "";
     private string serial = "";
@@ -18,15 +21,51 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
 
     public bool is_supported = true;
 
-    public AndroidDevice (unowned Mtp.Device device) {
+    public AndroidDevice (unowned Mtp.Device device, string? system_device_label = null) {
         mtp = device;
         icon = new GLib.ThemedIcon ("phone");
         uri_id = "mtp-native://session";
+
+        if (system_device_label != null) {
+            system_label = clean_label (system_device_label);
+        }
 
         refresh_from_mtp ();
 
         library = new AndroidLibrary (this);
         libraries_manager.add_library (library);
+    }
+
+    private static bool is_generic_label (string name) {
+        var n = name.strip ().down ();
+        if (n.length == 0) {
+            return true;
+        }
+        return n == "mtp"
+            || n == "mtp device"
+            || n == "android"
+            || n == "android device"
+            || n == "android mtp device"
+            || n.has_prefix ("mtp://")
+            || n.has_prefix ("usb");
+    }
+
+    private static string clean_label (string name) {
+        var t = name.strip ();
+        /* mtp://SAMSUNG_Samsung_Galaxy_Tab_E_xxxx → try last path-ish segment */
+        if ("mtp://" in t || "gphoto2://" in t) {
+            try {
+                var f = File.new_for_uri (t);
+                var parse = f.get_parse_name () ?? t;
+                var parts = parse.split ("/");
+                if (parts.length > 0) {
+                    t = parts[parts.length - 1];
+                }
+            } catch (Error e) {
+            }
+        }
+        t = t.replace ("_", " ").strip ();
+        return t;
     }
 
     private void refresh_from_mtp () {
@@ -37,16 +76,18 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
 
         unowned string? s;
         s = d.get_friendly_name ();
-        if (s != null && s.length > 0) {
-            friendly = s;
+        if (s != null && s.strip ().length > 0) {
+            friendly = s.strip ();
         }
+        print ("[MTP] Friendly Device Name (Android): '%s'\n", friendly.length > 0 ? friendly : "(not set)");
+
         s = d.get_manufacturer_name ();
         if (s != null) {
-            manufacturer = s;
+            manufacturer = s.strip ();
         }
         s = d.get_model_name ();
         if (s != null) {
-            model = s;
+            model = s.strip ();
         }
         s = d.get_serial_number ();
         if (s != null && s.length > 0) {
@@ -55,7 +96,7 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         }
         s = d.get_device_version ();
         if (s != null) {
-            device_version = s;
+            device_version = s.strip ();
         }
 
         uint8 max_level = 0;
@@ -118,13 +159,16 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     }
 
     public string get_display_name () {
-        if (friendly.length > 0) {
+        /* 1) Name set on the phone (MTP Friendly Device Name) */
+        if (friendly.length > 0 && !is_generic_label (friendly)) {
             return friendly;
         }
+        /* 2) System/volume label (often mirrors Android device name) */
+        if (system_label.length > 0 && !is_generic_label (system_label)) {
+            return system_label;
+        }
+        /* 3) Last resort: model — not preferred */
         if (model.length > 0) {
-            if (manufacturer.length > 0 && !model.down ().contains (manufacturer.down ())) {
-                return "%s %s".printf (manufacturer, model);
-            }
             return model;
         }
         return _("Android MTP device");

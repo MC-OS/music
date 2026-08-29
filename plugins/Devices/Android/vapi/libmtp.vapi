@@ -13,28 +13,30 @@ namespace Mtp {
         public unowned Storage? next;
     }
 
-    [CCode (cname = "LIBMTP_mtpdevice_t", free_function = "LIBMTP_Release_Device", unref_function = "", has_type_id = false)]
+    /* free_function empty: caller must LIBMTP_Release_Device exactly once */
+    [CCode (cname = "LIBMTP_mtpdevice_t", free_function = "", unref_function = "", has_type_id = false)]
     [Compact]
     public class Device {
         public unowned Storage? storage;
 
+        /* libmtp returns malloc() strings — treat as unowned; do not g_free */
         [CCode (cname = "LIBMTP_Get_Friendlyname")]
-        public string? get_friendly_name ();
+        public unowned string? get_friendly_name ();
 
         [CCode (cname = "LIBMTP_Set_Friendlyname")]
         public int set_friendly_name (string name);
 
         [CCode (cname = "LIBMTP_Get_Modelname")]
-        public string? get_model_name ();
+        public unowned string? get_model_name ();
 
         [CCode (cname = "LIBMTP_Get_Manufacturername")]
-        public string? get_manufacturer_name ();
+        public unowned string? get_manufacturer_name ();
 
         [CCode (cname = "LIBMTP_Get_Serialnumber")]
-        public string? get_serial_number ();
+        public unowned string? get_serial_number ();
 
         [CCode (cname = "LIBMTP_Get_Deviceversion")]
-        public string? get_device_version ();
+        public unowned string? get_device_version ();
 
         [CCode (cname = "LIBMTP_Get_Storage")]
         public int get_storage (int sortby);
@@ -48,7 +50,6 @@ namespace Mtp {
         [CCode (cname = "LIBMTP_Clear_Errorstack")]
         public void clear_errorstack ();
 
-        /* Returns 0 on success */
         [CCode (cname = "LIBMTP_Get_Batterylevel")]
         public int get_battery_level (out uint8 maxlevel, out uint8 curlevel);
     }
@@ -64,4 +65,7 @@ namespace Mtp {
 
     [CCode (cname = "LIBMTP_Release_Device")]
     public static void release_device (Device device);
+
+    [CCode (cname = "LIBMTP_FreeMemory")]
+    public static void free_memory (void* ptr);
 }

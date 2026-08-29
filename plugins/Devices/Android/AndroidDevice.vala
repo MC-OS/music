@@ -2,7 +2,8 @@
 /* Music.Device for a native libmtp session (no GVFS mount required). */
 
 public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
-    private Mtp.Device? mtp;
+    /* Compact libmtp handle — do not own/copy; release with LIBMTP_Release_Device once */
+    private unowned Mtp.Device? mtp;
     private GLib.Icon icon;
     private AndroidLibrary library;
 
@@ -30,43 +31,44 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     }
 
     private void refresh_from_mtp () {
-        if (mtp == null) {
+        unowned Mtp.Device? d = mtp;
+        if (d == null) {
             return;
         }
 
         unowned string? s;
-        s = mtp.get_friendly_name ();
+        s = d.get_friendly_name ();
         if (s != null && s.length > 0) {
             friendly = s;
         }
-        s = mtp.get_manufacturer_name ();
+        s = d.get_manufacturer_name ();
         if (s != null) {
             manufacturer = s;
         }
-        s = mtp.get_model_name ();
+        s = d.get_model_name ();
         if (s != null) {
             model = s;
         }
-        s = mtp.get_serial_number ();
+        s = d.get_serial_number ();
         if (s != null && s.length > 0) {
             serial = s;
             uri_id = "mtp-native://%s".printf (serial);
         }
-        s = mtp.get_device_version ();
+        s = d.get_device_version ();
         if (s != null) {
             device_version = s;
         }
 
         uint8 max_level = 0;
         uint8 cur_level = 0;
-        if (mtp.get_battery_level (out max_level, out cur_level) == 0 && max_level > 0) {
+        if (d.get_battery_level (out max_level, out cur_level) == 0 && max_level > 0) {
             battery = (int) ((cur_level * 100) / max_level);
         }
 
         capacity = 0;
         free_space = 0;
-        if (mtp.get_storage (0) == 0 && mtp.storage != null) {
-            unowned Mtp.Storage? store = mtp.storage;
+        if (d.get_storage (0) == 0 && d.storage != null) {
+            unowned Mtp.Storage? store = d.storage;
             while (store != null) {
                 var desc = (store.StorageDescription ?? "").down ();
                 bool external = desc.contains ("sd") || desc.contains ("card")
@@ -77,17 +79,18 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
                 }
                 store = store.next;
             }
-            if (capacity == 0 && mtp.storage != null) {
-                capacity = mtp.storage.MaxCapacity;
-                free_space = mtp.storage.FreeSpaceInBytes;
+            if (capacity == 0 && d.storage != null) {
+                capacity = d.storage.MaxCapacity;
+                free_space = d.storage.FreeSpaceInBytes;
             }
         }
     }
 
     public void release_mtp () {
-        if (mtp != null) {
-            Mtp.release_device (mtp);
+        unowned Mtp.Device? d = mtp;
+        if (d != null) {
             mtp = null;
+            Mtp.release_device (d);
         }
     }
 
@@ -129,10 +132,11 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     }
 
     public void set_display_name (string name) {
-        if (mtp == null) {
+        unowned Mtp.Device? d = mtp;
+        if (d == null) {
             return;
         }
-        if (mtp.set_friendly_name (name) == 0) {
+        if (d.set_friendly_name (name) == 0) {
             friendly = name;
             DeviceManager.get_default ().device_name_changed (this);
             print ("[MTP] Friendly name set to: %s\n", name);

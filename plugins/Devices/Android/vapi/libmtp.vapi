@@ -1,8 +1,8 @@
-/* libmtp bindings for native MTP console probe (info dump / rename later). */
+/* libmtp bindings — compact handles, no Vala ownership transfer */
 [CCode (cheader_filename = "libmtp.h", cprefix = "LIBMTP_", lower_case_cprefix = "LIBMTP_")]
 namespace Mtp {
 
-    [CCode (cname = "LIBMTP_devicestorage_t", free_function = "", unref_function = "", has_type_id = false)]
+    [CCode (cname = "LIBMTP_devicestorage_t", free_function = "", unref_function = "", has_type_id = false, copy_function = "")]
     [Compact]
     public class Storage {
         public uint32 id;
@@ -13,13 +13,11 @@ namespace Mtp {
         public unowned Storage? next;
     }
 
-    /* free_function empty: caller must LIBMTP_Release_Device exactly once */
-    [CCode (cname = "LIBMTP_mtpdevice_t", free_function = "", unref_function = "", has_type_id = false)]
+    [CCode (cname = "LIBMTP_mtpdevice_t", free_function = "", unref_function = "", has_type_id = false, copy_function = "")]
     [Compact]
     public class Device {
         public unowned Storage? storage;
 
-        /* libmtp returns malloc() strings — treat as unowned; do not g_free */
         [CCode (cname = "LIBMTP_Get_Friendlyname")]
         public unowned string? get_friendly_name ();
 
@@ -60,12 +58,10 @@ namespace Mtp {
     [CCode (cname = "LIBMTP_Set_Debug")]
     public static void set_debug (int level);
 
+    /* Returned pointer is managed only via release_device() */
     [CCode (cname = "LIBMTP_Get_First_Device")]
-    public static Device? get_first_device ();
+    public static unowned Device? get_first_device ();
 
     [CCode (cname = "LIBMTP_Release_Device")]
-    public static void release_device (Device device);
-
-    [CCode (cname = "LIBMTP_FreeMemory")]
-    public static void free_memory (void* ptr);
+    public static void release_device ([CCode (destroy_notify_pos = -1)] Device device);
 }

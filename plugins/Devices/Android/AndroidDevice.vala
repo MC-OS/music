@@ -2,7 +2,6 @@
 /* Music.Device for a native libmtp session (no GVFS mount required). */
 
 public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
-    /* Compact libmtp handle — do not own/copy; release with LIBMTP_Release_Device once */
     private unowned Mtp.Device? mtp;
     private GLib.Icon icon;
     private AndroidLibrary library;
@@ -19,8 +18,8 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
 
     public bool is_supported = true;
 
-    public AndroidDevice (Mtp.Device device) {
-        this.mtp = device;
+    public AndroidDevice (unowned Mtp.Device device) {
+        mtp = device;
         icon = new GLib.ThemedIcon ("phone");
         uri_id = "mtp-native://session";
 

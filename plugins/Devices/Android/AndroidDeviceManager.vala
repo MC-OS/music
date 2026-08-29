@@ -175,4 +175,19 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
 
         added.finish_initialization ();
     }
+
+    /*
+     * Called when the device is ejected/unplugged: drop it from our list and
+     * re-arm scanning so a replug is detected. DeviceManager.device_removed is
+     * fired by AndroidDevice.release_mtp() itself.
+     */
+    public void on_device_gone (AndroidDevice dev) {
+        if (!devices.remove (dev)) {
+            return;
+        }
+        announced = false;
+        busy = false;
+        pending_label = null;
+        schedule_scan ("replug");
+    }
 }

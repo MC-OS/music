@@ -126,11 +126,17 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         }
     }
 
+    /* Drop the libmtp session and tell DeviceManager to remove us from the sidebar. */
     public void release_mtp () {
         unowned Mtp.Device? d = mtp;
         if (d != null) {
             mtp = null;
             Mtp.release_device (d);
+            print ("[MTP] Session released for %s\n", get_display_name ());
+        }
+        try {
+            DeviceManager.get_default ().device_removed ((Music.Device) this);
+        } catch (Error e) {
         }
     }
 
@@ -264,6 +270,7 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         return free_space;
     }
 
+    /* Eject / unmount: release the libmtp session and remove from the sidebar. */
     public void unmount () {
         release_mtp ();
     }

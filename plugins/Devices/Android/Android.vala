@@ -1,76 +1,32 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
-/* Native MTP test: no device UI registration yet — only terminal dumps. */
+/* Native MTP: device manager registers AndroidDevice with the player. */
 
 public class Music.Plugins.AndroidPlugin : Peas.ExtensionBase, Peas.Activatable {
     Music.Plugins.Interface plugins;
     public GLib.Object object { owned get; construct; }
 
-    private Music.Plugins.MtpConsoleProbe? probe;
-    private VolumeMonitor? volume_monitor;
-    private uint idle_probe_id = 0;
+    private AndroidDeviceManager? android_manager;
 
     public void activate () {
-        message ("Activating Android MTP plugin (native console probe)");
+        message ("Activating Android MTP plugin (native)");
 
         Value value = Value (typeof (GLib.Object));
         get_property ("object", ref value);
         plugins = (Music.Plugins.Interface) value.get_object ();
 
         plugins.register_function (Music.Plugins.Interface.Hook.WINDOW, () => {
-            probe = new Music.Plugins.MtpConsoleProbe ();
-            volume_monitor = VolumeMonitor.get ();
-
-            volume_monitor.volume_added.connect (on_volume_event);
-            volume_monitor.mount_added.connect (on_mount_event);
-
-            schedule_probe ("startup");
+            android_manager = new AndroidDeviceManager ();
         });
     }
 
     public void deactivate () {
-        if (idle_probe_id != 0) {
-            Source.remove (idle_probe_id);
-            idle_probe_id = 0;
+        if (android_manager != null) {
+            android_manager.remove_all ();
+            android_manager = null;
         }
-
-        if (volume_monitor != null) {
-            volume_monitor.volume_added.disconnect (on_volume_event);
-            volume_monitor.mount_added.disconnect (on_mount_event);
-            volume_monitor = null;
-        }
-
-        probe = null;
     }
 
     public void update_state () {
-    }
-
-    private void on_volume_event (Volume volume) {
-        schedule_probe ("volume_added: %s".printf (volume.get_name () ?? "?"));
-    }
-
-    private void on_mount_event (Mount mount) {
-        schedule_probe ("mount_added: %s".printf (mount.get_name () ?? "?"));
-    }
-
-    private void schedule_probe (string reason) {
-        if (probe == null) {
-            return;
-        }
-
-        if (idle_probe_id != 0) {
-            Source.remove (idle_probe_id);
-        }
-
-        var r = reason;
-        idle_probe_id = Timeout.add (600, () => {
-            idle_probe_id = 0;
-            if (probe != null) {
-                probe.probe_now (r);
-            }
-
-            return false;
-        });
     }
 }
 

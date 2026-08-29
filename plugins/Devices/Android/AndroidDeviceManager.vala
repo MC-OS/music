@@ -7,6 +7,7 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
     private bool busy = false;
     private bool announced = false;
     private uint scan_id = 0;
+    private string? pending_label = null;
     private static bool lib_ready = false;
 
     public AndroidDeviceManager () {
@@ -46,6 +47,7 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
         devices.clear ();
         announced = false;
         busy = false;
+        pending_label = null;
     }
 
     private void schedule_scan (string reason) {
@@ -65,7 +67,31 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
         });
     }
 
+    private string? pick_label (Mount mount) {
+        var name = mount.get_name ();
+        if (name != null && name.strip ().length > 0) {
+            return name.strip ();
+        }
+        var volume = mount.get_volume ();
+        if (volume != null) {
+            var vn = volume.get_name ();
+            if (vn != null && vn.strip ().length > 0) {
+                return vn.strip ();
+            }
+            var drive = volume.get_drive ();
+            if (drive != null) {
+                var dn = drive.get_name ();
+                if (dn != null && dn.strip ().length > 0) {
+                    return dn.strip ();
+                }
+            }
+        }
+        return null;
+    }
+
     private async void release_gvfs_mtp () {
+        pending_label = null;
+
         foreach (var mount in volume_monitor.get_mounts ()) {
             var root = mount.get_default_location ();
             if (root == null) {
@@ -75,6 +101,14 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
             if (!uri.has_prefix ("mtp://") && !uri.has_prefix ("gphoto2://")) {
                 continue;
             }
+
+            if (pending_label == null) {
+                pending_label = pick_label (mount);
+                if (pending_label != null) {
+                    print ("[MTP manager] System/Android label: %s\n", pending_label);
+                }
+            }
+
             print ("[MTP manager] Unmounting %s\n", uri);
             try {
                 yield mount.unmount_with_operation (MountUnmountFlags.NONE, null, null);
@@ -115,7 +149,7 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
 
         print ("[MTP manager] Session opened — registering device\n");
 
-        var added = new AndroidDevice (raw);
+        var added = new AndroidDevice (raw, pending_label);
         devices.add (added);
 
         if (!added.start_initialization ()) {

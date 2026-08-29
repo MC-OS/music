@@ -13,16 +13,35 @@ public class MtpConsoleProbe : GLib.Object {
     public MtpConsoleProbe () {
         if (!lib_ready) {
             Mtp.init ();
-            /* 0 = off; raise if you need libmtp's own noise */
             Mtp.set_debug (0);
             lib_ready = true;
         }
     }
 
-    /** Best-effort: unmount MTP so libmtp can claim USB. */
-    public void release_gvfs_mtp () {
+    public void probe_now (string reason) {
+        if (probing) {
+            return;
+        }
+
+        probing = true;
+        print ("\n========== MTP native probe (%s) ==========\n", reason);
+
+        release_gvfs_mtp_async.begin ((obj, res) => {
+            release_gvfs_mtp_async.end (res);
+            /* Brief settle after unmount */
+            Timeout.add (500, () => {
+                open_and_dump ();
+                probing = false;
+                return false;
+            });
+        });
+    }
+
+    private async void release_gvfs_mtp_async () {
         var vm = VolumeMonitor.get ();
-        foreach (var mount in vm.get_mounts ()) {
+        var mounts = vm.get_mounts ();
+
+        foreach (var mount in mounts) {
             var root = mount.get_default_location ();
             if (root == null) {
                 continue;
@@ -35,29 +54,12 @@ public class MtpConsoleProbe : GLib.Object {
 
             print ("[MTP probe] Unmounting GVFS: %s\n", uri);
             try {
-                mount.unmount_with_operation (MountUnmountFlags.NONE, null, null);
+                yield mount.unmount_with_operation (MountUnmountFlags.NONE, null, null);
+                print ("[MTP probe] Unmounted OK\n");
             } catch (Error e) {
                 print ("[MTP probe] Unmount failed: %s\n", e.message);
             }
         }
-    }
-
-    public void probe_now (string reason) {
-        if (probing) {
-            return;
-        }
-
-        probing = true;
-        print ("\n========== MTP native probe (%s) ==========\n", reason);
-
-        release_gvfs_mtp ();
-
-        /* Give GVFS a moment to drop the interface */
-        Timeout.add (400, () => {
-            open_and_dump ();
-            probing = false;
-            return false;
-        });
     }
 
     private void open_and_dump () {

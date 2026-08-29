@@ -1,10 +1,12 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
-/* Discover via libmtp (after releasing GVFS), register AndroidDevice. */
+/* Discover via libmtp (after releasing GVFS), register at most one AndroidDevice. */
 
 public class Music.Plugins.AndroidDeviceManager : GLib.Object {
     private Gee.ArrayList<AndroidDevice> devices;
     private VolumeMonitor volume_monitor;
     private bool busy = false;
+    private bool announced = false;
+    private uint scan_id = 0;
     private static bool lib_ready = false;
 
     public AndroidDeviceManager () {
@@ -17,27 +19,45 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
         }
 
         volume_monitor = VolumeMonitor.get ();
-        volume_monitor.volume_added.connect (() => { schedule_scan ("volume_added"); });
-        volume_monitor.mount_added.connect (() => { schedule_scan ("mount_added"); });
+        /* Only use volume/mount as a hint to try once — never after we own a session */
+        volume_monitor.volume_added.connect (on_hint);
+        volume_monitor.mount_added.connect (on_hint);
 
         schedule_scan ("startup");
     }
 
+    private void on_hint () {
+        if (devices.size > 0 || busy || announced) {
+            return;
+        }
+        schedule_scan ("hotplug");
+    }
+
     public void remove_all () {
+        if (scan_id != 0) {
+            Source.remove (scan_id);
+            scan_id = 0;
+        }
+
         var dm = DeviceManager.get_default ();
         foreach (var dev in devices) {
             dev.release_mtp ();
             dm.device_removed ((Music.Device) dev);
         }
         devices.clear ();
+        announced = false;
+        busy = false;
     }
 
-    private uint scan_id = 0;
-
     private void schedule_scan (string reason) {
+        if (devices.size > 0 || busy || announced) {
+            return;
+        }
+
         if (scan_id != 0) {
             Source.remove (scan_id);
         }
+
         var r = reason;
         scan_id = Timeout.add (700, () => {
             scan_id = 0;
@@ -66,10 +86,7 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
     }
 
     private void try_open_native (string reason) {
-        if (busy) {
-            return;
-        }
-        if (devices.size > 0) {
+        if (busy || devices.size > 0 || announced) {
             return;
         }
 
@@ -87,7 +104,7 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
     }
 
     private void open_session () {
-        if (devices.size > 0) {
+        if (devices.size > 0 || announced) {
             return;
         }
 
@@ -108,13 +125,22 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
             return;
         }
 
-        added.finish_initialization ();
+        /* Connect before finish so we cannot miss initialized; announce at most once */
         added.initialized.connect ((d) => {
-            var android = (AndroidDevice) d;
-            if (android.is_supported) {
-                print ("[MTP manager] Ready: %s\n", android.get_display_name ());
-                DeviceManager.get_default ().device_initialized ((Music.Device) d);
+            if (announced) {
+                return;
             }
+            announced = true;
+
+            var android = (AndroidDevice) d;
+            if (!android.is_supported) {
+                return;
+            }
+
+            print ("[MTP manager] Ready: %s\n", android.get_display_name ());
+            DeviceManager.get_default ().device_initialized ((Music.Device) d);
         });
+
+        added.finish_initialization ();
     }
 }

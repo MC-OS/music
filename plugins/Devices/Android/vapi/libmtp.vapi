@@ -121,5 +121,5 @@ namespace Mtp {
     public static unowned Device? get_first_device ();
 
     [CCode (cname = "LIBMTP_Release_Device")]
-    public static void release_device ([CCode (destroy_notify_pos = -1)] Device device);
+    public static void release_device (unowned Device device);
 }

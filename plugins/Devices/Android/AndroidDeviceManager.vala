@@ -1,5 +1,5 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
-/* Discover via libmtp (after releasing GVFS), register at most one AndroidDevice. */
+/* Discover via libmtp (uncached) so file listing works, register at most one AndroidDevice. */
 
 public class Music.Plugins.AndroidDeviceManager : GLib.Object {
     private Gee.ArrayList<AndroidDevice> devices;
@@ -129,25 +129,36 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
         release_gvfs_mtp.begin ((obj, res) => {
             release_gvfs_mtp.end (res);
             Timeout.add (500, () => {
-                open_session ();
+                open_session_uncached ();
                 busy = false;
                 return false;
             });
         });
     }
 
-    private void open_session () {
+    /*
+     * Open via Detect_Raw_Devices + Open_Raw_Device_Uncached so
+     * Get_Files_And_Folders works (cached sessions reject file listing).
+     */
+    private void open_session_uncached () {
         if (devices.size > 0 || announced) {
             return;
         }
 
-        unowned Mtp.Device? raw = Mtp.get_first_device ();
-        if (raw == null) {
-            print ("[MTP manager] No libmtp device\n");
+        unowned Mtp.RawDevice[]? rawdevs = null;
+        int numdevs = 0;
+        if (Mtp.Device.detect_raw_devices (out rawdevs, out numdevs) != 0 || numdevs <= 0 || rawdevs == null) {
+            print ("[MTP manager] No raw MTP device detected\n");
             return;
         }
 
-        print ("[MTP manager] Session opened — registering device\n");
+        unowned Mtp.Device? raw = Mtp.Device.open_raw_device_uncached (rawdevs[0]);
+        if (raw == null) {
+            print ("[MTP manager] Open_Raw_Device_Uncached failed\n");
+            return;
+        }
+
+        print ("[MTP manager] Uncached session opened — registering device\n");
 
         var added = new AndroidDevice (raw, pending_label);
         devices.add (added);

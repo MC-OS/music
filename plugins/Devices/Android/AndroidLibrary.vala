@@ -163,13 +163,14 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
         media.file_size = file.filesize;
         media.last_modified = (uint) file.modificationdate;
 
-        /* Copy the libmtp-owned string before string methods. */
-        string base = file.filename;
-        int dot = base.last_index_of_char ('.');
+        /* Copy the libmtp-owned string before string methods.
+         * Do NOT name this variable "base" — that is a Vala keyword for the parent class. */
+        string basename = file.filename;
+        int dot = basename.last_index_of_char ('.');
         if (dot > 0) {
-            base = base.substring (0, dot);
+            basename = basename.substring (0, dot);
         }
-        media.title = base;
+        media.title = basename;
 
         return media;
     }

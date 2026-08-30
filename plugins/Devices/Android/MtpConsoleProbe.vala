@@ -90,7 +90,7 @@ public class Music.Plugins.MtpConsoleProbe : GLib.Object {
                 dump_folder (device, storage_id, file.item_id, depth + 1);
             }
 
-            var next = file.next;
+            unowned Mtp.File? next = file.next;
             Mtp.destroy_file_t (file);
             file = next;
         }
@@ -117,7 +117,7 @@ public class Music.Plugins.MtpConsoleProbe : GLib.Object {
             print ("  Battery       : (unavailable)\n");
         }
 
-        var store = pick_internal_storage (device);
+        unowned Mtp.Storage? store = pick_internal_storage (device);
         if (store == null) {
             print ("  Storage       : (none reported)\n");
         } else {

@@ -54,6 +54,21 @@ namespace Mtp {
         /* File listing: requires an uncached device session. */
         [CCode (cname = "LIBMTP_Get_Files_And_Folders")]
         public unowned File? get_files_and_folders (uint32 storage_id, uint32 parent_id);
+
+        [CCode (cname = "LIBMTP_Detect_Raw_Devices")]
+        public static int detect_raw_devices (out unowned RawDevice[]? devices, out int numdevs);
+
+        [CCode (cname = "LIBMTP_Open_Raw_Device_Uncached")]
+        public static unowned Device? open_raw_device_uncached (RawDevice raw);
+    }
+
+    [CCode (cname = "LIBMTP_raw_device_t", has_type_id = false, copy_function = "")]
+    public struct RawDevice {
+        public uint32 bus_location;
+        public uint8 devnum;
+        public uint16 vendor;
+        public uint16 product_id;
+        public uint32 device_flags;
     }
 
     /* MTP file / folder entry. Strings are libmtp-owned; copy before use. */
@@ -116,7 +131,7 @@ namespace Mtp {
     [CCode (cname = "LIBMTP_Set_Debug")]
     public static void set_debug (int level);
 
-    /* Returned pointer is managed only via release_device() */
+    /* Cached session — do NOT use when you need Get_Files_And_Folders */
     [CCode (cname = "LIBMTP_Get_First_Device")]
     public static unowned Device? get_first_device ();
 

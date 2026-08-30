@@ -18,6 +18,7 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     private uint64 capacity = 0;
     private uint64 free_space = 0;
     private string uri_id;
+    private uint32 internal_storage_id = 0;
 
     public bool is_supported = true;
 
@@ -107,6 +108,7 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
 
         capacity = 0;
         free_space = 0;
+        internal_storage_id = 0;
         if (d.get_storage (0) == 0 && d.storage != null) {
             unowned Mtp.Storage? store = d.storage;
             while (store != null) {
@@ -116,12 +118,14 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
                 if (!external && store.MaxCapacity > capacity) {
                     capacity = store.MaxCapacity;
                     free_space = store.FreeSpaceInBytes;
+                    internal_storage_id = store.id;
                 }
                 store = store.next;
             }
             if (capacity == 0 && d.storage != null) {
                 capacity = d.storage.MaxCapacity;
                 free_space = d.storage.FreeSpaceInBytes;
+                internal_storage_id = d.storage.id;
             }
         }
     }
@@ -138,6 +142,14 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
             DeviceManager.get_default ().device_removed ((Music.Device) this);
         } catch (Error e) {
         }
+    }
+
+    public unowned Mtp.Device? get_mtp_device () {
+        return mtp;
+    }
+
+    public uint32 get_internal_storage_id () {
+        return internal_storage_id;
     }
 
     public bool start_initialization () {

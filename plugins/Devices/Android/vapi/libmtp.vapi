@@ -55,8 +55,13 @@ namespace Mtp {
         [CCode (cname = "LIBMTP_Get_Files_And_Folders")]
         public unowned File? get_files_and_folders (uint32 storage_id, uint32 parent_id);
 
+        /*
+         * Bind as pointer (not Vala array) so the C call stays
+         * LIBMTP_Detect_Raw_Devices(LIBMTP_raw_device_t **, int *)
+         * and does not gain an extra length argument.
+         */
         [CCode (cname = "LIBMTP_Detect_Raw_Devices")]
-        public static int detect_raw_devices (out unowned RawDevice[]? devices, out int numdevs);
+        public static int detect_raw_devices (out RawDevice* devices, out int numdevs);
 
         [CCode (cname = "LIBMTP_Open_Raw_Device_Uncached")]
         public static unowned Device? open_raw_device_uncached (RawDevice raw);

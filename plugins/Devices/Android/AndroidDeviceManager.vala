@@ -145,7 +145,7 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
             return;
         }
 
-        unowned Mtp.RawDevice[]? rawdevs = null;
+        Mtp.RawDevice* rawdevs = null;
         int numdevs = 0;
         if (Mtp.Device.detect_raw_devices (out rawdevs, out numdevs) != 0 || numdevs <= 0 || rawdevs == null) {
             print ("[MTP manager] No raw MTP device detected\n");

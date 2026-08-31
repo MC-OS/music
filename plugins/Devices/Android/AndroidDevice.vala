@@ -42,25 +42,28 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     /*
      * Icon from the device's own MTP Perceived Device Type (0xD407).
      * No name matching — the device reports its category itself.
-     *   3 = Mobile Handset  → phone
-     *   2 = Media Player    → multimedia-player
-     *   4 = Video Player    → multimedia-player
-     *   5 = PIM / PDA       → phone
-     *   0/1/6/unknown       → phone (default)
+     *   1 = Still Image/Video Camera → camera-photo-symbolic
+     *   2 = Media (Audio/Video) Player → multimedia-player-symbolic
+     *   3 = Mobile Handset            → phone
+     *   4 = Video Player              → multimedia-player-symbolic
+     *   5 = PIM / PDA                 → phone
+     *   6 = Audio Recorder            → multimedia-player-symbolic
+     *   0 / unknown                  → media-flash
      */
     private string pick_icon_name () {
         switch (perceived_type) {
+            case 1: /* Still Image/Video Camera */
+                return "camera-photo-symbolic";
+            case 2: /* Media (Audio/Video) Player */
+            case 4: /* Video Player */
+            case 6: /* Audio Recorder */
+                return "multimedia-player-symbolic";
             case 3: /* Mobile Handset */
             case 5: /* PIM / PDA */
                 return "phone";
-            case 2: /* Media (Audio/Video) Player */
-            case 4: /* Video Player */
-                return "multimedia-player";
             case 0: /* Generic */
-            case 1: /* Still Image/Video Camera */
-            case 6: /* Audio Recorder */
             default:
-                return "phone";
+                return "media-flash";
         }
     }
 

@@ -4,6 +4,8 @@
 public class Music.Plugins.AndroidLibrary : Music.Library {
     Gee.HashMap<string, Music.Media> medias;
     Gee.LinkedList<Music.Media> searched_medias;
+    /* uri → MTP object id (needed to download for playback) */
+    Gee.HashMap<string, uint32> item_ids;
     AndroidDevice device;
 
     private unowned Mtp.Device? mtp;
@@ -17,6 +19,7 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
         this.device = device;
         medias = new Gee.HashMap<string, Music.Media> ();
         searched_medias = new Gee.LinkedList<Music.Media> ();
+        item_ids = new Gee.HashMap<string, uint32> ();
 
         mtp = device.get_mtp_device ();
         storage_id = device.get_internal_storage_id ();
@@ -24,6 +27,14 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
         NotificationManager.get_default ().progress_canceled.connect (() => {
             operation_cancelled = true;
         });
+    }
+
+    public uint32 get_item_id (string uri) {
+        return item_ids.has_key (uri) ? item_ids.get (uri) : 0;
+    }
+
+    public unowned Mtp.Device? get_mtp () {
+        return mtp;
     }
 
     public override void initialize_library () {
@@ -123,6 +134,7 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
                 var media = media_from_mtp_file (file, child_path);
                 if (media != null && !medias.has_key (media.uri)) {
                     medias.set (media.uri, media);
+                    item_ids.set (media.uri, file.item_id);
                 }
             }
 

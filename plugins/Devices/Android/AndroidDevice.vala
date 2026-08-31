@@ -133,8 +133,9 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
             battery = (int) ((cur_level * 100) / max_level);
         }
 
-        /* MTP Perceived Device Type — object 0 = the device itself. */
-        perceived_type = d.get_u32_from_object (0, (uint32) Mtp.Property.PERCEIVED_DEVICE_TYPE, 0);
+        /* MTP Perceived Device Type — object 0 = the device itself.
+         * libmtp has no Property enum, so pass the raw MTP code 0xD407. */
+        perceived_type = d.get_u32_from_object (0, 0xD407, 0);
         print ("[MTP] Perceived Device Type: %u → icon '%s'\n", perceived_type, pick_icon_name ());
 
         capacity = 0;

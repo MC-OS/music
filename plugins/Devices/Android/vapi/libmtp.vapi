@@ -56,6 +56,13 @@ namespace Mtp {
         public unowned File? get_files_and_folders (uint32 storage_id, uint32 parent_id);
 
         /*
+         * Download a file by its MTP object id to a local path.
+         * Returns 0 on success.
+         */
+        [CCode (cname = "LIBMTP_Get_File_To_File")]
+        public int get_file_to_file (uint32 id, string path, void* callback = null, void* data = null);
+
+        /*
          * Read an arbitrary device/object property as a u32.
          * object_id 0 = the device itself. Used for MTP Perceived Device Type (0xD407).
          */

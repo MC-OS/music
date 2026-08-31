@@ -153,6 +153,9 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
         var media = new Music.Media (uri);
         media.file_size = file.filesize;
         media.last_modified = (uint) file.modificationdate;
+        /* Device tracks are not in the local library yet — mark temporary so
+         * MediaMenu enables "Import to Library". */
+        media.is_temporary = true;
 
         /* Copy the libmtp-owned string before string methods.
          * Do NOT name this variable "base" — that is a Vala keyword for the parent class. */

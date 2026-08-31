@@ -63,6 +63,14 @@ namespace Mtp {
         public int get_file_to_file (uint32 id, string path, void* callback = null, void* data = null);
 
         /*
+         * Stream a file by object id into an open file descriptor.
+         * Blocks until the whole object is written or an error occurs.
+         * Returns 0 on success.
+         */
+        [CCode (cname = "LIBMTP_Get_File_To_File_Descriptor")]
+        public int get_file_to_file_descriptor (uint32 id, int fd, void* callback = null, void* data = null);
+
+        /*
          * Read an arbitrary device/object property as a u32.
          * object_id 0 = the device itself. Used for MTP Perceived Device Type (0xD407).
          */

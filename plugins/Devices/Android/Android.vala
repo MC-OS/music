@@ -6,6 +6,7 @@ public class Music.Plugins.AndroidPlugin : Peas.ExtensionBase, Peas.Activatable 
     public GLib.Object object { owned get; construct; }
 
     private AndroidDeviceManager? android_manager;
+    private AndroidStreamer? streamer;
 
     public void activate () {
         message ("Activating Android MTP plugin (native)");
@@ -16,6 +17,10 @@ public class Music.Plugins.AndroidPlugin : Peas.ExtensionBase, Peas.Activatable 
 
         plugins.register_function (Music.Plugins.Interface.Hook.WINDOW, () => {
             android_manager = new AndroidDeviceManager ();
+
+            /* Register playback backend for mtp-native:// URIs */
+            streamer = new AndroidStreamer ();
+            App.player.add_playback (streamer);
         });
     }
 
@@ -24,6 +29,7 @@ public class Music.Plugins.AndroidPlugin : Peas.ExtensionBase, Peas.Activatable 
             android_manager.remove_all ();
             android_manager = null;
         }
+        streamer = null;
     }
 
     public void update_state () {

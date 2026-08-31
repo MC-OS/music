@@ -143,6 +143,14 @@ namespace Mtp {
         UNKNOWN
     }
 
+    /*
+     * libmtp's official audio test macro (LIBMTP_FILETYPE_IS_AUDIO).
+     * Covers WAV/MP3/MP2/WMA/OGG/FLAC/AAC/M4A/AUDIBLE/UNDEF_AUDIO.
+     * Note: MP4 is audio+video, so it is NOT included here — use IS_AUDIOVIDEO for that.
+     */
+    [CCode (cname = "LIBMTP_FILETYPE_IS_AUDIO")]
+    public static bool filetype_is_audio (Filetype filetype);
+
     [CCode (cname = "LIBMTP_Init")]
     public static void init ();
 

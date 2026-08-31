@@ -9,6 +9,7 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
     private uint scan_id = 0;
     private string? pending_label = null;
     private static bool lib_ready = false;
+    private AndroidStreamer streamer;
 
     public AndroidDeviceManager () {
         devices = new Gee.ArrayList<AndroidDevice> ();
@@ -19,11 +20,26 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
             lib_ready = true;
         }
 
+        streamer = new AndroidStreamer (this);
+        Music.App.player.add_playback (streamer);
+
         volume_monitor = VolumeMonitor.get ();
         volume_monitor.volume_added.connect (on_hint);
         volume_monitor.mount_added.connect (on_hint);
 
         schedule_scan ("startup");
+    }
+
+    public AndroidDevice? get_device_for_uri (string uri) {
+        foreach (var device in devices) {
+            if (device.get_library ().media_from_uri (uri) != null) {
+                return device;
+            }
+            if (uri.has_prefix ("mtp-native://%s".printf (device.get_serial_number ()))) {
+                return device;
+            }
+        }
+        return null;
     }
 
     private void on_hint () {

@@ -96,6 +96,9 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         storagebar = new Granite.Widgets.StorageBar (device.get_capacity ());
         storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.OTHER, 0);
         storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.AUDIO, 0);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.VIDEO, 0);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.PHOTO, 0);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.APP, 0);
 
         sync_button = new Gtk.Button.with_label (_("Sync"));
         sync_button.valign = Gtk.Align.CENTER;
@@ -138,8 +141,12 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         content_grid.attach (sync_music_check, 2, 3, 1, 1);
         content_grid.attach (sync_music_combobox, 3, 3, 1, 1);
 
+        /* Wrap the existing sync / device-name controls in DevicePanel */
+        var sync_panel = new DevicePanel (_("Sync"));
+        sync_panel.add_content (content_grid);
+
         var main_grid = new Gtk.Grid ();
-        main_grid.attach (content_grid, 0, 0, 1, 1);
+        main_grid.attach (sync_panel, 0, 0, 1, 1);
         main_grid.attach (storage_toolbar, 0, 1, 1, 1);
 
         add (main_grid);
@@ -191,17 +198,23 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
     }
 
     private void refresh_space_widget () {
-        uint64 other_files_size = 0;
-        uint64 music_size = 0;
+        uint64 audio_size = 0;
+        uint64 video_size = 0;
+        uint64 photo_size = 0;
+        uint64 app_size = 0;
+        uint64 other_size = 0;
+
         foreach (var m in device.get_library ().get_medias ()) {
-            if (m != null) {
-                music_size += m.file_size;
+            if (m == null || m.file_size == 0) {
+                continue;
             }
         }
-        other_files_size = device.get_used_space () - music_size;
 
-        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.OTHER, other_files_size);
-        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.AUDIO, music_size);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.VIDEO, video_size);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.AUDIO, audio_size);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.PHOTO, photo_size);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.APP, app_size);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.OTHER, other_size);
     }
 
     private bool row_separator_func (Gtk.TreeModel model, Gtk.TreeIter iter) {

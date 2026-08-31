@@ -13,18 +13,6 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
 
     private const string MUSIC_FOLDER = "Music";
 
-    /* libmtp has no AAC/M4A enum; AAC is reported as MP4. */
-    private const Mtp.Filetype[] AUDIO_TYPES = {
-        Mtp.Filetype.MP3,
-        Mtp.Filetype.FLAC,
-        Mtp.Filetype.OGG,
-        Mtp.Filetype.WAV,
-        Mtp.Filetype.WMA,
-        Mtp.Filetype.AUDIBLE,
-        Mtp.Filetype.MP4,
-        Mtp.Filetype.UNDEF_AUDIO
-    };
-
     public AndroidLibrary (AndroidDevice device) {
         this.device = device;
         medias = new Gee.HashMap<string, Music.Media> ();
@@ -131,7 +119,7 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
                 continue;
             }
 
-            if (is_audio (file.filetype)) {
+            if (Mtp.filetype_is_audio (file.filetype)) {
                 var media = media_from_mtp_file (file, child_path);
                 if (media != null && !medias.has_key (media.uri)) {
                     medias.set (media.uri, media);
@@ -142,15 +130,6 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
             Mtp.destroy_file_t (file);
             file = next;
         }
-    }
-
-    private bool is_audio (Mtp.Filetype ft) {
-        foreach (var t in AUDIO_TYPES) {
-            if (t == ft) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private Music.Media? media_from_mtp_file (unowned Mtp.File file, string relative_path) {

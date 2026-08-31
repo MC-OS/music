@@ -56,6 +56,13 @@ namespace Mtp {
         public unowned File? get_files_and_folders (uint32 storage_id, uint32 parent_id);
 
         /*
+         * Read an arbitrary device/object property as a u32.
+         * object_id 0 = the device itself. Used for MTP Perceived Device Type (0xD407).
+         */
+        [CCode (cname = "LIBMTP_Get_u32_From_Object")]
+        public uint32 get_u32_from_object (uint32 object_id, uint32 attribute_id, uint32 value_default);
+
+        /*
          * Bind as pointer (not Vala array) so the C call stays
          * LIBMTP_Detect_Raw_Devices(LIBMTP_raw_device_t **, int *)
          * and does not gain an extra length argument.
@@ -95,6 +102,12 @@ namespace Mtp {
 
     [CCode (cname = "LIBMTP_FILES_AND_FOLDERS_ROOT")]
     public const uint32 FILES_AND_FOLDERS_ROOT;
+
+    /* MTP device property codes (libmtp.h / mtp.h). */
+    [CCode (cname = "uint32", has_type_id = false)]
+    public enum Property {
+        PERCEIVED_DEVICE_TYPE = 0xD407
+    }
 
     [CCode (cname = "LIBMTP_filetype_t", cprefix = "LIBMTP_FILETYPE_", has_type_id = false)]
     public enum Filetype {

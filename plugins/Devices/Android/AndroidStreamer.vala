@@ -62,14 +62,22 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
 
     /* Download the MTP object to /tmp and return a file:// URI, or null on failure. */
     private string? prepare_local_file (Media media) {
-        var lib = media.library as AndroidLibrary;
-        if (lib == null) {
-            /* Fall back: look for any AndroidLibrary that knows this URI */
-            foreach (var l in libraries_manager.get_libraries ()) {
-                if (l is AndroidLibrary && l.media_from_uri (media.uri) != null) {
-                    lib = (AndroidLibrary) l;
-                    break;
-                }
+        AndroidLibrary? lib = null;
+
+        /* Find the AndroidDevice whose serial is in the URI, then its library. */
+        var dm = DeviceManager.get_default ();
+        foreach (var d in dm.get_devices ()) {
+            if (!(d is AndroidDevice)) {
+                continue;
+            }
+            var android = (AndroidDevice) d;
+            if (!media.uri.has_prefix ("mtp-native://%s/".printf (android.get_serial_number ()))) {
+                continue;
+            }
+            var l = android.get_library () as AndroidLibrary;
+            if (l != null && l.get_item_id (media.uri) != 0) {
+                lib = l;
+                break;
             }
         }
 
@@ -97,8 +105,9 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
         }
 
         try {
-            var tmp = File.new_tmp ("music-mtp-XXXXXX" + ext, out temp_path);
-            temp_path = tmp.get_path ();
+            string path_out;
+            var tmp = File.new_tmp ("music-mtp-XXXXXX" + ext, out path_out);
+            temp_path = path_out ?? tmp.get_path ();
         } catch (Error e) {
             warning ("[MTP streamer] Cannot create temp file: %s", e.message);
             return null;

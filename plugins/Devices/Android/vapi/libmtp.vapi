@@ -103,12 +103,6 @@ namespace Mtp {
     [CCode (cname = "LIBMTP_FILES_AND_FOLDERS_ROOT")]
     public const uint32 FILES_AND_FOLDERS_ROOT;
 
-    /* MTP device property codes (libmtp.h / mtp.h). */
-    [CCode (cname = "uint32", has_type_id = false)]
-    public enum Property {
-        PERCEIVED_DEVICE_TYPE = 0xD407
-    }
-
     [CCode (cname = "LIBMTP_filetype_t", cprefix = "LIBMTP_FILETYPE_", has_type_id = false)]
     public enum Filetype {
         FOLDER,

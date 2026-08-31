@@ -165,8 +165,11 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         }
     }
 
-    /* Drop the libmtp session and tell DeviceManager to remove us from the sidebar. */
+    /* Drop the libmtp session, wipe session playback cache, remove from sidebar. */
     public void release_mtp () {
+        /* Session-only cache: nothing left after unplug */
+        AndroidStreamer.wipe_cache (serial);
+
         unowned Mtp.Device? d = mtp;
         if (d != null) {
             mtp = null;

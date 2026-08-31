@@ -1,11 +1,9 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
- * Netflix-style MTP playback:
- *   1. Look for a local cache of this track under XDG cache.
- *   2. If missing, pull the object from the device into the cache.
- *   3. Hand GStreamer a normal file:// URI (seekable, all formats).
- *
- * Cache lives across plays so the second listen is instant.
+ * Session-only MTP cache (Netflix-style while plugged in):
+ *   1. Pull track into ~/.cache/io.elementary.music/mtp/ for seekable play.
+ *   2. Reuse within the same session.
+ *   3. Wipe that cache when the device unplugs — nothing left behind.
  */
 
 public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
@@ -14,7 +12,7 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
     public bool set_resume_pos;
 
     private AndroidDeviceManager manager;
-    private File cache_dir;
+    private static File cache_dir;
 
     public AndroidStreamer (AndroidDeviceManager manager) {
         this.manager = manager;
@@ -22,7 +20,6 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
         pipe.bus.add_watch (GLib.Priority.DEFAULT, bus_callback);
         Timeout.add (200, update_position);
 
-        /* ~/.cache/io.elementary.music/mtp/ */
         cache_dir = File.new_for_path (
             Path.build_filename (Environment.get_user_cache_dir (),
                                  "io.elementary.music", "mtp"));
@@ -39,6 +36,47 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
         var uris = new Gee.LinkedList<string> ();
         uris.add ("mtp-native://");
         return uris;
+    }
+
+    /**
+     * Delete cached tracks for one device (by serial), or the whole MTP
+     * cache if serial is null/empty. Called on eject / unplug.
+     */
+    public static void wipe_cache (string? serial = null) {
+        if (cache_dir == null) {
+            cache_dir = File.new_for_path (
+                Path.build_filename (Environment.get_user_cache_dir (),
+                                     "io.elementary.music", "mtp"));
+        }
+        if (!cache_dir.query_exists ()) {
+            return;
+        }
+
+        string? prefix = null;
+        if (serial != null && serial.length > 0) {
+            prefix = serial.replace ("/", "_").replace (" ", "_") + "-";
+        }
+
+        try {
+            var enumerator = cache_dir.enumerate_children (
+                FileAttribute.STANDARD_NAME, FileQueryInfoFlags.NONE);
+            FileInfo? info;
+            while ((info = enumerator.next_file ()) != null) {
+                var name = info.get_name ();
+                if (prefix != null && !name.has_prefix (prefix)) {
+                    continue;
+                }
+                try {
+                    cache_dir.get_child (name).delete ();
+                } catch (Error e) {
+                    warning ("[MTP streamer] wipe %s: %s", name, e.message);
+                }
+            }
+            print ("[MTP streamer] Cache wiped%s\n",
+                prefix != null ? " for device" : "");
+        } catch (Error e) {
+            warning ("[MTP streamer] wipe_cache: %s", e.message);
+        }
     }
 
     public bool update_position () {
@@ -81,10 +119,6 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
         play ();
     }
 
-    /*
-     * Return a file:// URI for a complete local copy of the track.
-     * Reuses cache when present; otherwise pulls from the device once.
-     */
     private string? ensure_cached (Media media) {
         var android = manager.get_device_for_uri (media.uri);
         if (android == null) {
@@ -108,7 +142,6 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
         if (serial == null || serial.length == 0) {
             serial = "unknown";
         }
-        /* Keep the name filesystem-safe */
         string safe_serial = serial.replace ("/", "_").replace (" ", "_");
         string name = "%s-%u%s".printf (safe_serial, item_id, ext);
         File cached = cache_dir.get_child (name);
@@ -122,7 +155,6 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
                 }
             } catch (Error e) {
             }
-            /* empty/corrupt — remove and re-fetch */
             try { cached.delete (); } catch (Error e) {}
         }
 

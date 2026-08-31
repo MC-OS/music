@@ -1,7 +1,12 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /*
- * Playback for mtp-native:// — pull the object with libmtp into a temp
- * file, then hand a file:// URI to GStreamer (same idea as Amarok MTP).
+ * Experimental: stream the MTP object straight into GStreamer.
+ *
+ * libmtp writes the object into a pipe (Get_File_To_File_Descriptor).
+ * GStreamer reads the other end via fd:// — no temp file, no GVFS.
+ *
+ * This may fail on some GStreamer builds (fd:// support) or if the
+ * decoder needs seekable input. That is the experiment.
  */
 
 public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
@@ -10,7 +15,7 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
     public bool set_resume_pos;
 
     private AndroidDeviceManager manager;
-    private string? temp_path = null;
+    private int stream_read_fd = -1;
 
     public AndroidStreamer (AndroidDeviceManager manager) {
         this.manager = manager;
@@ -49,23 +54,28 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
 
     public void set_media (Media media) {
         set_state (Gst.State.READY);
-        cleanup_temp ();
+        close_stream_fd ();
 
-        string? local_uri = download_to_temp (media);
-        if (local_uri == null) {
-            warning ("[MTP streamer] Download failed for %s", media.uri);
+        string? fd_uri = open_device_stream (media);
+        if (fd_uri == null) {
+            warning ("[MTP streamer] Could not open device stream for %s", media.uri);
             error_occured ();
             return;
         }
 
-        debug ("[MTP streamer] set uri to %s\n", local_uri);
-        pipe.playbin.set_property ("uri", local_uri);
+        print ("[MTP streamer] Streaming via %s\n", fd_uri);
+        pipe.playbin.set_property ("uri", fd_uri);
         set_state (Gst.State.PLAYING);
+        /* Seek is best-effort — fd streams are often not seekable */
         pipe.playbin.seek_simple (Gst.Format.TIME, Gst.SeekFlags.FLUSH, (int64)App.player.current_media.resume_pos * 1000000000);
         play ();
     }
 
-    private string? download_to_temp (Media media) {
+    /*
+     * Create a pipe. A worker thread pumps the MTP object into the write
+     * end; we hand GStreamer the read end as fd://N.
+     */
+    private string? open_device_stream (Media media) {
         var android = manager.get_device_for_uri (media.uri);
         if (android == null) {
             warning ("[MTP streamer] No device for %s", media.uri);
@@ -74,7 +84,6 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
 
         var lib = android.get_library () as AndroidLibrary;
         if (lib == null) {
-            warning ("[MTP streamer] No AndroidLibrary");
             return null;
         }
 
@@ -90,40 +99,38 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
             return null;
         }
 
-        string ext = ".bin";
-        int dot = media.uri.last_index_of_char ('.');
-        if (dot > 0 && media.uri.length - dot <= 5) {
-            ext = media.uri.substring (dot);
-        }
-
-        string name_used;
-        try {
-            /* Vala: File.new_tmp (tmpl, out string name_used) */
-            File.new_tmp ("music-mtp-XXXXXX" + ext, out name_used);
-            temp_path = name_used;
-        } catch (Error e) {
-            warning ("[MTP streamer] temp file: %s", e.message);
+        int[] fds = new int[2];
+        if (Posix.pipe (fds) != 0) {
+            warning ("[MTP streamer] pipe() failed");
             return null;
         }
+        int read_fd = fds[0];
+        int write_fd = fds[1];
 
-        print ("[MTP streamer] Downloading item %u → %s\n", item_id, temp_path);
-        int ret = mtp.get_file_to_file (item_id, temp_path);
-        if (ret != 0) {
-            warning ("[MTP streamer] Get_File_To_File failed (%d)", ret);
-            cleanup_temp ();
+        /* Capture for the worker thread (mtp is unowned — session must stay alive). */
+        unowned Mtp.Device device = mtp;
+        uint32 id = item_id;
+
+        new Thread<void*> ("mtp-fd-stream", () => {
+            print ("[MTP streamer] Worker: streaming object %u into fd %d\n", id, write_fd);
+            int ret = device.get_file_to_file_descriptor (id, write_fd, null, null);
+            if (ret != 0) {
+                warning ("[MTP streamer] Get_File_To_File_Descriptor failed (%d)", ret);
+            } else {
+                print ("[MTP streamer] Worker: finished object %u\n", id);
+            }
+            Posix.close (write_fd);
             return null;
-        }
+        });
 
-        return File.new_for_path (temp_path).get_uri ();
+        stream_read_fd = read_fd;
+        return "fd://%d".printf (read_fd);
     }
 
-    private void cleanup_temp () {
-        if (temp_path != null) {
-            try {
-                File.new_for_path (temp_path).delete ();
-            } catch (Error e) {
-            }
-            temp_path = null;
+    private void close_stream_fd () {
+        if (stream_read_fd >= 0) {
+            Posix.close (stream_read_fd);
+            stream_read_fd = -1;
         }
     }
 
@@ -185,7 +192,7 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
                 }
                 break;
             case Gst.MessageType.EOS:
-                cleanup_temp ();
+                close_stream_fd ();
                 end_of_stream ();
                 break;
             default:

@@ -253,7 +253,8 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
             }
 
             print ("[MTP library] Importing %s → %s\n", m.title ?? "?", dest_path);
-            int ret = dev.get_file_to_file (item_id, dest_path);
+            /* VAPI has no default args, so pass explicit NULL for callback + data. */
+            int ret = dev.get_file_to_file (item_id, dest_path, null, null);
             if (ret != 0) {
                 warning ("[MTP library] Get_File_To_File failed (%d) for %s", ret, m.title ?? "?");
                 try {

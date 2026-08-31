@@ -166,7 +166,8 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
 
         string path = cached.get_path ();
         print ("[MTP streamer] Caching object %u → %s\n", item_id, path);
-        int ret = mtp.get_file_to_file (item_id, path);
+        /* VAPI has no default args — pass explicit NULL for callback + data. */
+        int ret = mtp.get_file_to_file (item_id, path, null, null);
         if (ret != 0) {
             warning ("[MTP streamer] Get_File_To_File failed (%d)", ret);
             try { if (cached.query_exists ()) cached.delete (); } catch (Error e) {}

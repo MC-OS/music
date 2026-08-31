@@ -13,6 +13,7 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     private string manufacturer = "";
     private string model = "";
     private string serial = "";
+    /* MTP Deviceversion string (almost always "1.0") — not the Android OS version. */
     private string device_version = "";
     private int battery = -1;
     private uint64 capacity = 0;
@@ -202,6 +203,8 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         return library;
     }
 
+    /* ---------- Device interface: every string getter is wired ---------- */
+
     public string get_empty_device_title () {
         return _("Empty device!");
     }
@@ -223,7 +226,7 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         if (system_label.length > 0 && !is_generic_label (system_label)) {
             return system_label;
         }
-        /* 3) Last resort: model — not preferred */
+        /* 3) Last resort: model */
         if (model.length > 0) {
             return model;
         }
@@ -248,6 +251,10 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         return serial;
     }
 
+    /*
+     * IMEI is not exposed by the standard MTP property set that Android
+     * implements. Always empty for pure-libmtp devices.
+     */
     public string get_imei () {
         return "";
     }
@@ -266,14 +273,26 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         return battery;
     }
 
+    /*
+     * Real Android OS version is not available via standard MTP.
+     * The old code returned MTP Deviceversion (almost always "1.0"),
+     * which is misleading. Return empty so the UI shows a clean blank.
+     */
     public string get_os_version () {
-        return device_version;
+        return "";
     }
 
+    /*
+     * ROM / custom firmware name (Lineage, LFR, etc.) is not available
+     * through standard MTP properties.
+     */
     public string get_rom_name () {
         return "";
     }
 
+    /*
+     * Android security patch level is not exposed by MTP.
+     */
     public string get_security_patch () {
         return "";
     }
@@ -306,6 +325,9 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     }
 
     public string get_fancy_capacity () {
+        if (capacity == 0) {
+            return "";
+        }
         return GLib.format_size (capacity);
     }
 

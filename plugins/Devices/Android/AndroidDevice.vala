@@ -19,6 +19,8 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     private uint64 free_space = 0;
     private string uri_id;
     private uint32 internal_storage_id = 0;
+    /* MTP Perceived Device Type (0xD407), read from the device itself. */
+    private uint32 perceived_type = 0;
 
     public bool is_supported = true;
 
@@ -38,62 +40,28 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     }
 
     /*
-     * Choose a themed icon from manufacturer/model/friendly/system labels.
-     * Matches elementary/GNOME conventions used by the iPod plugin.
+     * Icon from the device's own MTP Perceived Device Type (0xD407).
+     * No name matching — the device reports its category itself.
+     *   3 = Mobile Handset  → phone
+     *   2 = Media Player    → multimedia-player
+     *   4 = Video Player    → multimedia-player
+     *   5 = PIM / PDA       → phone
+     *   0/1/6/unknown       → phone (default)
      */
     private string pick_icon_name () {
-        var hay = "%s %s %s %s".printf (manufacturer, model, friendly, system_label).down ();
-
-        /* Tablets first — "Galaxy Tab" must not fall through as a phone */
-        if (hay.contains ("tablet")
-            || hay.contains (" tab ")
-            || hay.contains ("tab ")
-            || hay.has_suffix (" tab")
-            || hay.contains ("galaxy tab")
-            || hay.contains ("ipad")
-            || hay.contains (" mediapad")
-            || hay.contains ("pad ")
-            || hay.contains (" fire ") /* Amazon Fire tablets */
-            || hay.contains ("kindle fire")) {
-            return "tablet";
+        switch (perceived_type) {
+            case 3: /* Mobile Handset */
+            case 5: /* PIM / PDA */
+                return "phone";
+            case 2: /* Media (Audio/Video) Player */
+            case 4: /* Video Player */
+                return "multimedia-player";
+            case 0: /* Generic */
+            case 1: /* Still Image/Video Camera */
+            case 6: /* Audio Recorder */
+            default:
+                return "phone";
         }
-
-        /* Dedicated media players / DAPs */
-        if (hay.contains ("walkman")
-            || hay.contains ("zune")
-            || hay.contains ("ipod")
-            || hay.contains ("mp3")
-            || hay.contains ("media player")
-            || hay.contains ("multimedia")
-            || hay.contains ("cowon")
-            || hay.contains ("fiio")
-            || hay.contains ("hiby")
-            || hay.contains ("agptek")) {
-            return "multimedia-player";
-        }
-
-        /* Phones (default for most Android MTP devices) */
-        if (hay.contains ("phone")
-            || hay.contains ("galaxy")
-            || hay.contains ("pixel")
-            || hay.contains ("iphone")
-            || hay.contains ("oneplus")
-            || hay.contains ("xiaomi")
-            || hay.contains ("redmi")
-            || hay.contains ("huawei")
-            || hay.contains ("honor")
-            || hay.contains ("oppo")
-            || hay.contains ("vivo")
-            || hay.contains ("motorola")
-            || hay.contains ("nokia")
-            || hay.contains ("lg ")
-            || hay.contains ("sony")
-            || hay.contains ("android")) {
-            return "phone";
-        }
-
-        /* Unknown Android MTP — phone is the common case */
-        return "phone";
     }
 
     private static bool is_generic_label (string name) {
@@ -165,6 +133,10 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
             battery = (int) ((cur_level * 100) / max_level);
         }
 
+        /* MTP Perceived Device Type — object 0 = the device itself. */
+        perceived_type = d.get_u32_from_object (0, (uint32) Mtp.Property.PERCEIVED_DEVICE_TYPE, 0);
+        print ("[MTP] Perceived Device Type: %u → icon '%s'\n", perceived_type, pick_icon_name ());
+
         capacity = 0;
         free_space = 0;
         internal_storage_id = 0;
@@ -187,9 +159,6 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
                 internal_storage_id = d.storage.id;
             }
         }
-
-        print ("[MTP] Icon heuristic: manufacturer='%s' model='%s' → %s\n",
-            manufacturer, model, pick_icon_name ());
     }
 
     /* Drop the libmtp session and tell DeviceManager to remove us from the sidebar. */

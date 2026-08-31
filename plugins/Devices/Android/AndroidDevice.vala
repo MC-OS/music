@@ -58,10 +58,10 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
             case 4: /* Video Player */
             case 6: /* Audio Recorder */
                 return "multimedia-player-symbolic";
+            case 0: /* Generic */
             case 3: /* Mobile Handset */
             case 5: /* PIM / PDA */
                 return "phone";
-            case 0: /* Generic */
             default:
                 return "media-flash";
         }

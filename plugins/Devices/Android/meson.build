@@ -10,7 +10,10 @@ Android_files = files(
 shared_module(
   'android-device',
   Android_files,
-  vala_args: ['--vapidir', join_paths(meson.current_source_dir(), 'vapi')],
+  vala_args: [
+    '--vapidir', join_paths(meson.current_source_dir(), 'vapi'),
+    '--pkg', 'posix',
+  ],
   dependencies: [
     app_dep,
     dependency('libmtp')

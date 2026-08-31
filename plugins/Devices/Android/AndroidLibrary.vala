@@ -1,10 +1,10 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
-/* Native MTP library: lists audio under the device Music folder. */
+/* Import a track from the Android MTP device into the local Music library. */
 
 public class Music.Plugins.AndroidLibrary : Music.Library {
     Gee.HashMap<string, Music.Media> medias;
     Gee.LinkedList<Music.Media> searched_medias;
-    /* uri → MTP object id (needed to download for playback) */
+    /* uri → MTP object id (needed to download for playback / import) */
     Gee.HashMap<string, uint32> item_ids;
     AndroidDevice device;
 
@@ -169,6 +169,115 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
     public override void add_files_to_library (Gee.Collection<string> files) {
     }
 
+    /*
+     * Import selected device tracks into the local Music library.
+     * Downloads each MTP object into the user's Music folder, then adds
+     * the resulting local file to libraries_manager.local_library.
+     */
+    public override void add_medias (Gee.Collection<Music.Media> list) {
+        if (is_doing_file_operations) {
+            warning ("[MTP library] Import already in progress");
+            return;
+        }
+        if (list.size == 0) {
+            return;
+        }
+
+        is_doing_file_operations = true;
+        operation_cancelled = false;
+        libraries_manager.current_operation = _("Importing <b>%d</b> track(s) from <b>%s</b>…")
+            .printf (list.size, device.get_display_name ());
+        Timeout.add (500, libraries_manager.do_progress_notification_with_timeout);
+        import_medias_async.begin (list);
+    }
+
+    private async void import_medias_async (Gee.Collection<Music.Media> to_import) {
+        var local = libraries_manager.local_library;
+        if (local == null) {
+            warning ("[MTP library] No local library available for import");
+            is_doing_file_operations = false;
+            file_operations_done ();
+            return;
+        }
+
+        string music_dir = Environment.get_user_special_dir (UserDirectory.MUSIC);
+        if (music_dir == null || music_dir == "") {
+            music_dir = Path.build_filename (Environment.get_home_dir (), "Music");
+        }
+
+        int total = to_import.size;
+        int index = 0;
+        int imported = 0;
+
+        foreach (var m in to_import) {
+            if (operation_cancelled) {
+                break;
+            }
+
+            uint32 item_id = get_item_id (m.uri);
+            if (item_id == 0) {
+                warning ("[MTP library] No item_id for %s — skipping", m.uri);
+                index++;
+                libraries_manager.progress = (double) index / total;
+                continue;
+            }
+
+            string ext = ".mp3";
+            int dot = m.uri.last_index_of_char ('.');
+            if (dot > 0 && m.uri.length - dot <= 5) {
+                ext = m.uri.substring (dot).down ();
+            }
+
+            string safe_title = (m.title ?? "track").replace ("/", "_").replace ("\\", "_");
+            if (safe_title.strip () == "") {
+                safe_title = "track";
+            }
+            string dest_name = "%s%s".printf (safe_title, ext);
+            string dest_path = Path.build_filename (music_dir, dest_name);
+
+            /* Avoid clobbering an existing file with the same name. */
+            int suffix = 1;
+            while (File.new_for_path (dest_path).query_exists ()) {
+                dest_name = "%s (%d)%s".printf (safe_title, suffix, ext);
+                dest_path = Path.build_filename (music_dir, dest_name);
+                suffix++;
+            }
+
+            unowned Mtp.Device? dev = mtp;
+            if (dev == null) {
+                warning ("[MTP library] MTP session gone — aborting import");
+                break;
+            }
+
+            print ("[MTP library] Importing %s → %s\n", m.title ?? "?", dest_path);
+            int ret = dev.get_file_to_file (item_id, dest_path);
+            if (ret != 0) {
+                warning ("[MTP library] Get_File_To_File failed (%d) for %s", ret, m.title ?? "?");
+                try {
+                    var f = File.new_for_path (dest_path);
+                    if (f.query_exists ()) {
+                        f.delete ();
+                    }
+                } catch (Error e) {}
+            } else {
+                local.add_file_to_library (File.new_for_path (dest_path));
+                imported++;
+            }
+
+            index++;
+            libraries_manager.progress = (double) index / total;
+        }
+
+        print ("[MTP library] Imported %d / %d track(s)\n", imported, total);
+
+        Idle.add (() => {
+            is_doing_file_operations = false;
+            file_operations_done ();
+            operation_cancelled = false;
+            return false;
+        });
+    }
+
     public override void search_medias (string search) {
         lock (searched_medias) {
             searched_medias.clear ();
@@ -217,9 +326,6 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
     }
 
     public override void add_media (Music.Media s) {
-    }
-
-    public override void add_medias (Gee.Collection<Music.Media> list) {
     }
 
     public override Media? media_from_id (int64 id) {

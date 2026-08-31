@@ -20,7 +20,7 @@
  * by the GPL license by which Music is covered. If you modify this code
  * you may extend this exception to your version of the code, but you are not
  * obligated to do so. If you do not wish to do so, delete this exception
- * statement from your version.
+ * statement from your version of the code.
  */
 
 public class Music.MediaMenu : Gtk.Menu {
@@ -192,6 +192,15 @@ public class Music.MediaMenu : Gtk.Menu {
                 import_to_library.label = _("Import %i of %i selected songs").printf ((int)temporary_count, (int)total_count);
             } else {
                 import_to_library.label = ngettext ("Import %i song", "Import %i songs", temporary_count).printf ((int)temporary_count);
+            }
+        }
+
+        /* Device tracks are always importable by definition — they live on the
+         * device, not in the local library. Force the item on for DEVICE_AUDIO. */
+        if (hint == ViewWrapper.Hint.DEVICE_AUDIO) {
+            import_to_library.sensitive = true;
+            if (total_count > 0) {
+                import_to_library.label = ngettext ("Import %i song", "Import %i songs", total_count).printf ((int)total_count);
             }
         }
 

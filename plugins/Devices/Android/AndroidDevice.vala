@@ -24,7 +24,6 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
 
     public AndroidDevice (unowned Mtp.Device device, string? system_device_label = null) {
         mtp = device;
-        icon = new GLib.ThemedIcon ("phone");
         uri_id = "mtp-native://session";
 
         if (system_device_label != null) {
@@ -32,9 +31,69 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         }
 
         refresh_from_mtp ();
+        icon = new GLib.ThemedIcon (pick_icon_name ());
 
         library = new AndroidLibrary (this);
         libraries_manager.add_library (library);
+    }
+
+    /*
+     * Choose a themed icon from manufacturer/model/friendly/system labels.
+     * Matches elementary/GNOME conventions used by the iPod plugin.
+     */
+    private string pick_icon_name () {
+        var hay = "%s %s %s %s".printf (manufacturer, model, friendly, system_label).down ();
+
+        /* Tablets first — "Galaxy Tab" must not fall through as a phone */
+        if (hay.contains ("tablet")
+            || hay.contains (" tab ")
+            || hay.contains ("tab ")
+            || hay.has_suffix (" tab")
+            || hay.contains ("galaxy tab")
+            || hay.contains ("ipad")
+            || hay.contains (" mediapad")
+            || hay.contains ("pad ")
+            || hay.contains (" fire ") /* Amazon Fire tablets */
+            || hay.contains ("kindle fire")) {
+            return "tablet";
+        }
+
+        /* Dedicated media players / DAPs */
+        if (hay.contains ("walkman")
+            || hay.contains ("zune")
+            || hay.contains ("ipod")
+            || hay.contains ("mp3")
+            || hay.contains ("media player")
+            || hay.contains ("multimedia")
+            || hay.contains ("cowon")
+            || hay.contains ("fiio")
+            || hay.contains ("hiby")
+            || hay.contains ("agptek")) {
+            return "multimedia-player";
+        }
+
+        /* Phones (default for most Android MTP devices) */
+        if (hay.contains ("phone")
+            || hay.contains ("galaxy")
+            || hay.contains ("pixel")
+            || hay.contains ("iphone")
+            || hay.contains ("oneplus")
+            || hay.contains ("xiaomi")
+            || hay.contains ("redmi")
+            || hay.contains ("huawei")
+            || hay.contains ("honor")
+            || hay.contains ("oppo")
+            || hay.contains ("vivo")
+            || hay.contains ("motorola")
+            || hay.contains ("nokia")
+            || hay.contains ("lg ")
+            || hay.contains ("sony")
+            || hay.contains ("android")) {
+            return "phone";
+        }
+
+        /* Unknown Android MTP — phone is the common case */
+        return "phone";
     }
 
     private static bool is_generic_label (string name) {
@@ -128,6 +187,9 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
                 internal_storage_id = d.storage.id;
             }
         }
+
+        print ("[MTP] Icon heuristic: manufacturer='%s' model='%s' → %s\n",
+            manufacturer, model, pick_icon_name ());
     }
 
     /* Drop the libmtp session and tell DeviceManager to remove us from the sidebar. */

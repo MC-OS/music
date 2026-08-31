@@ -57,10 +57,10 @@ namespace Mtp {
 
         /*
          * Download a file by its MTP object id to a local path.
-         * Returns 0 on success.
+         * Returns 0 on success. callback/data are plain pointers (no defaults — Vala has none).
          */
         [CCode (cname = "LIBMTP_Get_File_To_File")]
-        public int get_file_to_file (uint32 id, string path, void* callback = null, void* data = null);
+        public int get_file_to_file (uint32 id, string path, void* callback, void* data);
 
         /*
          * Stream a file by object id into an open file descriptor.
@@ -68,7 +68,7 @@ namespace Mtp {
          * Returns 0 on success.
          */
         [CCode (cname = "LIBMTP_Get_File_To_File_Descriptor")]
-        public int get_file_to_file_descriptor (uint32 id, int fd, void* callback = null, void* data = null);
+        public int get_file_to_file_descriptor (uint32 id, int fd, void* callback, void* data);
 
         /*
          * Read an arbitrary device/object property as a u32.

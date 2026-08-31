@@ -260,7 +260,9 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
                     }
                 } catch (Error e) {}
             } else {
-                local.add_file_to_library (File.new_for_path (dest_path));
+                var files = new Gee.ArrayList<string> ();
+                files.add (dest_path);
+                local.add_files_to_library (files);
                 imported++;
             }
 

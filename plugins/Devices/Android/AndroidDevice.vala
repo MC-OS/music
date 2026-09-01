@@ -22,6 +22,8 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     private uint32 internal_storage_id = 0;
     /* MTP Perceived Device Type (0xD407), read from the device itself. */
     private uint32 perceived_type = 0;
+    private uint64[] storage_info = { 0, 0, 0, 0, 0 };
+    private bool storage_info_set = false;
 
     public bool is_supported = true;
 
@@ -318,6 +320,60 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
 
     public GLib.Icon get_icon () {
         return icon;
+    }
+
+    /*
+     * [0] AUDIO [1] VIDEO [2] PHOTO [3] APP [4] OTHER
+     * APP is always 0 over MTP. OTHER closes the gap to used space.
+     */
+    public uint64[] get_device_storage_info () {
+        if (storage_info_set) {
+            return storage_info;
+        }
+
+        uint64 audio = 0;
+        uint64 video = 0;
+        uint64 photo = 0;
+        uint64 other = 0;
+
+        if (library != null) {
+            foreach (var m in library.get_medias ()) {
+                if (m == null || m.file_size == 0) {
+                    continue;
+                }
+                var uri = (m.uri ?? "").down ();
+                if (uri.has_suffix (".mp3") || uri.has_suffix (".flac") || uri.has_suffix (".m4a")
+                    || uri.has_suffix (".ogg") || uri.has_suffix (".wav") || uri.has_suffix (".aac")
+                    || uri.has_suffix (".opus") || uri.has_suffix (".wma") || uri.has_suffix (".aiff")) {
+                    audio += m.file_size;
+                } else if (uri.has_suffix (".mp4") || uri.has_suffix (".mkv") || uri.has_suffix (".avi")
+                    || uri.has_suffix (".mov") || uri.has_suffix (".webm") || uri.has_suffix (".3gp")
+                    || uri.has_suffix (".m4v") || uri.has_suffix (".wmv")) {
+                    video += m.file_size;
+                } else if (uri.has_suffix (".jpg") || uri.has_suffix (".jpeg") || uri.has_suffix (".png")
+                    || uri.has_suffix (".gif") || uri.has_suffix (".webp") || uri.has_suffix (".heic")
+                    || uri.has_suffix (".bmp") || uri.has_suffix (".tif") || uri.has_suffix (".tiff")) {
+                    photo += m.file_size;
+                } else {
+                    other += m.file_size;
+                }
+            }
+        }
+
+        uint64 accounted = audio + video + photo + other;
+        uint64 used = get_used_space ();
+        if (used > accounted) {
+            other += used - accounted;
+        }
+
+        return new uint64[] { audio, video, photo, 0, other };
+    }
+
+    public void set_device_storage_info (uint64[] info) {
+        if (info != null && info.length >= 5) {
+            storage_info = info;
+            storage_info_set = true;
+        }
     }
 
     public uint64 get_capacity () {

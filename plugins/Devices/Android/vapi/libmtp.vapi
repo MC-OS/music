@@ -78,6 +78,14 @@ namespace Mtp {
         public uint32 get_u32_from_object (uint32 object_id, uint32 attribute_id, uint32 value_default);
 
         /*
+         * Read a device property value (GetDevicePropValue, 0x1015).
+         * out_val is a LIBMTP_device_prop_value_t*; caller must free with
+         * LIBMTP_FreeMemory. Returns 0 on success.
+         */
+        [CCode (cname = "LIBMTP_Get_DevicePropValue")]
+        public int get_device_prop_value (uint16 prop, out void* out_val);
+
+        /*
          * Bind as pointer (not Vala array) so the C call stays
          * LIBMTP_Detect_Raw_Devices(LIBMTP_raw_device_t **, int *)
          * and does not gain an extra length argument.
@@ -155,10 +163,17 @@ namespace Mtp {
     /*
      * libmtp's official audio test macro (LIBMTP_FILETYPE_IS_AUDIO).
      * Covers WAV/MP3/MP2/WMA/OGG/FLAC/AAC/M4A/AUDIBLE/UNDEF_AUDIO.
-     * Note: MP4 is audio+video, so it is NOT included here — use IS_AUDIOVIDEO for that.
      */
     [CCode (cname = "LIBMTP_FILETYPE_IS_AUDIO")]
     public static bool filetype_is_audio (Filetype filetype);
+
+    /* Video test: WMV/AVI/MPEG/UNDEF_VIDEO. */
+    [CCode (cname = "LIBMTP_FILETYPE_IS_VIDEO")]
+    public static bool filetype_is_video (Filetype filetype);
+
+    /* Image test: JPEG/JFIF/TIFF/BMP/GIF/PICT/PNG/JP2/JPX/WindowsImageFormat. */
+    [CCode (cname = "LIBMTP_FILETYPE_IS_IMAGE")]
+    public static bool filetype_is_image (Filetype filetype);
 
     [CCode (cname = "LIBMTP_Init")]
     public static void init ();

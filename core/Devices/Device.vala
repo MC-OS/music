@@ -7,7 +7,8 @@ public interface Music.Device : GLib.Object {
     public signal void initialized (Device d);
     public signal void device_unmounted ();
     public signal void infobar_message (string label, Gtk.MessageType message_type);
-
+    public abstract uint64[] get_device_storage_info ();
+    public abstract void set_device_storage_info (uint64[] info);
     public abstract bool start_initialization ();
     public abstract void finish_initialization ();
     public abstract string get_content_type ();

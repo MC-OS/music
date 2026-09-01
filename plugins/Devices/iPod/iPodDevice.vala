@@ -33,6 +33,8 @@ public class Music.Plugins.iPodDevice : GLib.Object, Music.Device { //vala-lint=
     public bool is_supported = true;
     bool is_new = false;
     iPodLibrary library;
+    private uint64[] storage_info = { 0, 0, 0, 0, 0 };
+    private bool storage_info_set = false;
 
     public iPodDevice (Mount mount) {
         this.mount = mount;
@@ -212,6 +214,33 @@ public class Music.Plugins.iPodDevice : GLib.Object, Music.Device { //vala-lint=
 
     public GLib.Icon get_icon () {
         return icon;
+    }
+
+    /* [AUDIO, VIDEO, PHOTO, APP, OTHER] — zeros are not drawn by StorageBar */
+    public uint64[] get_device_storage_info () {
+        if (storage_info_set) {
+            return storage_info;
+        }
+
+        uint64 audio = 0;
+        if (library != null) {
+            foreach (var m in library.get_medias ()) {
+                if (m != null) {
+                    audio += m.file_size;
+                }
+            }
+        }
+
+        uint64 used = get_used_space ();
+        uint64 other = used > audio ? used - audio : 0;
+        return new uint64[] { audio, 0, 0, 0, other };
+    }
+
+    public void set_device_storage_info (uint64[] info) {
+        if (info != null && info.length >= 5) {
+            storage_info = info;
+            storage_info_set = true;
+        }
     }
 
     public uint64 get_capacity () {

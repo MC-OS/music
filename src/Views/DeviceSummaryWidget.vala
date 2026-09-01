@@ -197,24 +197,22 @@ public class Music.DeviceSummaryWidget : Gtk.EventBox {
         show_all ();
     }
 
+    /*
+     * Device plugins own the math. Core only maps the fixed-order array:
+     * [0] AUDIO [1] VIDEO [2] PHOTO [3] APP [4] OTHER
+     * Zero sizes are left as zero so StorageBar omits those slices.
+     */
     private void refresh_space_widget () {
-        uint64 audio_size = 0;
-        uint64 video_size = 0;
-        uint64 photo_size = 0;
-        uint64 app_size = 0;
-        uint64 other_size = 0;
-
-        foreach (var m in device.get_library ().get_medias ()) {
-            if (m == null || m.file_size == 0) {
-                continue;
-            }
+        uint64[] info = device.get_device_storage_info ();
+        if (info == null || info.length < 5) {
+            info = new uint64[5];
         }
 
-        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.VIDEO, video_size);
-        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.AUDIO, audio_size);
-        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.PHOTO, photo_size);
-        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.APP, app_size);
-        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.OTHER, other_size);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.AUDIO, info[0]);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.VIDEO, info[1]);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.PHOTO, info[2]);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.APP, info[3]);
+        storagebar.update_block_size (Granite.Widgets.StorageBar.ItemDescription.OTHER, info[4]);
     }
 
     private bool row_separator_func (Gtk.TreeModel model, Gtk.TreeIter iter) {

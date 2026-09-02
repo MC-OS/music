@@ -86,7 +86,6 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
 
     private static string clean_label (string name) {
         var t = name.strip ();
-        /* mtp://SAMSUNG_Samsung_Galaxy_Tab_E_xxxx → try last path-ish segment */
         if ("mtp://" in t || "gphoto2://" in t) {
             try {
                 var f = File.new_for_uri (t);
@@ -275,7 +274,7 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
      * which is misleading. Return empty so the UI shows a clean blank.
      */
     public string get_os_version () {
-        return "";
+        return device_version;
     }
 
     /*

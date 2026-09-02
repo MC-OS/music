@@ -319,6 +319,7 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     /*
      * [0] AUDIO [1] VIDEO [2] PHOTO [3] APP [4] OTHER
      * APP is always 0 over MTP. OTHER closes the gap to used space.
+     * Buckets by libmtp filetype macros (same classification the library scan uses).
      */
     public uint64[] get_device_storage_info () {
         if (storage_info_set) {
@@ -335,18 +336,12 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
                 if (m == null || m.file_size == 0) {
                     continue;
                 }
-                var uri = (m.uri ?? "").down ();
-                if (uri.has_suffix (".mp3") || uri.has_suffix (".flac") || uri.has_suffix (".m4a")
-                    || uri.has_suffix (".ogg") || uri.has_suffix (".wav") || uri.has_suffix (".aac")
-                    || uri.has_suffix (".opus") || uri.has_suffix (".wma") || uri.has_suffix (".aiff")) {
+                var ft = m.filetype;
+                if (Mtp.filetype_is_audio (ft)) {
                     audio += m.file_size;
-                } else if (uri.has_suffix (".mp4") || uri.has_suffix (".mkv") || uri.has_suffix (".avi")
-                    || uri.has_suffix (".mov") || uri.has_suffix (".webm") || uri.has_suffix (".3gp")
-                    || uri.has_suffix (".m4v") || uri.has_suffix (".wmv")) {
+                } else if (Mtp.filetype_is_video (ft)) {
                     video += m.file_size;
-                } else if (uri.has_suffix (".jpg") || uri.has_suffix (".jpeg") || uri.has_suffix (".png")
-                    || uri.has_suffix (".gif") || uri.has_suffix (".webp") || uri.has_suffix (".heic")
-                    || uri.has_suffix (".bmp") || uri.has_suffix (".tif") || uri.has_suffix (".tiff")) {
+                } else if (Mtp.filetype_is_image (ft)) {
                     photo += m.file_size;
                 } else {
                     other += m.file_size;

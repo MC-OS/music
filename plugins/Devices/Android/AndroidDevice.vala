@@ -262,12 +262,6 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
     }
 
     public string get_model_identifier () {
-        if (model.length == 0) {
-            return "";
-        }
-        if (manufacturer.length > 0) {
-            return "%s %s".printf (manufacturer, model);
-        }
         return model;
     }
 

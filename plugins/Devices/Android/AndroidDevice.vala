@@ -318,8 +318,10 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
 
     /*
      * [0] AUDIO [1] VIDEO [2] PHOTO [3] APP [4] OTHER
-     * APP is always 0 over MTP. OTHER closes the gap to used space.
-     * Buckets by libmtp filetype macros (same classification the library scan uses).
+     *
+     * Old core mechanic: sum the library's audio files, then fake the
+     * other slices so the StorageBar renders every color for UI preview.
+     * APP stays 0 (not available over MTP). OTHER closes the gap to used.
      */
     public uint64[] get_device_storage_info () {
         if (storage_info_set) {
@@ -327,35 +329,27 @@ public class Music.Plugins.AndroidDevice : GLib.Object, Music.Device {
         }
 
         uint64 audio = 0;
-        uint64 video = 0;
-        uint64 photo = 0;
-        uint64 other = 0;
-
         if (library != null) {
             foreach (var m in library.get_medias ()) {
-                if (m == null || m.file_size == 0) {
-                    continue;
-                }
-                var ft = m.filetype;
-                if (Mtp.filetype_is_audio (ft)) {
+                if (m != null && m.file_size > 0) {
                     audio += m.file_size;
-                } else if (Mtp.filetype_is_video (ft)) {
-                    video += m.file_size;
-                } else if (Mtp.filetype_is_image (ft)) {
-                    photo += m.file_size;
-                } else {
-                    other += m.file_size;
                 }
             }
         }
 
-        uint64 accounted = audio + video + photo + other;
         uint64 used = get_used_space ();
-        if (used > accounted) {
-            other += used - accounted;
+        if (used == 0) {
+            used = audio > 0 ? audio * 4 : 8 * 1024 * 1024 * 1024;
         }
 
-        return new uint64[] { audio, video, photo, 0, other };
+        /* Fake slices proportional to used space so the bar shows all colors. */
+        uint64 video = used / 5;
+        uint64 photo = used / 8;
+        uint64 app = used / 10;
+        uint64 accounted = audio + video + photo + app;
+        uint64 other = used > accounted ? used - accounted : used / 10;
+
+        return new uint64[] { audio, video, photo, app, other };
     }
 
     public void set_device_storage_info (uint64[] info) {

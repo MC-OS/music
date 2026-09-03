@@ -83,6 +83,16 @@ namespace Mtp {
         public int get_file_to_file_descriptor (uint32 id, int fd, ProgressFunc? callback, void* data);
 
         /*
+         * Retrieve rich metadata for a single track (title, artist, album, etc.).
+         * WARNING: O(n) and involves USB traffic — do not call in a tight loop
+         * over every file if the library is large. Prefer Get_Tracklisting when
+         * scanning everything.
+         * Caller must free the returned Track with destroy_track_t().
+         */
+        [CCode (cname = "LIBMTP_Get_Trackmetadata")]
+        public Track? get_trackmetadata (uint32 trackid);
+
+        /*
          * Read an arbitrary device/object property as a u32.
          * object_id 0 = the device itself. Used for MTP Perceived Device Type (0xD407).
          */
@@ -134,6 +144,42 @@ namespace Mtp {
 
     [CCode (cname = "LIBMTP_destroy_file_t")]
     public static void destroy_file_t (File file);
+
+    /*
+     * Full track metadata (title, artist, album, duration, …).
+     * Returned by get_trackmetadata / Get_Tracklisting.
+     * Free with destroy_track_t().
+     */
+    [CCode (cname = "LIBMTP_track_t", free_function = "LIBMTP_destroy_track_t", has_type_id = false, copy_function = "")]
+    [Compact]
+    public class Track {
+        public uint32 item_id;
+        public uint32 parent_id;
+        public uint32 storage_id;
+        public unowned string? title;
+        public unowned string? artist;
+        public unowned string? composer;
+        public unowned string? genre;
+        public unowned string? album;
+        public unowned string? date;
+        public unowned string? filename;
+        public uint16 tracknumber;
+        public uint32 duration;          /* milliseconds */
+        public uint32 samplerate;
+        public uint16 nochannels;
+        public uint32 wavecodec;
+        public uint32 bitrate;
+        public uint16 bitratetype;
+        public uint16 rating;
+        public uint32 usecount;
+        public uint64 filesize;
+        public ulong modificationdate;
+        public Filetype filetype;
+        public unowned Track? next;
+    }
+
+    [CCode (cname = "LIBMTP_destroy_track_t")]
+    public static void destroy_track_t (Track track);
 
     [CCode (cname = "LIBMTP_FILES_AND_FOLDERS_ROOT")]
     public const uint32 FILES_AND_FOLDERS_ROOT;

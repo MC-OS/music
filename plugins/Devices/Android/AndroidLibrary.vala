@@ -301,45 +301,53 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
                 continue;
             }
 
-            string ext = ".mp3";
-            int dot = m.uri.last_index_of_char ('.');
-            if (dot > 0 && m.uri.length - dot <= 5) {
-                ext = m.uri.substring (dot).down ();
+            /* Pull the real on-device filename via Get_Filemetadata. */
+            string dest_name = "track";
+            unowned Mtp.Device? dev = mtp;
+            if (dev != null) {
+                unowned Mtp.File? meta = dev.get_filemetadata (item_id);
+                if (meta != null && meta.filename != null && meta.filename != "") {
+                    dest_name = meta.filename;
+                }
+                /* Vala frees meta automatically via free_function. */
             }
 
-            string safe_title = (m.title ?? "track").replace ("/", "_").replace ("\\", "_");
-            if (safe_title.strip () == "") {
-                safe_title = "track";
+            /* Sanitize: strip any directory components and control chars. */
+            dest_name = Path.get_basename (dest_name);
+            dest_name = dest_name.replace ("/", "_").replace ("\\", "_");
+            if (dest_name.strip () == "") {
+                dest_name = "track";
             }
-            string dest_name = "%s%s".printf (safe_title, ext);
+
             string dest_path = Path.build_filename (music_dir, dest_name);
 
-            /* Avoid clobbering an existing file with the same name. */
+            /* Avoid clobbering an existing file. */
             int suffix = 1;
             while (File.new_for_path (dest_path).query_exists ()) {
-                dest_name = "%s (%d)%s".printf (safe_title, suffix, ext);
+                string base = Path.get_basename (dest_name);
+                string ext = "";
+                int dot = base.last_index_of_char ('.');
+                if (dot > 0) {
+                    ext = base.substring (dot);
+                    base = base.substring (0, dot);
+                }
+                dest_name = "%s (%d)%s".printf (base, suffix, ext);
                 dest_path = Path.build_filename (music_dir, dest_name);
                 suffix++;
             }
 
-            unowned Mtp.Device? dev = mtp;
             if (dev == null) {
                 warning ("[MTP library] MTP session gone — aborting import");
                 break;
             }
 
             ctx.index = index;
-            print ("[MTP library] Importing %s → %s\n", m.title ?? "?", dest_path);
+            print ("[MTP library] Importing %s → %s\n", dest_name, dest_path);
 
-            /* Prefer the track API for audio; fall back to generic file API. */
-            int ret = dev.get_track_to_file (item_id, dest_path, transfer_progress_cb, ctx);
-            if (ret != 0) {
-                /* Track call can fail on some devices; retry with file API. */
-                ret = dev.get_file_to_file (item_id, dest_path, transfer_progress_cb, ctx);
-            }
+            int ret = dev.get_file_to_file (item_id, dest_path, transfer_progress_cb, ctx);
 
             if (ret != 0) {
-                warning ("[MTP library] transfer failed (%d) for %s", ret, m.title ?? "?");
+                warning ("[MTP library] transfer failed (%d) for %s", ret, dest_name);
                 try {
                     var f = File.new_for_path (dest_path);
                     if (f.query_exists ()) {

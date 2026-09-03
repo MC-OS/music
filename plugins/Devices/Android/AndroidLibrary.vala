@@ -15,6 +15,13 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
 
     private const string MUSIC_FOLDER = "Music";
 
+    /* Context passed to the libmtp progress callback. */
+    private class TransferContext {
+        public int index;
+        public int total;
+        public unowned AndroidLibrary library;
+    }
+
     public AndroidLibrary (AndroidDevice device) {
         this.device = device;
         medias = new Gee.HashMap<string, Music.Media> ();
@@ -194,6 +201,30 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
         import_medias_async.begin (list);
     }
 
+    /*
+     * libmtp progress callback. Updates the global progress bar using both
+     * the overall file index and the bytes transferred for the current file.
+     * Returning non-zero cancels the transfer.
+     */
+    private static int transfer_progress_cb (uint64 sent, uint64 total, void* data) {
+        var ctx = (TransferContext) data;
+        if (ctx == null || ctx.library == null) {
+            return 0;
+        }
+
+        if (ctx.library.operation_cancelled) {
+            return 1; /* cancel */
+        }
+
+        if (total > 0 && ctx.total > 0) {
+            double file_frac = (double) sent / (double) total;
+            double overall = ((double) ctx.index + file_frac) / (double) ctx.total;
+            libraries_manager.progress = overall.clamp (0.0, 1.0);
+        }
+
+        return 0; /* continue */
+    }
+
     private async void import_medias_async (Gee.Collection<Music.Media> to_import) {
         var local = libraries_manager.local_library;
         if (local == null) {
@@ -211,6 +242,10 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
         int total = to_import.size;
         int index = 0;
         int imported = 0;
+
+        var ctx = new TransferContext ();
+        ctx.library = this;
+        ctx.total = total;
 
         foreach (var m in to_import) {
             if (operation_cancelled) {
@@ -252,11 +287,18 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
                 break;
             }
 
+            ctx.index = index;
             print ("[MTP library] Importing %s → %s\n", m.title ?? "?", dest_path);
-            /* VAPI has no default args, so pass explicit NULL for callback + data. */
-            int ret = dev.get_file_to_file (item_id, dest_path, null, null);
+
+            /* Prefer the track API for audio; fall back to generic file API. */
+            int ret = dev.get_track_to_file (item_id, dest_path, transfer_progress_cb, ctx);
             if (ret != 0) {
-                warning ("[MTP library] Get_File_To_File failed (%d) for %s", ret, m.title ?? "?");
+                /* Track call can fail on some devices; retry with file API. */
+                ret = dev.get_file_to_file (item_id, dest_path, transfer_progress_cb, ctx);
+            }
+
+            if (ret != 0) {
+                warning ("[MTP library] transfer failed (%d) for %s", ret, m.title ?? "?");
                 try {
                     var f = File.new_for_path (dest_path);
                     if (f.query_exists ()) {

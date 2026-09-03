@@ -151,6 +151,10 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
         }
     }
 
+    /*
+     * Build a Media from the basic file listing, then enrich it with
+     * LIBMTP_Get_Trackmetadata when available (title/artist/album/etc.).
+     */
     private Music.Media? media_from_mtp_file (unowned Mtp.File file, string relative_path) {
         if (file.filename == null) {
             return null;
@@ -164,14 +168,50 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
          * MediaMenu enables "Import to Library". */
         media.is_temporary = true;
 
-        /* Copy the libmtp-owned string before string methods.
-         * Do NOT name this variable "base" — that is a Vala keyword for the parent class. */
+        /* Fallback title from filename (strip extension). */
         string basename = file.filename;
         int dot = basename.last_index_of_char ('.');
         if (dot > 0) {
             basename = basename.substring (0, dot);
         }
         media.title = basename;
+
+        /* Try to pull real tags from the device. */
+        unowned Mtp.Device? dev = mtp;
+        if (dev != null) {
+            var track = dev.get_trackmetadata (file.item_id);
+            if (track != null) {
+                if (track.title != null && track.title.strip ().length > 0) {
+                    media.title = track.title.strip ();
+                }
+                if (track.artist != null && track.artist.strip ().length > 0) {
+                    media.artist = track.artist.strip ();
+                }
+                if (track.album != null && track.album.strip ().length > 0) {
+                    media.album = track.album.strip ();
+                }
+                if (track.genre != null && track.genre.strip ().length > 0) {
+                    media.genre = track.genre.strip ();
+                }
+                if (track.composer != null && track.composer.strip ().length > 0) {
+                    media.composer = track.composer.strip ();
+                }
+                if (track.tracknumber > 0) {
+                    media.track = track.tracknumber;
+                }
+                if (track.duration > 0) {
+                    media.length = track.duration; /* already in ms */
+                }
+                if (track.bitrate > 0) {
+                    media.bitrate = track.bitrate;
+                }
+                if (track.samplerate > 0) {
+                    media.samplerate = track.samplerate;
+                }
+                /* year can sometimes be parsed from the date string, but leave it for later */
+                Mtp.destroy_track_t (track);
+            }
+        }
 
         return media;
     }

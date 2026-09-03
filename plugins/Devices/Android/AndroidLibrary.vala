@@ -154,6 +154,8 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
     /*
      * Build a Media from the basic file listing, then enrich it with
      * LIBMTP_Get_Trackmetadata when available (title/artist/album/etc.).
+     * Note: Track is owned by Vala (free_function on the Compact class);
+     * do NOT call destroy_track_t manually or you get a double-free.
      */
     private Music.Media? media_from_mtp_file (unowned Mtp.File file, string relative_path) {
         if (file.filename == null) {
@@ -208,8 +210,7 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
                 if (track.samplerate > 0) {
                     media.samplerate = track.samplerate;
                 }
-                /* year can sometimes be parsed from the date string, but leave it for later */
-                Mtp.destroy_track_t (track);
+                /* Track is freed automatically when it goes out of scope. */
             }
         }
 

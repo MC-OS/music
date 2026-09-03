@@ -2,6 +2,11 @@
 [CCode (cheader_filename = "libmtp.h", cprefix = "LIBMTP_", lower_case_cprefix = "LIBMTP_")]
 namespace Mtp {
 
+    /* Progress callback used by Get_*_To_File family.
+     * Return 0 to continue, non-zero to cancel the transfer. */
+    [CCode (cname = "LIBMTP_progressfunc_t", has_target = false)]
+    public delegate int ProgressFunc (uint64 sent, uint64 total, void* data);
+
     [CCode (cname = "LIBMTP_devicestorage_t", free_function = "", unref_function = "", has_type_id = false, copy_function = "")]
     [Compact]
     public class Storage {
@@ -57,10 +62,17 @@ namespace Mtp {
 
         /*
          * Download a file by its MTP object id to a local path.
-         * Returns 0 on success. callback/data are plain pointers (no defaults — Vala has none).
+         * Returns 0 on success.
          */
         [CCode (cname = "LIBMTP_Get_File_To_File")]
-        public int get_file_to_file (uint32 id, string path, void* callback, void* data);
+        public int get_file_to_file (uint32 id, string path, ProgressFunc? callback, void* data);
+
+        /*
+         * Same as get_file_to_file but for tracks (thin wrapper in libmtp).
+         * Prefer this when the object is known to be audio.
+         */
+        [CCode (cname = "LIBMTP_Get_Track_To_File")]
+        public int get_track_to_file (uint32 id, string path, ProgressFunc? callback, void* data);
 
         /*
          * Stream a file by object id into an open file descriptor.
@@ -68,7 +80,7 @@ namespace Mtp {
          * Returns 0 on success.
          */
         [CCode (cname = "LIBMTP_Get_File_To_File_Descriptor")]
-        public int get_file_to_file_descriptor (uint32 id, int fd, void* callback, void* data);
+        public int get_file_to_file_descriptor (uint32 id, int fd, ProgressFunc? callback, void* data);
 
         /*
          * Read an arbitrary device/object property as a u32.

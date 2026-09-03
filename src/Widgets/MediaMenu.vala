@@ -88,7 +88,6 @@ public class Music.MediaMenu : Gtk.Menu {
             case ViewWrapper.Hint.DEVICE_AUDIO:
                 append (scroll_to_current);
                 append (new Gtk.SeparatorMenuItem ());
-                append (file_browse);
                 append (contractor_entry);
                 append (rate_media);
                 append (new Gtk.SeparatorMenuItem ());

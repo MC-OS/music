@@ -301,19 +301,14 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
                 continue;
             }
 
-            /* Filename is already on the listing object from the scan — no extra MTP call. */
+            /* Audio-only import: use the title populated at scan time. */
             string dest_name = m.title ?? "track";
             if (dest_name.strip () == "") {
                 dest_name = "track";
             }
 
-            /* Guess extension from the MTP filetype. */
+            /* Audio files only — default to .mp3. */
             string ext = ".mp3";
-            if (Mtp.filetype_is_video (m.filetype)) {
-                ext = ".mp4";
-            } else if (Mtp.filetype_is_image (m.filetype)) {
-                ext = ".jpg";
-            }
             if (!dest_name.down ().has_suffix (ext)) {
                 dest_name = dest_name + ext;
             }

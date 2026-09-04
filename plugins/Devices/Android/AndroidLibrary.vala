@@ -301,22 +301,28 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
                 continue;
             }
 
-            /* Pull the real on-device filename via Get_Filemetadata. */
-            string dest_name = "track";
-            unowned Mtp.Device? dev = mtp;
-            if (dev != null) {
-                unowned Mtp.File? meta = dev.get_filemetadata (item_id);
-                if (meta != null && meta.filename != null && meta.filename != "") {
-                    dest_name = meta.filename;
-                }
-                /* Vala frees meta automatically via free_function. */
+            /* Filename is already on the listing object from the scan — no extra MTP call. */
+            string dest_name = m.title ?? "track";
+            if (dest_name.strip () == "") {
+                dest_name = "track";
             }
 
-            /* Sanitize: strip any directory components and control chars. */
+            /* Guess extension from the MTP filetype. */
+            string ext = ".mp3";
+            if (Mtp.filetype_is_video (m.filetype)) {
+                ext = ".mp4";
+            } else if (Mtp.filetype_is_image (m.filetype)) {
+                ext = ".jpg";
+            }
+            if (!dest_name.down ().has_suffix (ext)) {
+                dest_name = dest_name + ext;
+            }
+
+            /* Sanitize: strip any directory components. */
             dest_name = Path.get_basename (dest_name);
             dest_name = dest_name.replace ("/", "_").replace ("\\", "_");
             if (dest_name.strip () == "") {
-                dest_name = "track";
+                dest_name = "track" + ext;
             }
 
             string dest_path = Path.build_filename (music_dir, dest_name);
@@ -324,18 +330,19 @@ public class Music.Plugins.AndroidLibrary : Music.Library {
             /* Avoid clobbering an existing file. */
             int suffix = 1;
             while (File.new_for_path (dest_path).query_exists ()) {
-                string base = Path.get_basename (dest_name);
-                string ext = "";
-                int dot = base.last_index_of_char ('.');
+                string base_name = Path.get_basename (dest_name);
+                string e = "";
+                int dot = base_name.last_index_of_char ('.');
                 if (dot > 0) {
-                    ext = base.substring (dot);
-                    base = base.substring (0, dot);
+                    e = base_name.substring (dot);
+                    base_name = base_name.substring (0, dot);
                 }
-                dest_name = "%s (%d)%s".printf (base, suffix, ext);
+                dest_name = "%s (%d)%s".printf (base_name, suffix, e);
                 dest_path = Path.build_filename (music_dir, dest_name);
                 suffix++;
             }
 
+            unowned Mtp.Device? dev = mtp;
             if (dev == null) {
                 warning ("[MTP library] MTP session gone — aborting import");
                 break;

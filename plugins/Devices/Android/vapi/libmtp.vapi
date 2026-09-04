@@ -2,10 +2,17 @@
 [CCode (cheader_filename = "libmtp.h", cprefix = "LIBMTP_", lower_case_cprefix = "LIBMTP_")]
 namespace Mtp {
 
-    /* Progress callback used by Get_*_To_File family.
+    /* Progress callback used by Get_*_To_File / Send_*_From_File family.
      * Return 0 to continue, non-zero to cancel the transfer. */
     [CCode (cname = "LIBMTP_progressfunc_t", has_target = false)]
     public delegate int ProgressFunc (uint64 sent, uint64 total, void* data);
+
+    /* Handler callbacks for streaming transfers without a local file. */
+    [CCode (cname = "MTPDataGetFunc", has_target = false)]
+    public delegate uint16 DataGetFunc (void* params, void* priv, uint32 wantlen, uint8* data, out uint32 gotlen);
+
+    [CCode (cname = "MTPDataPutFunc", has_target = false)]
+    public delegate uint16 DataPutFunc (void* params, void* priv, uint32 sendlen, uint8* data, out uint32 putlen);
 
     [CCode (cname = "LIBMTP_devicestorage_t", free_function = "", unref_function = "", has_type_id = false, copy_function = "")]
     [Compact]
@@ -83,6 +90,45 @@ namespace Mtp {
         public int get_file_to_file_descriptor (uint32 id, int fd, ProgressFunc? callback, void* data);
 
         /*
+         * Upload a local file to the device. filedata carries the destination
+         * filename / parent / storage; its item_id is filled in on success.
+         * Returns 0 on success.
+         */
+        [CCode (cname = "LIBMTP_Send_File_From_File")]
+        public int send_file_from_file (string path, File filedata, ProgressFunc? callback, void* data);
+
+        /*
+         * Stream upload from a handler callback instead of a local file.
+         * Useful for unknown-length streams.
+         */
+        [CCode (cname = "LIBMTP_Send_File_From_Handler")]
+        public int send_file_from_handler (DataGetFunc get_func, void* priv, File filedata, ProgressFunc? callback, void* data);
+
+        /*
+         * Read a byte range from an object. data is allocated by libmtp;
+         * caller must free it with GLib.free(). Returns 0 on success.
+         * maxlen is capped at 0xFFFFFFFF by the protocol.
+         */
+        [CCode (cname = "LIBMTP_GetPartialObject")]
+        public int get_partial_object (uint32 id, uint64 offset, uint32 maxlen, out uint8* data, out uint size);
+
+        /*
+         * Write a byte range into an existing object. Requires BeginEditObject
+         * first on devices that support in-place edits.
+         */
+        [CCode (cname = "LIBMTP_SendPartialObject")]
+        public int send_partial_object (uint32 id, uint64 offset, uint8* data, uint size);
+
+        [CCode (cname = "LIBMTP_BeginEditObject")]
+        public int begin_edit_object (uint32 id);
+
+        [CCode (cname = "LIBMTP_EndEditObject")]
+        public int end_edit_object (uint32 id);
+
+        [CCode (cname = "LIBMTP_TruncateObject")]
+        public int truncate_object (uint32 id, uint64 newsize);
+
+        /*
          * Retrieve rich metadata for a single track (title, artist, album, etc.).
          * WARNING: O(n) and involves USB traffic — do not call in a tight loop
          * over every file if the library is large. Prefer Get_Tracklisting when
@@ -106,6 +152,14 @@ namespace Mtp {
          */
         [CCode (cname = "LIBMTP_Get_DevicePropValue")]
         public int get_device_prop_value (uint16 prop, out void* out_val);
+
+        /*
+         * Check whether the device supports a given capability
+         * (partial object, send partial, edit, move, copy).
+         * Returns 1 if supported, 0 otherwise.
+         */
+        [CCode (cname = "LIBMTP_Check_Capability")]
+        public int check_capability (Devicecap cap);
 
         /*
          * Bind as pointer (not Vala array) so the C call stays
@@ -216,6 +270,16 @@ namespace Mtp {
         FLAC,
         DNG,
         UNKNOWN
+    }
+
+    /* Device capability flags for Check_Capability. */
+    [CCode (cname = "LIBMTP_devicecap_t", cprefix = "LIBMTP_DEVICECAP_", has_type_id = false)]
+    public enum Devicecap {
+        GetPartialObject,
+        SendPartialObject,
+        EditObjects,
+        MoveObject,
+        CopyObject
     }
 
     /*

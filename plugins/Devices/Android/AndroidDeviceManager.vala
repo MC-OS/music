@@ -24,8 +24,10 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
         Music.App.player.add_playback (streamer);
 
         volume_monitor = VolumeMonitor.get ();
-        volume_monitor.volume_added.connect (on_hint);
-        volume_monitor.mount_added.connect (on_hint);
+        volume_monitor.volume_added.connect (on_mount_hint);
+        volume_monitor.mount_added.connect (on_mount_hint);
+        volume_monitor.mount_removed.connect (on_mount_removed);
+        volume_monitor.volume_removed.connect (on_volume_removed);
 
         schedule_scan ("startup");
     }
@@ -42,11 +44,62 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
         return null;
     }
 
-    private void on_hint () {
+    private bool is_mtp_uri (string? uri) {
+        if (uri == null) {
+            return false;
+        }
+        return uri.has_prefix ("mtp://") || uri.has_prefix ("gphoto2://");
+    }
+
+    /* Device appeared (or gvfs mounted it) — try a native open if we have none. */
+    private void on_mount_hint () {
         if (devices.size > 0 || busy || announced) {
             return;
         }
         schedule_scan ("hotplug");
+    }
+
+    /* gvfs mount disappeared — session is gone; drop our device and re-arm. */
+    private void on_mount_removed (Mount mount) {
+        var root = mount.get_default_location ();
+        if (root == null) {
+            return;
+        }
+        var uri = root.get_uri () ?? "";
+        if (!is_mtp_uri (uri)) {
+            return;
+        }
+
+        print ("[MTP manager] Mount removed: %s\n", uri);
+        drop_current_device ("mount-removed");
+    }
+
+    private void on_volume_removed (Volume volume) {
+        /* Volume removal often accompanies unplug / mode switch. */
+        if (devices.size == 0) {
+            return;
+        }
+        print ("[MTP manager] Volume removed: %s\n", volume.get_name () ?? "(unnamed)");
+        drop_current_device ("volume-removed");
+    }
+
+    private void drop_current_device (string reason) {
+        if (devices.size == 0) {
+            announced = false;
+            busy = false;
+            return;
+        }
+
+        print ("[MTP manager] Dropping device (%s)\n", reason);
+
+        /* Copy list — release_mtp / on_device_gone mutates devices. */
+        var snapshot = new Gee.ArrayList<AndroidDevice> ();
+        snapshot.add_all (devices);
+
+        foreach (var dev in snapshot) {
+            dev.release_mtp ();
+            on_device_gone (dev);
+        }
     }
 
     public void remove_all () {
@@ -114,7 +167,7 @@ public class Music.Plugins.AndroidDeviceManager : GLib.Object {
                 continue;
             }
             var uri = root.get_uri () ?? "";
-            if (!uri.has_prefix ("mtp://") && !uri.has_prefix ("gphoto2://")) {
+            if (!is_mtp_uri (uri)) {
                 continue;
             }
 

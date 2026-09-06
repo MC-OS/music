@@ -67,6 +67,27 @@ namespace Mtp {
         [CCode (cname = "LIBMTP_Get_Batterylevel")]
         public int get_battery_level (out uint8 maxlevel, out uint8 curlevel);
 
+        /*
+         * Secure Time (DRM clock). Returns 0 on success; *sertime is allocated
+         * by libmtp and must be freed with GLib.free().
+         */
+        [CCode (cname = "LIBMTP_Get_Secure_Time")]
+        public int get_secure_time (out string? sertime);
+
+        /*
+         * Device Certificate. Returns 0 on success; *devcert is allocated
+         * by libmtp and must be freed with GLib.free().
+         */
+        [CCode (cname = "LIBMTP_Get_Device_Certificate")]
+        public int get_device_certificate (out string? devcert);
+
+        /*
+         * List of object format codes the device claims to support.
+         * On success *filetypes is an array of length *length; free with GLib.free().
+         */
+        [CCode (cname = "LIBMTP_Get_Supported_Filetypes")]
+        public int get_supported_filetypes ([CCode (array_length_type = "uint16_t")] out uint16[] filetypes);
+
         /* File listing: requires an uncached device session. */
         [CCode (cname = "LIBMTP_Get_Files_And_Folders")]
         public unowned File? get_files_and_folders (uint32 storage_id, uint32 parent_id);
@@ -152,7 +173,7 @@ namespace Mtp {
         /*
          * Read a device property value (GetDevicePropValue, 0x1015).
          * out_val is a LIBMTP_device_prop_value_t*; caller must free with
-         * LIBMTP_FreeMemory. Returns 0 on success.
+         * LIBMTP_FreeMemory / GLib.free. Returns 0 on success.
          */
         [CCode (cname = "LIBMTP_Get_DevicePropValue")]
         public int get_device_prop_value (uint16 prop, out void* out_val);

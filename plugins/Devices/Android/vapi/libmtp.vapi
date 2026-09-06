@@ -20,6 +20,7 @@ namespace Mtp {
         public uint32 id;
         public uint64 MaxCapacity;
         public uint64 FreeSpaceInBytes;
+        public uint64 FreeSpaceInObjects;
         public unowned string? StorageDescription;
         public unowned string? VolumeIdentifier;
         public unowned Storage? next;
@@ -47,6 +48,9 @@ namespace Mtp {
 
         [CCode (cname = "LIBMTP_Get_Deviceversion")]
         public unowned string? get_device_version ();
+
+        [CCode (cname = "LIBMTP_Get_Syncpartner")]
+        public unowned string? get_syncpartner ();
 
         [CCode (cname = "LIBMTP_Get_Storage")]
         public int get_storage (int sortby);
@@ -309,4 +313,8 @@ namespace Mtp {
 
     [CCode (cname = "LIBMTP_Release_Device")]
     public static void release_device (unowned Device device);
+
+    /* Free memory allocated by libmtp (same as free() in most cases). */
+    [CCode (cname = "LIBMTP_FreeMemory")]
+    public static void free_memory (void* mem);
 }

@@ -105,7 +105,9 @@ public class Music.Plugins.MtpConsoleProbe : GLib.Object {
             return;
         }
 
-        /* Full capability dump: operations, events, device props, object formats. */
+        /* Full capability dump: operations, events, device props, object formats.
+         * This writes to stdout (not message()), so look at the terminal. */
+        message ("--- LIBMTP_Dump_Device_Info (stdout) ---");
         device.dump_device_info ();
 
         /* GetDeviceInfo fields (manufacturer, model, version, serial, extensions). */

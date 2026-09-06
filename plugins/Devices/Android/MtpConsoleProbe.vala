@@ -143,6 +143,38 @@ public class Music.Plugins.MtpConsoleProbe : GLib.Object {
         string? sync = device.get_syncpartner ();
         message ("  Sync partner  : %s", sync ?? "(empty)");
 
+        /* Secure Time. */
+        string? secure_time = null;
+        if (device.get_secure_time (out secure_time) == 0 && secure_time != null && secure_time != "") {
+            message ("  Secure time   : %s", secure_time);
+        } else {
+            message ("  Secure time   : (unavailable)");
+        }
+
+        /* Device Certificate (often empty / not supported on Android). */
+        string? cert = null;
+        if (device.get_device_certificate (out cert) == 0 && cert != null && cert != "") {
+            /* Certificates can be huge; show a short preview. */
+            var preview = cert.length > 120 ? cert.substring (0, 120) + "…" : cert;
+            message ("  Device cert   : %s", preview);
+        } else {
+            message ("  Device cert   : (unavailable)");
+        }
+
+        /* Supported filetypes. */
+        message ("--- Supported filetypes ---");
+        uint16[]? filetypes = null;
+        if (device.get_supported_filetypes (out filetypes) == 0 && filetypes != null) {
+            foreach (var ft in filetypes) {
+                message ("  0x%04x", ft);
+            }
+            if (filetypes.length == 0) {
+                message ("  (none reported)");
+            }
+        } else {
+            message ("  (unavailable)");
+        }
+
         /* Folder tree. */
         if (store != null) {
             message ("--- files & folders ---");

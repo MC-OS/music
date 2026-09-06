@@ -368,9 +368,6 @@ public class Music.Plugins.MtpConsoleProbe : GLib.Object {
             int ret = device.get_device_prop_value (code, out val);
             if (ret != 0 || val == null) {
                 message ("  0x%04x: (unsupported or error %d)", code, ret);
-                if (val != null) {
-                    Mtp.free_memory (val);
-                }
                 continue;
             }
 
@@ -381,7 +378,6 @@ public class Music.Plugins.MtpConsoleProbe : GLib.Object {
                 hex += "%02x ".printf (bytes[i]);
             }
             message ("  0x%04x: %s...", code, hex);
-            Mtp.free_memory (val);
         }
     }
 

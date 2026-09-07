@@ -1,9 +1,8 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Holds the tracks from an audio CD.
  *
- * Lazy: only reads the TOC when the user opens the CD.
- * Uses cdparanoiasrc to get the real track count, then creates
- * simple "Track N" placeholders. No durations or tags until import.
+ * Lazy: only reads the disc when the user opens the CD.
+ * Uses GVFS/GIO (cdda://) exclusively – same path as the file manager.
  */
 
 public class Music.Plugins.CDLibrary : Music.Library {
@@ -23,8 +22,6 @@ public class Music.Plugins.CDLibrary : Music.Library {
     public override void initialize_library () {
     }
 
-    /* Lightweight – device is ready, no drive access yet.
-     * Emit initialized on Idle so CDDeviceManager can connect first. */
     public async void finish_initialization_async () {
         Idle.add (() => {
             device.initialized (device);
@@ -32,13 +29,12 @@ public class Music.Plugins.CDLibrary : Music.Library {
         });
     }
 
-    /* Called the first time the user opens the CD view. */
     public void ensure_scanned () {
         if (scan_started) {
             return;
         }
         scan_started = true;
-        message ("[CD] starting lazy TOC scan");
+        message ("[CD] starting GVFS track listing");
         start_scan.begin ();
     }
 
@@ -46,86 +42,108 @@ public class Music.Plugins.CDLibrary : Music.Library {
         is_doing_file_operations = true;
         file_operations_started ();
 
-        yield read_toc ();
+        yield list_tracks_via_gvfs ();
 
         is_doing_file_operations = false;
         file_operations_done ();
         search_medias ("");
     }
 
-    private async void read_toc () {
-        string? device_path = device.get_volume ().get_identifier ("unix-device");
-        message ("[CD] reading TOC, device = %s", device_path ?? "(default)");
+    /* Build cdda:// URI the same way gio/Thunar do:
+     *   /dev/sr0  →  cdda://sr0/  */
+    private string? cdda_root_uri () {
+        string? unix = device.get_volume ().get_identifier ("unix-device");
+        if (unix != null && unix.has_prefix ("/dev/")) {
+            return "cdda://%s/".printf (unix.substring (5));
+        }
 
-        uint track_count = 0;
+        string? cdda = device.get_volume ().get_identifier ("cdda");
+        if (cdda != null && cdda != "") {
+            if (!cdda.has_suffix ("/")) {
+                cdda += "/";
+            }
+            return cdda;
+        }
 
-        SourceFunc callback = read_toc.callback;
+        return "cdda://";
+    }
 
-        new Thread<void*> ("cd-toc", () => {
-            track_count = query_track_count (device_path);
-            Idle.add ((owned) callback);
-            return null;
-        });
-
-        yield;
-
-        if (track_count == 0) {
-            warning ("[CD] no audio tracks found");
+    private async void list_tracks_via_gvfs () {
+        string? root = cdda_root_uri ();
+        if (root == null) {
+            warning ("[CD] could not build cdda URI");
             return;
         }
 
-        message ("[CD] TOC reports %u tracks", track_count);
+        message ("[CD] enumerating %s", root);
 
-        for (uint t = 1; t <= track_count; t++) {
-            add_placeholder_track (t, track_count);
-        }
-    }
+        var file = File.new_for_uri (root);
 
-    private static uint query_track_count (string? device_path) {
-        Gst.Element? src = Gst.ElementFactory.make ("cdparanoiasrc", "cdsrc");
-        if (src == null) {
-            src = Gst.ElementFactory.make ("cdiocddasrc", "cdsrc");
-        }
-        if (src == null) {
-            warning ("[CD] neither cdparanoiasrc nor cdiocddasrc is available");
-            return 0;
-        }
-
-        if (device_path != null) {
-            src.set ("device", device_path);
+        /* Ensure GVFS has the disc mounted (same as: gio mount cdda://sr0/) */
+        try {
+            yield file.mount_enclosing_volume (
+                MountMountFlags.NONE,
+                null,
+                null
+            );
+        } catch (Error e) {
+            /* Already mounted or not needed – fine either way */
+            debug ("[CD] mount_enclosing_volume: %s", e.message);
         }
 
-        var pipeline = new Gst.Pipeline ("cd-toc-pipeline");
-        var sink = Gst.ElementFactory.make ("fakesink", "sink");
-        pipeline.add_many (src, sink);
-        src.link (sink);
+        try {
+            var attrs = string.join (",",
+                FileAttribute.STANDARD_NAME,
+                FileAttribute.STANDARD_DISPLAY_NAME,
+                FileAttribute.TIME_MODIFIED,
+                "xattr::org.gnome.audio.title",
+                "xattr::org.gnome.audio.artist",
+                "xattr::org.gnome.audio.duration"
+            );
 
-        var ret = pipeline.set_state (Gst.State.PAUSED);
-        if (ret == Gst.StateChangeReturn.FAILURE) {
-            warning ("[CD] failed to pause cd source");
-            pipeline.set_state (Gst.State.NULL);
-            return 0;
-        }
+            var enumerator = yield file.enumerate_children_async (
+                attrs,
+                FileQueryInfoFlags.NONE,
+                Priority.DEFAULT,
+                null
+            );
 
-        Gst.State state;
-        pipeline.get_state (out state, null, 5 * Gst.SECOND);
+            uint track = 0;
+            while (true) {
+                var infos = yield enumerator.next_files_async (20, Priority.DEFAULT, null);
+                if (infos == null || infos.length () == 0) {
+                    break;
+                }
 
-        uint count = 0;
-        var format = Gst.Format.get_by_nick ("track");
-        if (format != Gst.Format.UNDEFINED) {
-            int64 duration = 0;
-            if (pipeline.query_duration (format, out duration) && duration > 0) {
-                count = (uint) duration;
+                foreach (var info in infos) {
+                    track++;
+                    string name = info.get_name ();
+                    string child_uri = file.get_child (name).get_uri ();
+
+                    string title = info.get_attribute_string ("xattr::org.gnome.audio.title");
+                    if (title == null || title == "") {
+                        title = info.get_display_name () ?? _("Track %u").printf (track);
+                        /* Strip .wav if GVFS used Track N.wav */
+                        if (title.has_suffix (".wav")) {
+                            title = title.substring (0, title.length - 4);
+                        }
+                    }
+
+                    string? artist = info.get_attribute_string ("xattr::org.gnome.audio.artist");
+                    uint64 duration_sec = info.get_attribute_uint64 ("xattr::org.gnome.audio.duration");
+
+                    add_track (track, child_uri, title, artist, duration_sec);
+                    message ("[CD] track %u: %s (%s)", track, title, child_uri);
+                }
             }
-        }
 
-        pipeline.set_state (Gst.State.NULL);
-        return count;
+            message ("[CD] GVFS listed %u tracks", medias.size);
+        } catch (Error e) {
+            warning ("[CD] GVFS enumerate failed: %s", e.message);
+        }
     }
 
-    private void add_placeholder_track (uint track, uint total) {
-        string uri = "cdda://%u".printf (track);
-
+    private void add_track (uint track, string uri, string title, string? artist, uint64 duration_sec) {
         lock (medias) {
             if (medias.has_key (uri)) {
                 return;
@@ -135,12 +153,16 @@ public class Music.Plugins.CDLibrary : Music.Library {
         var media = new Music.Media (uri);
         media.rowid = next_rowid++;
         media.track = track;
-        media.track_count = total;
-        media.title = _("Track %u").printf (track);
-        media.artist = _("Unknown");
+        media.track_count = (uint) medias.size + 1;
+        media.title = title;
+        media.artist = (artist != null && artist != "") ? artist : _("Unknown");
         media.album = device.get_display_name ();
         media.is_temporary = true;
         media.file_size = 0;
+
+        if (duration_sec > 0) {
+            media.length = (uint) (duration_sec * 1000);
+        }
 
         lock (medias) {
             medias.set (uri, media);
@@ -158,7 +180,6 @@ public class Music.Plugins.CDLibrary : Music.Library {
     }
 
     public override void search_medias (string search) {
-        /* Do not call ensure_scanned here – scanning is triggered by the view */
         lock (searched_medias) {
             searched_medias.clear ();
             if (search == null || search == "") {

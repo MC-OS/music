@@ -164,21 +164,16 @@
     <content_attribute id="money-gambling">none</content_attribute>
   </content_rating>
   <developer_name>elementary, Inc.</developer_name>
-  <url type="homepage">https://elementary.io/</url>
-  <url type="bugtracker">https://github.com/elementary/music/issues</url>
-  <url type="donation">https://elementary.io/get-involved#funding</url>
-  <url type="help">https://elementaryos.stackexchange.com/questions/tagged/noise</url>
-  <url type="translate">https://l10n.elementary.io/projects/music</url>
-  <update_contact>contact_at_elementary.io</update_contact>
+  <url type="bugtracker">https://github.com/MC-OS/music/issues</url>
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/elementary/music/master/data/screenshot.png</image>
+      <image>https://raw.githubusercontent.com/MC-OS/music/eOS_Classic_ui/data/screenshot.png</image>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/elementary/music/master/data/screenshot-2.png</image>
+      <image>https://raw.githubusercontent.com/MC-OS/music/eOS_Classic_ui/data/screenshot-2.png</image>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/elementary/music/master/data/screenshot-3.png</image>
+      <image>https://raw.githubusercontent.com/MC-OS/music/eOS_Classic_ui/data/screenshot-3.png</image>
     </screenshot>
   </screenshots>
 </component>

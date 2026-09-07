@@ -1,0 +1,8 @@
+[Plugin]
+Module=cdrom-device
+Loader=C
+Name=CD/DVD
+Description=Support for audio CDs via GVFS
+Authors=Music Developers
+Copyright=Copyright © 2012-2026 Music Developers
+Website=https://github.com/MC-OS/music

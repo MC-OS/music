@@ -540,7 +540,6 @@ public class Music.PlaybackManager : Object {
         if (!m.file.query_exists ()) {
             m.unique_status_image = new ThemedIcon ("process-error-symbolic");
             m.location_unknown = true;
-            //App.main_window.media_not_found(id);
             get_next (true);
             return;
         } else {

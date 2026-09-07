@@ -1,9 +1,9 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Holds the tracks from an audio CD.
  *
- * Scanning is lazy (starts only when the user opens the CD) and
- * progressive: each track is added to the library as soon as it is
- * discovered so the list fills in while the scan continues.
+ * Lazy: only reads the TOC when the user opens the CD.
+ * Uses cdparanoiasrc to get the real track count, then creates
+ * simple "Track N" placeholders. No durations or tags until import.
  */
 
 public class Music.Plugins.CDLibrary : Music.Library {
@@ -23,7 +23,7 @@ public class Music.Plugins.CDLibrary : Music.Library {
     public override void initialize_library () {
     }
 
-    /* Lightweight – just signal that the device is ready. No drive access. */
+    /* Lightweight – device is ready, no drive access yet. */
     public async void finish_initialization_async () {
         device.initialized (device);
         search_medias ("");
@@ -42,86 +42,88 @@ public class Music.Plugins.CDLibrary : Music.Library {
         is_doing_file_operations = true;
         file_operations_started ();
 
-        yield read_disc_toc ();
+        yield read_toc ();
 
         is_doing_file_operations = false;
         file_operations_done ();
         search_medias ("");
     }
 
-    private async void read_disc_toc () {
+    private async void read_toc () {
         string? device_path = device.get_volume ().get_identifier ("unix-device");
+        message ("[CD] reading TOC, device = %s", device_path ?? "(default)");
 
-        message ("[CD] unix-device = %s", device_path ?? "(null)");
+        uint track_count = 0;
 
-        string track_uri_template;
-        if (device_path != null && device_path.has_prefix ("/dev/")) {
-            track_uri_template = "cdda://%u#" + device_path;
-        } else {
-            track_uri_template = "cdda://%u";
-        }
+        SourceFunc callback = read_toc.callback;
 
-        message ("[CD] probing tracks with template: %s", track_uri_template);
-
-        SourceFunc callback = read_disc_toc.callback;
-
-        new Thread<void*> ("cd-toc-probe", () => {
-            try {
-                var discoverer = new Gst.PbUtils.Discoverer (8 * Gst.SECOND);
-
-                for (uint track = 1; track <= 99; track++) {
-                    string uri = track_uri_template.printf (track);
-                    Gst.PbUtils.DiscovererInfo? info = null;
-
-                    try {
-                        info = discoverer.discover_uri (uri);
-                    } catch (Error e) {
-                        message ("[CD] track %u failed: %s", track, e.message);
-                        break;
-                    }
-
-                    if (info == null) {
-                        message ("[CD] track %u returned null info", track);
-                        break;
-                    }
-
-                    var result = info.get_result ();
-                    if (result != Gst.PbUtils.DiscovererResult.OK &&
-                        result != Gst.PbUtils.DiscovererResult.TIMEOUT) {
-                        message ("[CD] track %u result = %s — stopping", track, result.to_string ());
-                        break;
-                    }
-
-                    uint t = track;
-                    Gst.ClockTime dur = info.get_duration ();
-                    Gst.TagList? tags = info.get_tags ();
-
-                    message ("[CD] found track %u  duration=%" + int64.FORMAT + " ns",
-                             t, (int64) dur);
-
-                    /* Add this track on the main thread immediately */
-                    Idle.add (() => {
-                        add_track (t, dur, tags);
-                        search_medias ("");
-                        return false;
-                    });
-                }
-            } catch (Error e) {
-                warning ("[CD] Discoverer setup failed: %s", e.message);
-            }
-
-            message ("[CD] finished probing");
+        new Thread<void*> ("cd-toc", () => {
+            track_count = query_track_count (device_path);
             Idle.add ((owned) callback);
             return null;
         });
 
         yield;
+
+        if (track_count == 0) {
+            warning ("[CD] no audio tracks found");
+            return;
+        }
+
+        message ("[CD] TOC reports %u tracks", track_count);
+
+        for (uint t = 1; t <= track_count; t++) {
+            add_placeholder_track (t, track_count);
+        }
     }
 
-    private void add_track (uint track, Gst.ClockTime duration, Gst.TagList? tags) {
+    /* Ask cdparanoiasrc (or cdiocddasrc) for the real number of tracks. */
+    private static uint query_track_count (string? device_path) {
+        Gst.Element? src = Gst.ElementFactory.make ("cdparanoiasrc", "cdsrc");
+        if (src == null) {
+            src = Gst.ElementFactory.make ("cdiocddasrc", "cdsrc");
+        }
+        if (src == null) {
+            warning ("[CD] neither cdparanoiasrc nor cdiocddasrc is available");
+            return 0;
+        }
+
+        if (device_path != null) {
+            src.set ("device", device_path);
+        }
+
+        var pipeline = new Gst.Pipeline ("cd-toc-pipeline");
+        var sink = Gst.ElementFactory.make ("fakesink", "sink");
+        pipeline.add_many (src, sink);
+        src.link (sink);
+
+        var ret = pipeline.set_state (Gst.State.PAUSED);
+        if (ret == Gst.StateChangeReturn.FAILURE) {
+            warning ("[CD] failed to pause cd source");
+            pipeline.set_state (Gst.State.NULL);
+            return 0;
+        }
+
+        /* Wait for state change / TOC to become available */
+        Gst.State state;
+        pipeline.get_state (out state, null, 5 * Gst.SECOND);
+
+        uint count = 0;
+        var format = Gst.Format.get_by_nick ("track");
+        if (format != Gst.Format.UNDEFINED) {
+            int64 duration = 0;
+            if (pipeline.query_duration (format, out duration) && duration > 0) {
+                count = (uint) duration;
+            }
+        }
+
+        pipeline.set_state (Gst.State.NULL);
+        return count;
+    }
+
+    private void add_placeholder_track (uint track, uint total) {
         string uri = "cdda://%u".printf (track);
 
-        /* Avoid duplicates if called twice */
         lock (medias) {
             if (medias.has_key (uri)) {
                 return;
@@ -131,40 +133,18 @@ public class Music.Plugins.CDLibrary : Music.Library {
         var media = new Music.Media (uri);
         media.rowid = next_rowid++;
         media.track = track;
-        media.track_count = (uint) medias.size + 1;
+        media.track_count = total;
         media.title = _("Track %u").printf (track);
         media.artist = _("Unknown");
         media.album = device.get_display_name ();
         media.is_temporary = true;
         media.file_size = 0;
-
-        if (duration != Gst.CLOCK_TIME_NONE && duration > 0) {
-            media.length = (uint) (duration / Gst.MSECOND);
-        }
-
-        if (tags != null) {
-            string? title = null, artist = null, album = null, genre = null;
-            tags.get_string (Gst.Tags.TITLE, out title);
-            tags.get_string (Gst.Tags.ARTIST, out artist);
-            tags.get_string (Gst.Tags.ALBUM, out album);
-            tags.get_string (Gst.Tags.GENRE, out genre);
-            if (title != null && title != "") {
-                media.title = title;
-            }
-            if (artist != null && artist != "") {
-                media.artist = artist;
-            }
-            if (album != null && album != "") {
-                media.album = album;
-            }
-            if (genre != null) {
-                media.genre = genre;
-            }
-        }
+        /* length left at 0 – filled later on import/playback if needed */
 
         lock (medias) {
             medias.set (uri, media);
         }
+
         var added = new Gee.ArrayList<Music.Media> ();
         added.add (media);
         media_added (added);

@@ -43,36 +43,42 @@ public class Music.Plugins.CDDeviceManager : GLib.Object {
         return null;
     }
 
-    private bool is_optical (Volume volume) {
-        var drive = volume.get_drive ();
-        if (drive == null || !drive.has_media ()) {
+    private bool is_optical (Volume vol) {
+        var drive = vol.get_drive ();
+        if (drive == null) {
             return false;
         }
 
-        string? unix = volume.get_identifier ("unix-device");
-        if (unix != null && (unix.has_prefix ("/dev/sr") || unix.has_prefix ("/dev/cd"))) {
+        if (!drive.has_media ()) {
+            return false;
+        }
+
+        /* Copy into a non-null local to avoid Vala ownership free bugs */
+        string device_path = vol.get_identifier ("unix-device") ?? "";
+        if (device_path.has_prefix ("/dev/sr") || device_path.has_prefix ("/dev/cd")) {
             return true;
         }
 
         return drive.is_media_removable () && drive.can_eject ();
     }
 
-    public virtual void volume_added (Volume volume) {
-        if (!is_optical (volume)) {
+    public virtual void volume_added (Volume vol) {
+        if (!is_optical (vol)) {
             return;
         }
 
         foreach (var dev in devices) {
-            if (dev.get_volume () == volume) {
+            if (dev.get_volume () == vol) {
                 return;
             }
         }
 
+        string device_path = vol.get_identifier ("unix-device") ?? "?";
         message ("[CD] Optical volume: %s (%s)",
-                 volume.get_name () ?? "(unnamed)",
-                 volume.get_identifier ("unix-device") ?? "?");
+                 vol.get_name () ?? "(unnamed)",
+                 device_path);
 
-        var added = new CDDevice (volume);
+        var added = new CDDevice (vol);
         devices.add (added);
 
         if (added.start_initialization ()) {
@@ -85,15 +91,15 @@ public class Music.Plugins.CDDeviceManager : GLib.Object {
     }
 
     public virtual void mount_added (Mount mount) {
-        var volume = mount.get_volume ();
-        if (volume != null) {
-            volume_added (volume);
+        var vol = mount.get_volume ();
+        if (vol != null) {
+            volume_added (vol);
         }
     }
 
-    public virtual void volume_removed (Volume volume) {
+    public virtual void volume_removed (Volume vol) {
         foreach (var dev in devices) {
-            if (dev.get_volume () == volume) {
+            if (dev.get_volume () == vol) {
                 DeviceManager.get_default ().device_removed ((Music.Device) dev);
                 devices.remove (dev);
                 return;
@@ -102,9 +108,9 @@ public class Music.Plugins.CDDeviceManager : GLib.Object {
     }
 
     public virtual void mount_removed (Mount mount) {
-        var volume = mount.get_volume ();
-        if (volume != null) {
-            volume_removed (volume);
+        var vol = mount.get_volume ();
+        if (vol != null) {
+            volume_removed (vol);
         }
     }
 }

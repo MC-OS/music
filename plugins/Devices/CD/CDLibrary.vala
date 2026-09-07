@@ -1,9 +1,8 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Holds the tracks from an audio CD.
  *
- * Discovers each track individually (cdda://1, cdda://2, ...) because
- * handing a bare cdda:// or device node to Discoverer almost never
- * returns useful per-track streams.
+ * Discovers each track individually (cdda://1, cdda://2, ...) off the
+ * main thread so the UI does not freeze while Gst.PbUtils.Discoverer runs.
  */
 
 public class Music.Plugins.CDLibrary : Music.Library {
@@ -41,8 +40,6 @@ public class Music.Plugins.CDLibrary : Music.Library {
         message ("[CD] unix-device = %s", device_path ?? "(null)");
         message ("[CD] cdda identifier = %s", cdda_id ?? "(null)");
 
-        /* Build the base form that GStreamer cdparanoiasrc understands.
-         * Prefer the classic cdda://N form; fall back to device-qualified. */
         string track_uri_template;
         if (device_path != null && device_path.has_prefix ("/dev/")) {
             track_uri_template = "cdda://%u#" + device_path;
@@ -52,47 +49,69 @@ public class Music.Plugins.CDLibrary : Music.Library {
 
         message ("[CD] probing tracks with template: %s", track_uri_template);
 
-        Gst.PbUtils.Discoverer discoverer;
-        try {
-            discoverer = new Gst.PbUtils.Discoverer (8 * Gst.SECOND);
-        } catch (Error e) {
-            warning ("[CD] could not create Discoverer: %s", e.message);
-            return;
-        }
+        /* Run the blocking Discoverer calls on a worker thread */
+        Gee.ArrayList<TrackInfo?> found = new Gee.ArrayList<TrackInfo?> ();
 
-        /* Probe sequential tracks until we hit a failure.
-         * Real audio CDs are almost never > 30 tracks; hard stop at 99. */
-        for (uint track = 1; track <= 99; track++) {
-            string uri = track_uri_template.printf (track);
-            Gst.PbUtils.DiscovererInfo? info = null;
-
+        SourceFunc callback = read_disc_toc.callback;
+        new Thread<void*> ("cd-toc-probe", () => {
             try {
-                info = discoverer.discover_uri (uri);
+                var discoverer = new Gst.PbUtils.Discoverer (8 * Gst.SECOND);
+
+                for (uint track = 1; track <= 99; track++) {
+                    string uri = track_uri_template.printf (track);
+                    Gst.PbUtils.DiscovererInfo? info = null;
+
+                    try {
+                        info = discoverer.discover_uri (uri);
+                    } catch (Error e) {
+                        message ("[CD] track %u failed: %s", track, e.message);
+                        break;
+                    }
+
+                    if (info == null) {
+                        message ("[CD] track %u returned null info", track);
+                        break;
+                    }
+
+                    var result = info.get_result ();
+                    if (result != Gst.PbUtils.DiscovererResult.OK &&
+                        result != Gst.PbUtils.DiscovererResult.TIMEOUT) {
+                        message ("[CD] track %u result = %s — stopping", track, result.to_string ());
+                        break;
+                    }
+
+                    var ti = new TrackInfo ();
+                    ti.track = track;
+                    ti.duration = info.get_duration ();
+                    ti.tags = info.get_tags ();
+                    found.add (ti);
+
+                    message ("[CD] found track %u  duration=%" + int64.FORMAT + " ns",
+                             track, (int64) ti.duration);
+                }
             } catch (Error e) {
-                message ("[CD] track %u failed: %s", track, e.message);
-                break;
+                warning ("[CD] Discoverer setup failed: %s", e.message);
             }
 
-            if (info == null) {
-                message ("[CD] track %u returned null info", track);
-                break;
+            Idle.add ((owned) callback);
+            return null;
+        });
+
+        yield;
+
+        foreach (var ti in found) {
+            if (ti != null) {
+                add_track (ti.track, ti.duration, ti.tags);
             }
-
-            var result = info.get_result ();
-            if (result != Gst.PbUtils.DiscovererResult.OK &&
-                result != Gst.PbUtils.DiscovererResult.TIMEOUT) {
-                message ("[CD] track %u result = %s — stopping", track, result.to_string ());
-                break;
-            }
-
-            Gst.ClockTime duration = info.get_duration ();
-            Gst.TagList? tags = info.get_tags ();
-
-            message ("[CD] found track %u  duration=%" + int64.FORMAT + " ns", track, (int64) duration);
-            add_track (track, duration, tags);
         }
 
         message ("[CD] finished probing — %u tracks in library", medias.size);
+    }
+
+    private class TrackInfo {
+        public uint track;
+        public Gst.ClockTime duration;
+        public Gst.TagList? tags;
     }
 
     private void add_track (uint track, Gst.ClockTime duration, Gst.TagList? tags) {

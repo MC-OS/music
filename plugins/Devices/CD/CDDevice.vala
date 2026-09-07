@@ -64,9 +64,9 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
     }
 
     public string get_uri () {
-        string? unix = volume.get_identifier ("unix-device");
-        if (unix != null && unix.has_prefix ("/dev/")) {
-            string device_name = unix.substring (5);
+        string? unix_device = volume.get_identifier ("unix-device");
+        if (unix_device != null && unix_device.has_prefix ("/dev/")) {
+            string device_name = unix_device.substring (5);
             return "cdda://%s/".printf (device_name);
         }
 

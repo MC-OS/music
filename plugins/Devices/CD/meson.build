@@ -9,7 +9,10 @@ cdrom_files = files(
 shared_module(
   'cdrom-device',
   cdrom_files,
-  dependencies: [ app_dep ],
+  dependencies: [
+    app_dep,
+    dependency('gstreamer-pbutils-1.0')
+  ],
   install: true,
   install_dir: plugindir
 )

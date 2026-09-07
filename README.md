@@ -54,7 +54,7 @@ To define their values, use `meson configure`
 
 ## Developer Docs
 
-Music includes valadoc documentation for developers, to autogenerate them from git master enable valadoc:
+Music includes valadoc documentation for developers, to autogenerate them from git eOS_Classic_ui enable valadoc:
 
     meson configure -Ddocumentation=true
 

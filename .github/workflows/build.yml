@@ -1,0 +1,59 @@
+name: Daily Build On Push
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    container:
+      image: elementary/docker:unstable
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      run: |
+        apt update
+        apt install -y appstream desktop-file-utils gettext libgda-5.0-dev libgee-0.8-dev libglib2.0-dev libgpod-dev libgranite-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libgtk-3-dev libhandy-1-dev libjson-glib-dev libpeas-dev libsoup2.4-dev libtagc0-dev libzeitgeist-2.0-dev meson valac
+    - name: Build
+      run: |
+        meson build
+        ninja -C build
+        ninja -C build install
+
+      - name: Install into staging directory
+        run: |
+          rm -rf pkg
+          mkdir -p pkg
+          DESTDIR="$PWD/pkg" ninja -C build install
+
+      - name: Create DEBIAN control and build .deb
+        env:
+          BRANCH: ${{ github.ref_name }}
+          PKGNAME: io.elementary.music
+          MAINTAINER: "${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
+        run: |
+          set -euo pipefail
+          mkdir -p pkg/DEBIAN
+          SAFE_BRANCH="${BRANCH//[^a-zA-Z0-9_.-]/-}"
+          VERSION="$(date -u +%Y%m%d%H%M)-${SAFE_BRANCH}"
+          printf '%s\n' \
+            "Package: ${PKGNAME}" \
+            "Version: ${VERSION}" \
+            "Section: utils" \
+            "Priority: optional" \
+            "Architecture: amd64" \
+            "Maintainer: ${MAINTAINER}" \
+            "Description: Build of ${PKGNAME} from branch ${BRANCH}" \
+            > pkg/DEBIAN/control
+          chmod 0755 pkg/DEBIAN
+          PKG_FILE="${PKGNAME}-${SAFE_BRANCH}_${VERSION}_amd64.deb"
+          dpkg-deb --build pkg "${PKG_FILE}"
+          echo "Built ${PKG_FILE}"
+
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.ref_name }}-deb
+          path: "./io.elementary.music_*.deb"

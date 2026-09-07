@@ -1,10 +1,10 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Holds the tracks from an audio CD.
  *
- * Reads the disc's table of contents with Gst.PbUtils.Discoverer so the
- * library fills with one Media per audio track (cdda://track-N). No
- * libcdio dependency — the discoverer opens the drive, reads the TOC,
- * and closes it before playback ever touches it.
+ * Reads the disc with Gst.PbUtils.Discoverer so the library fills with
+ * one Media per audio track. DiscovererStreamInfo does not expose
+ * duration, so we fall back to CLOCK_TIME_NONE for individual tracks
+ * (the top-level DiscovererInfo duration is the whole disc).
  */
 
 public class Music.Plugins.CDLibrary : Music.Library {
@@ -35,8 +35,6 @@ public class Music.Plugins.CDLibrary : Music.Library {
         search_medias ("");
     }
 
-    /* Walk the disc with the discoverer. Each discovered audio stream
-     * becomes one Media entry keyed by its cdda://track-N URI. */
     private async void read_disc_toc () {
         string? uri = device.get_volume ().get_identifier ("cdda")
                     ?? device.get_volume ().get_identifier ("unix-device");
@@ -70,7 +68,7 @@ public class Music.Plugins.CDLibrary : Music.Library {
 
         var streams = info.get_audio_streams ();
         if (streams == null || streams.length () == 0) {
-            /* Fallback: one synthetic track so the view is not completely empty */
+            /* No typed audio streams – create a single placeholder track */
             add_track (1, info.get_duration (), null);
             return;
         }
@@ -78,7 +76,8 @@ public class Music.Plugins.CDLibrary : Music.Library {
         uint track = 0;
         foreach (var stream in streams) {
             track++;
-            add_track (track, stream.get_duration (), stream.get_tags ());
+            /* DiscovererStreamInfo has no get_duration(); pass NONE for now */
+            add_track (track, Gst.CLOCK_TIME_NONE, stream.get_tags ());
         }
     }
 

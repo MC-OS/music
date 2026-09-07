@@ -3,8 +3,8 @@
  * Watch for optical media and register a CDDevice when an audio CD appears.
  *
  * Initialization order matches iPodDeviceManager / AudioPlayerDeviceManager:
- *   create device → start_initialization → finish_initialization →
- *   initialized signal → DeviceManager.device_initialized
+ *   create device → start_initialization → connect initialized →
+ *   finish_initialization → DeviceManager.device_initialized
  */
 
 public class Music.Plugins.CDDeviceManager : GLib.Object {
@@ -58,7 +58,15 @@ public class Music.Plugins.CDDeviceManager : GLib.Object {
             return false;
         }
 
-        return drive.is_media_removable () && drive.has_media ();
+        /* Prefer explicit optical identification when available */
+        if (drive.has_media () && drive.can_eject ()) {
+            string? unix = volume.get_identifier ("unix-device");
+            if (unix != null && (unix.has_prefix ("/dev/sr") || unix.has_prefix ("/dev/cd"))) {
+                return true;
+            }
+        }
+
+        return drive.is_media_removable () && drive.has_media () && drive.can_eject ();
     }
 
     public virtual void volume_added (Volume volume) {
@@ -72,16 +80,20 @@ public class Music.Plugins.CDDeviceManager : GLib.Object {
             }
         }
 
-        message ("[CD] Optical volume detected: %s", volume.get_name () ?? "(unnamed)");
+        message ("[CD] Optical volume detected: %s (%s)",
+                 volume.get_name () ?? "(unnamed)",
+                 volume.get_identifier ("unix-device") ?? "?");
 
         var added = new CDDevice (volume);
         devices.add (added);
 
         if (added.start_initialization ()) {
-            added.finish_initialization ();
+            /* MUST connect before finish_initialization – CD emits initialized quickly */
             added.initialized.connect ((d) => {
+                message ("[CD] device initialized: %s", d.get_display_name ());
                 DeviceManager.get_default ().device_initialized ((Music.Device) d);
             });
+            added.finish_initialization ();
         }
     }
 
@@ -96,6 +108,7 @@ public class Music.Plugins.CDDeviceManager : GLib.Object {
         var device_manager = DeviceManager.get_default ();
         foreach (var dev in devices) {
             if (dev.get_volume () == volume) {
+                message ("[CD] volume removed: %s", volume.get_name () ?? "?");
                 device_manager.device_removed ((Music.Device) dev);
                 dev.release ();
                 devices.remove (dev);

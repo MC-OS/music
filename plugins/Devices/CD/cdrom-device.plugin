@@ -1,0 +1,8 @@
+[Plugin]
+Module=cdrom-device
+IAge=2
+Name=CD/DVD Support
+Description=Play and import audio CDs
+Authors=Music Developers
+Copyright=Copyright © 2026
+Website=https://github.com/MC-OS/music

@@ -6,8 +6,9 @@
  *   construct → start_initialization → finish_initialization →
  *   initialized → library ready for the UI.
  *
- * only_use_custom_view() is true so LibraryWindow opens the CD library
- * list (DeviceViewWrapper) instead of the device summary page.
+ * only_use_custom_view() is true so DeviceView embeds get_custom_view()
+ * instead of the summary page. We return CDView (plugin-local list),
+ * not DeviceViewWrapper, so the list works without core changes.
  */
 
 public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
@@ -131,11 +132,9 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
     }
 
     public Gtk.Widget? get_custom_view () {
-        /* Opening the CD starts the lazy TOC scan */
+        /* Opening the CD starts the lazy TOC scan and shows our list */
         library.ensure_scanned ();
-
-        var tvs = new TreeViewSetup (ViewWrapper.Hint.CDROM);
-        return new DeviceViewWrapper (tvs, this, library);
+        return new CDView (this, library);
     }
 
     public bool read_only () {

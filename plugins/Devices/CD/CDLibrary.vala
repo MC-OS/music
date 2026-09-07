@@ -1,8 +1,9 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Holds the tracks from an audio CD.
  *
- * Scanning is lazy: we do not touch the drive until the user actually
- * opens the CD in the UI. That keeps startup and disc-insert fast.
+ * Scanning is lazy (starts only when the user opens the CD) and
+ * progressive: each track is added to the library as soon as it is
+ * discovered so the list fills in while the scan continues.
  */
 
 public class Music.Plugins.CDLibrary : Music.Library {
@@ -50,10 +51,8 @@ public class Music.Plugins.CDLibrary : Music.Library {
 
     private async void read_disc_toc () {
         string? device_path = device.get_volume ().get_identifier ("unix-device");
-        string? cdda_id = device.get_volume ().get_identifier ("cdda");
 
         message ("[CD] unix-device = %s", device_path ?? "(null)");
-        message ("[CD] cdda identifier = %s", cdda_id ?? "(null)");
 
         string track_uri_template;
         if (device_path != null && device_path.has_prefix ("/dev/")) {
@@ -64,9 +63,8 @@ public class Music.Plugins.CDLibrary : Music.Library {
 
         message ("[CD] probing tracks with template: %s", track_uri_template);
 
-        Gee.ArrayList<TrackInfo?> found = new Gee.ArrayList<TrackInfo?> ();
-
         SourceFunc callback = read_disc_toc.callback;
+
         new Thread<void*> ("cd-toc-probe", () => {
             try {
                 var discoverer = new Gst.PbUtils.Discoverer (8 * Gst.SECOND);
@@ -94,42 +92,42 @@ public class Music.Plugins.CDLibrary : Music.Library {
                         break;
                     }
 
-                    var ti = new TrackInfo ();
-                    ti.track = track;
-                    ti.duration = info.get_duration ();
-                    ti.tags = info.get_tags ();
-                    found.add (ti);
+                    uint t = track;
+                    Gst.ClockTime dur = info.get_duration ();
+                    Gst.TagList? tags = info.get_tags ();
 
                     message ("[CD] found track %u  duration=%" + int64.FORMAT + " ns",
-                             track, (int64) ti.duration);
+                             t, (int64) dur);
+
+                    /* Add this track on the main thread immediately */
+                    Idle.add (() => {
+                        add_track (t, dur, tags);
+                        search_medias ("");
+                        return false;
+                    });
                 }
             } catch (Error e) {
                 warning ("[CD] Discoverer setup failed: %s", e.message);
             }
 
+            message ("[CD] finished probing");
             Idle.add ((owned) callback);
             return null;
         });
 
         yield;
-
-        foreach (var ti in found) {
-            if (ti != null) {
-                add_track (ti.track, ti.duration, ti.tags);
-            }
-        }
-
-        message ("[CD] finished probing — %u tracks in library", medias.size);
-    }
-
-    private class TrackInfo {
-        public uint track;
-        public Gst.ClockTime duration;
-        public Gst.TagList? tags;
     }
 
     private void add_track (uint track, Gst.ClockTime duration, Gst.TagList? tags) {
         string uri = "cdda://%u".printf (track);
+
+        /* Avoid duplicates if called twice */
+        lock (medias) {
+            if (medias.has_key (uri)) {
+                return;
+            }
+        }
+
         var media = new Music.Media (uri);
         media.rowid = next_rowid++;
         media.track = track;

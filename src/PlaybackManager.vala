@@ -536,12 +536,8 @@ public class Music.PlaybackManager : Object {
             return;
         }
 
-        /*
-         * Local files must exist. Device-native schemes (mtp-native://, afc://, …)
-         * live on the device; the corresponding Playback backend fetches them.
-         */
-        bool is_device_uri = m.uri.has_prefix ("mtp-native://") || m.uri.has_prefix ("afc://");
-        if (!is_device_uri && !m.file.query_exists ()) {
+        // check that the file exists
+        if (!m.file.query_exists ()) {
             m.unique_status_image = new ThemedIcon ("process-error-symbolic");
             m.location_unknown = true;
             //App.main_window.media_not_found(id);

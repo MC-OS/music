@@ -1,8 +1,8 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Thin Device wrapper for an audio CD.
  *
- * only_use_custom_view() returns true so the normal DeviceSummaryWidget,
- * DevicePanel, storage bar and sync options never appear.
+ * get_custom_view() returns a DeviceViewWrapper so DeviceView never
+ * attaches the DeviceSummaryWidget (storage bar, sync options, etc.).
  * The user only sees the track library and can import from it.
  */
 
@@ -68,14 +68,15 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
         this.icon = icon;
     }
 
-    /* Force library-only view — no device chrome */
+    /* Still return true for any future callers that check the flag */
     public bool only_use_custom_view () {
         return true;
     }
 
     public Gtk.Widget? get_custom_view () {
-        /* null = fall back to normal library list view for this device */
-        return null;
+        /* Non-null widget makes DeviceView skip the summary page entirely */
+        var tvs = new TreeViewSetup (ViewWrapper.Hint.CDROM);
+        return new DeviceViewWrapper (tvs, this, library);
     }
 
     public string get_empty_device_title () {

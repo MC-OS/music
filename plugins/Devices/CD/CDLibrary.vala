@@ -1,11 +1,10 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Holds the tracks from an audio CD.
  *
- * Reads the disc's table of contents with GstPbutils.Discoverer so the
+ * Reads the disc's table of contents with Gst.PbUtils.Discoverer so the
  * library fills with one Media per audio track (cdda://track-N). No
  * libcdio dependency — the discoverer opens the drive, reads the TOC,
- * and closes it before playback ever touches it, so there's no session
- * fight with gvfs-cdda.
+ * and closes it before playback ever touches it.
  */
 
 public class Music.Plugins.CDLibrary : Music.Library {
@@ -42,43 +41,37 @@ public class Music.Plugins.CDLibrary : Music.Library {
         string? uri = device.get_volume ().get_identifier ("cdda")
                     ?? device.get_volume ().get_identifier ("unix-device");
         if (uri == null) {
-            /* Fall back to the generic cdda root; the discoverer resolves it. */
             uri = "cdda://";
         }
 
-        var discoverer = new GstPbutils.Discoverer ((Gst.ClockTime) (5 * Gst.SECOND), null);
-        GstPbutils.DiscovererInfo? info = null;
+        Gst.PbUtils.DiscovererInfo? info = null;
         try {
-            info = yield discoverer.discover_uri_async (uri);
+            var discoverer = new Gst.PbUtils.Discoverer (5 * Gst.SECOND);
+            info = discoverer.discover_uri (uri);
         } catch (Error e) {
             warning ("[CD] discoverer failed for %s: %s", uri, e.message);
             return;
         }
+
         if (info == null) {
             return;
         }
 
         var result = info.get_result ();
-        if (result == GstPbutils.DiscovererResult.MISSING_PLUGINS) {
+        if (result == Gst.PbUtils.DiscovererResult.MISSING_PLUGINS) {
             warning ("[CD] missing gstreamer cdda plugin");
             return;
         }
-        if (result != GstPbutils.DiscovererResult.OK &&
-            result != GstPbutils.DiscovererResult.TIMEOUT) {
+        if (result != Gst.PbUtils.DiscovererResult.OK &&
+            result != Gst.PbUtils.DiscovererResult.TIMEOUT) {
             warning ("[CD] disc not readable: %s", result.to_string ());
             return;
         }
 
         var streams = info.get_audio_streams ();
         if (streams == null || streams.length () == 0) {
-            /* No typed audio streams — synthesize one entry per discovered
-             * child so the library still shows something. */
-            var children = info.get_streams ();
-            uint i = 0;
-            foreach (var s in children) {
-                i++;
-                add_track (i, s.get_duration (), null);
-            }
+            /* Fallback: one synthetic track so the view is not completely empty */
+            add_track (1, info.get_duration (), null);
             return;
         }
 
@@ -90,7 +83,7 @@ public class Music.Plugins.CDLibrary : Music.Library {
     }
 
     private void add_track (uint track, Gst.ClockTime duration, Gst.TagList? tags) {
-        string uri = "cdda://track-%u".printf (track);
+        string uri = "cdda://%u".printf (track);
         var media = new Music.Media (uri);
         media.rowid = next_rowid++;
         media.track = track;
@@ -107,12 +100,10 @@ public class Music.Plugins.CDLibrary : Music.Library {
 
         if (tags != null) {
             string? title = null, artist = null, album = null, genre = null;
-            uint year = 0;
             tags.get_string (Gst.Tags.TITLE, out title);
             tags.get_string (Gst.Tags.ARTIST, out artist);
             tags.get_string (Gst.Tags.ALBUM, out album);
             tags.get_string (Gst.Tags.GENRE, out genre);
-            tags.get_uint (Gst.Tags.DATE_TIME, out year);
             if (title != null && title != "") {
                 media.title = title;
             }
@@ -124,9 +115,6 @@ public class Music.Plugins.CDLibrary : Music.Library {
             }
             if (genre != null) {
                 media.genre = genre;
-            }
-            if (year > 0) {
-                media.year = year;
             }
         }
 

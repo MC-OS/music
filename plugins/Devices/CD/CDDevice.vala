@@ -1,34 +1,30 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
-/* Thin Device wrapper for an audio CD.
+/*-
+ * Thin Device wrapper for an audio CD.
  *
- * get_custom_view() returns a DeviceViewWrapper so DeviceView never
- * attaches the DeviceSummaryWidget. Scanning starts only when the user
- * actually opens this view.
+ * Method order and initialization flow match iPodDevice / AudioPlayerDevice:
+ *   construct → start_initialization → finish_initialization →
+ *   initialized → library ready for the UI.
+ *
+ * only_use_custom_view() is true so LibraryWindow opens the CD library
+ * list (DeviceViewWrapper) instead of the device summary page.
  */
 
 public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
-    private Volume volume;
-    private CDLibrary library;
-    private GLib.Icon icon;
-    private string display_name;
+    Volume volume;
+    GLib.Icon icon;
+    string display_name;
+    CDLibrary library;
 
     public CDDevice (Volume volume) {
         this.volume = volume;
         display_name = volume.get_name () ?? _("Audio CD");
         icon = new ThemedIcon ("media-optical");
-
-        library = new CDLibrary (this);
-        libraries_manager.add_library (library);
-    }
-
-    public Volume get_volume () {
-        return volume;
-    }
-
-    public void release () {
     }
 
     public bool start_initialization () {
+        library = new CDLibrary (this);
+        libraries_manager.add_library (library);
         return true;
     }
 
@@ -36,8 +32,12 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
         library.finish_initialization_async.begin ();
     }
 
-    public Library get_library () {
-        return library;
+    public string get_empty_device_title () {
+        return _("No audio tracks");
+    }
+
+    public string get_empty_device_description () {
+        return _("This disc does not contain any audio tracks.");
     }
 
     public string get_content_type () {
@@ -50,58 +50,11 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
 
     public void set_display_name (string name) {
         display_name = name;
-    }
-
-    public string get_serial_number () {
-        return volume.get_identifier ("uuid") ?? volume.get_identifier ("unix-device") ?? "cdrom";
-    }
-
-    public string get_uri () {
-        return "cdda://" + get_serial_number ();
-    }
-
-    public GLib.Icon get_icon () {
-        return icon;
-    }
-
-    public void set_icon (GLib.Icon icon) {
-        this.icon = icon;
-    }
-
-    public bool only_use_custom_view () {
-        return true;
-    }
-
-    public Gtk.Widget? get_custom_view () {
-        /* User is opening the CD – start the (background) scan now */
-        library.ensure_scanned ();
-
-        var tvs = new TreeViewSetup (ViewWrapper.Hint.CDROM);
-        return new DeviceViewWrapper (tvs, this, library);
-    }
-
-    public string get_empty_device_title () {
-        return _("No audio tracks");
-    }
-
-    public string get_empty_device_description () {
-        return _("This disc does not contain any audio tracks.");
+        DeviceManager.get_default ().device_name_changed (this);
     }
 
     public string get_fancy_description () {
         return _("Audio CD");
-    }
-
-    public uint64 get_capacity () { return 0; }
-    public uint64 get_used_space () { return 0; }
-    public uint64 get_free_space () { return 0; }
-    public string get_fancy_capacity () { return ""; }
-
-    public uint64[] get_device_storage_info () {
-        return new uint64[] { 0, 0, 0, 0, 0 };
-    }
-
-    public void set_device_storage_info (uint64[] info) {
     }
 
     public void set_mount (Mount mount) {
@@ -109,6 +62,51 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
 
     public Mount? get_mount () {
         return volume.get_mount ();
+    }
+
+    public Volume get_volume () {
+        return volume;
+    }
+
+    public string get_uri () {
+        return "cdda://" + get_serial_number ();
+    }
+
+    public string get_serial_number () {
+        return volume.get_identifier ("uuid")
+            ?? volume.get_identifier ("unix-device")
+            ?? "cdrom";
+    }
+
+    public void set_icon (GLib.Icon icon) {
+        this.icon = icon;
+    }
+
+    public GLib.Icon get_icon () {
+        return icon;
+    }
+
+    public uint64 get_capacity () {
+        return 0;
+    }
+
+    public string get_fancy_capacity () {
+        return "";
+    }
+
+    public uint64 get_used_space () {
+        return 0;
+    }
+
+    public uint64 get_free_space () {
+        return 0;
+    }
+
+    public uint64[] get_device_storage_info () {
+        return new uint64[] { 0, 0, 0, 0, 0 };
+    }
+
+    public void set_device_storage_info (uint64[] info) {
     }
 
     public void unmount () {
@@ -128,8 +126,27 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
     public void synchronize () {
     }
 
+    public bool only_use_custom_view () {
+        return true;
+    }
+
+    public Gtk.Widget? get_custom_view () {
+        /* Opening the CD starts the lazy TOC scan */
+        library.ensure_scanned ();
+
+        var tvs = new TreeViewSetup (ViewWrapper.Hint.CDROM);
+        return new DeviceViewWrapper (tvs, this, library);
+    }
+
     public bool read_only () {
         return true;
+    }
+
+    public Music.Library get_library () {
+        return library;
+    }
+
+    public void release () {
     }
 
     public string get_imei () { return ""; }

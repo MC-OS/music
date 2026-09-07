@@ -229,22 +229,47 @@ public class Music.Plugins.AndroidStreamer : Music.Playback, GLib.Object {
         pipe.eq.set_gain (index, val);
     }
 
+    /* Callbacks */
     private bool bus_callback (Gst.Bus bus, Gst.Message message) {
         switch (message.type) {
             case Gst.MessageType.ERROR:
                 GLib.Error err;
                 string debug;
                 message.parse_error (out err, out debug);
-                warning ("[MTP streamer] Error: %s\n", err.message);
+                warning ("Error: %s\n", err.message);
                 error_occured ();
                 break;
             case Gst.MessageType.ELEMENT:
                 if (message.get_structure () != null && Gst.PbUtils.is_missing_plugin_message (message) && (dialog == null || !dialog.visible)) {
                     dialog = new InstallGstreamerPluginsDialog (message);
                 }
+
                 break;
             case Gst.MessageType.EOS:
                 end_of_stream ();
+                break;
+            case Gst.MessageType.STATE_CHANGED:
+                Gst.State oldstate;
+                Gst.State newstate;
+                Gst.State pending;
+                message.parse_state_changed (out oldstate, out newstate, out pending);
+                if (newstate != Gst.State.PLAYING) {
+                    break;
+                }
+                break;
+            case Gst.MessageType.TAG:
+                Gst.TagList tag_list;
+                message.parse_tag (out tag_list);
+                if (tag_list == null) {
+                    break;
+                }
+
+                if (tag_list.get_tag_size (Gst.Tags.TITLE) <= 0) {
+                    break;
+                }
+
+                string title = "";
+                tag_list.get_string (Gst.Tags.TITLE, out title);
                 break;
             default:
                 break;

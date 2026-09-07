@@ -2,8 +2,8 @@
 /* Thin Device wrapper for an audio CD.
  *
  * get_custom_view() returns a DeviceViewWrapper so DeviceView never
- * attaches the DeviceSummaryWidget (storage bar, sync options, etc.).
- * The user only sees the track library and can import from it.
+ * attaches the DeviceSummaryWidget. Scanning starts only when the user
+ * actually opens this view.
  */
 
 public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
@@ -68,13 +68,14 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
         this.icon = icon;
     }
 
-    /* Still return true for any future callers that check the flag */
     public bool only_use_custom_view () {
         return true;
     }
 
     public Gtk.Widget? get_custom_view () {
-        /* Non-null widget makes DeviceView skip the summary page entirely */
+        /* User is opening the CD – start the (background) scan now */
+        library.ensure_scanned ();
+
         var tvs = new TreeViewSetup (ViewWrapper.Hint.CDROM);
         return new DeviceViewWrapper (tvs, this, library);
     }

@@ -1,38 +1,64 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
-/* CD/DVD plugin entry point. */
+/*-
+ * Copyright (c) 2012-2018 elementary LLC. (https://elementary.io)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The Music authors hereby grant permission for non-GPL compatible
+ * GStreamer plugins to be used and distributed together with GStreamer
+ * and Music. This permission is above and beyond the permissions granted
+ * by the GPL license by which Music is covered. If you modify this code
+ * you may extend this exception to your version of the code, but you are not
+ * obligated to do so. If you do not wish to do so, delete this exception
+ * statement from your version.
+ */
 
-public class Music.Plugins.CDPlugin : Peas.ExtensionBase, Peas.Activatable {
-    Music.Plugins.Interface plugins;
-    public GLib.Object object { owned get; construct; }
+namespace Music.Plugins {
+    public class CDPlugin : Peas.ExtensionBase, Peas.Activatable {
 
-    private CDDeviceManager? cd_manager;
+        Interface plugins;
+        public GLib.Object object { owned get; construct; }
+        CDDeviceManager cd_manager;
 
-    public void activate () {
-        message ("Activating CD/DVD plugin");
+        public void activate () {
+            message ("Activating CD Device plugin");
 
-        Value value = Value (typeof (GLib.Object));
-        get_property ("object", ref value);
-        plugins = (Music.Plugins.Interface) value.get_object ();
-
-        plugins.register_function (Music.Plugins.Interface.Hook.WINDOW, () => {
-            cd_manager = new CDDeviceManager ();
-        });
-    }
-
-    public void deactivate () {
-        if (cd_manager != null) {
-            cd_manager.remove_all ();
-            cd_manager = null;
+            Value value = Value (typeof (GLib.Object));
+            get_property ("object", ref value);
+            plugins = (Music.Plugins.Interface) value.get_object ();
+            plugins.register_function (Interface.Hook.WINDOW, () => {
+                cd_manager = new CDDeviceManager ();
+            });
         }
-    }
 
-    public void update_state () {
+        public void deactivate () {
+            if (cd_manager != null) {
+                cd_manager.remove_all ();
+            }
+        }
+
+        public void update_state () {
+
+        }
     }
 }
 
 [ModuleInit]
 public void peas_register_types (GLib.TypeModule module) {
     var objmodule = module as Peas.ObjectModule;
-    objmodule.register_extension_type (typeof (Peas.Activatable),
-                                     typeof (Music.Plugins.CDPlugin));
+    objmodule.register_extension_type (
+        typeof (Peas.Activatable),
+        typeof (Music.Plugins.CDPlugin)
+    );
 }

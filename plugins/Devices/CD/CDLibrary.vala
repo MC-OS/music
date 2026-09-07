@@ -23,9 +23,13 @@ public class Music.Plugins.CDLibrary : Music.Library {
     public override void initialize_library () {
     }
 
-    /* Lightweight – device is ready, no drive access yet. */
+    /* Lightweight – device is ready, no drive access yet.
+     * Emit initialized on Idle so CDDeviceManager can connect first. */
     public async void finish_initialization_async () {
-        device.initialized (device);
+        Idle.add (() => {
+            device.initialized (device);
+            return false;
+        });
         search_medias ("");
     }
 
@@ -104,7 +108,6 @@ public class Music.Plugins.CDLibrary : Music.Library {
             return 0;
         }
 
-        /* Wait for state change / TOC to become available */
         Gst.State state;
         pipeline.get_state (out state, null, 5 * Gst.SECOND);
 
@@ -139,7 +142,6 @@ public class Music.Plugins.CDLibrary : Music.Library {
         media.album = device.get_display_name ();
         media.is_temporary = true;
         media.file_size = 0;
-        /* length left at 0 – filled later on import/playback if needed */
 
         lock (medias) {
             medias.set (uri, media);
@@ -154,7 +156,6 @@ public class Music.Plugins.CDLibrary : Music.Library {
     }
 
     public override void add_medias (Gee.Collection<Music.Media> list) {
-        /* Import will go here */
     }
 
     public override void search_medias (string search) {

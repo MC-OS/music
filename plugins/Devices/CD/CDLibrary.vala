@@ -1,8 +1,8 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Holds the tracks from an audio CD.
  *
- * Discovers each track individually (cdda://1, cdda://2, ...) off the
- * main thread so the UI does not freeze while Gst.PbUtils.Discoverer runs.
+ * Scanning is lazy: we do not touch the drive until the user actually
+ * opens the CD in the UI. That keeps startup and disc-insert fast.
  */
 
 public class Music.Plugins.CDLibrary : Music.Library {
@@ -10,6 +10,7 @@ public class Music.Plugins.CDLibrary : Music.Library {
     private Gee.LinkedList<Music.Media> searched_medias;
     private CDDevice device;
     private bool is_doing_file_operations = false;
+    private bool scan_started = false;
     private uint next_rowid = 1;
 
     public CDLibrary (CDDevice device) {
@@ -21,7 +22,22 @@ public class Music.Plugins.CDLibrary : Music.Library {
     public override void initialize_library () {
     }
 
+    /* Lightweight – just signal that the device is ready. No drive access. */
     public async void finish_initialization_async () {
+        device.initialized (device);
+        search_medias ("");
+    }
+
+    /* Called the first time the user opens the CD view. */
+    public void ensure_scanned () {
+        if (scan_started) {
+            return;
+        }
+        scan_started = true;
+        start_scan.begin ();
+    }
+
+    private async void start_scan () {
         is_doing_file_operations = true;
         file_operations_started ();
 
@@ -29,7 +45,6 @@ public class Music.Plugins.CDLibrary : Music.Library {
 
         is_doing_file_operations = false;
         file_operations_done ();
-        device.initialized (device);
         search_medias ("");
     }
 
@@ -49,7 +64,6 @@ public class Music.Plugins.CDLibrary : Music.Library {
 
         message ("[CD] probing tracks with template: %s", track_uri_template);
 
-        /* Run the blocking Discoverer calls on a worker thread */
         Gee.ArrayList<TrackInfo?> found = new Gee.ArrayList<TrackInfo?> ();
 
         SourceFunc callback = read_disc_toc.callback;
@@ -166,6 +180,7 @@ public class Music.Plugins.CDLibrary : Music.Library {
     }
 
     public override void search_medias (string search) {
+        ensure_scanned ();
         lock (searched_medias) {
             searched_medias.clear ();
             if (search == null || search == "") {
@@ -186,6 +201,7 @@ public class Music.Plugins.CDLibrary : Music.Library {
     }
 
     public override Gee.Collection<Media> get_medias () {
+        ensure_scanned ();
         return medias.values;
     }
 

@@ -30,7 +30,6 @@ public class Music.Plugins.CDLibrary : Music.Library {
             device.initialized (device);
             return false;
         });
-        search_medias ("");
     }
 
     /* Called the first time the user opens the CD view. */
@@ -39,6 +38,7 @@ public class Music.Plugins.CDLibrary : Music.Library {
             return;
         }
         scan_started = true;
+        message ("[CD] starting lazy TOC scan");
         start_scan.begin ();
     }
 
@@ -81,7 +81,6 @@ public class Music.Plugins.CDLibrary : Music.Library {
         }
     }
 
-    /* Ask cdparanoiasrc (or cdiocddasrc) for the real number of tracks. */
     private static uint query_track_count (string? device_path) {
         Gst.Element? src = Gst.ElementFactory.make ("cdparanoiasrc", "cdsrc");
         if (src == null) {
@@ -159,7 +158,7 @@ public class Music.Plugins.CDLibrary : Music.Library {
     }
 
     public override void search_medias (string search) {
-        ensure_scanned ();
+        /* Do not call ensure_scanned here – scanning is triggered by the view */
         lock (searched_medias) {
             searched_medias.clear ();
             if (search == null || search == "") {
@@ -180,7 +179,6 @@ public class Music.Plugins.CDLibrary : Music.Library {
     }
 
     public override Gee.Collection<Media> get_medias () {
-        ensure_scanned ();
         return medias.values;
     }
 

@@ -1,10 +1,9 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Holds the tracks from an audio CD.
  *
- * Reads the disc with Gst.PbUtils.Discoverer so the library fills with
- * one Media per audio track. DiscovererStreamInfo does not expose
- * duration, so we fall back to CLOCK_TIME_NONE for individual tracks
- * (the top-level DiscovererInfo duration is the whole disc).
+ * Discovers each track individually (cdda://1, cdda://2, ...) because
+ * handing a bare cdda:// or device node to Discoverer almost never
+ * returns useful per-track streams.
  */
 
 public class Music.Plugins.CDLibrary : Music.Library {
@@ -36,49 +35,64 @@ public class Music.Plugins.CDLibrary : Music.Library {
     }
 
     private async void read_disc_toc () {
-        string? uri = device.get_volume ().get_identifier ("cdda")
-                    ?? device.get_volume ().get_identifier ("unix-device");
-        if (uri == null) {
-            uri = "cdda://";
+        string? device_path = device.get_volume ().get_identifier ("unix-device");
+        string? cdda_id = device.get_volume ().get_identifier ("cdda");
+
+        message ("[CD] unix-device = %s", device_path ?? "(null)");
+        message ("[CD] cdda identifier = %s", cdda_id ?? "(null)");
+
+        /* Build the base form that GStreamer cdparanoiasrc understands.
+         * Prefer the classic cdda://N form; fall back to device-qualified. */
+        string track_uri_template;
+        if (device_path != null && device_path.has_prefix ("/dev/")) {
+            track_uri_template = "cdda://%u#" + device_path;
+        } else {
+            track_uri_template = "cdda://%u";
         }
 
-        Gst.PbUtils.DiscovererInfo? info = null;
+        message ("[CD] probing tracks with template: %s", track_uri_template);
+
+        Gst.PbUtils.Discoverer discoverer;
         try {
-            var discoverer = new Gst.PbUtils.Discoverer (5 * Gst.SECOND);
-            info = discoverer.discover_uri (uri);
+            discoverer = new Gst.PbUtils.Discoverer (8 * Gst.SECOND);
         } catch (Error e) {
-            warning ("[CD] discoverer failed for %s: %s", uri, e.message);
+            warning ("[CD] could not create Discoverer: %s", e.message);
             return;
         }
 
-        if (info == null) {
-            return;
+        /* Probe sequential tracks until we hit a failure.
+         * Real audio CDs are almost never > 30 tracks; hard stop at 99. */
+        for (uint track = 1; track <= 99; track++) {
+            string uri = track_uri_template.printf (track);
+            Gst.PbUtils.DiscovererInfo? info = null;
+
+            try {
+                info = discoverer.discover_uri (uri);
+            } catch (Error e) {
+                message ("[CD] track %u failed: %s", track, e.message);
+                break;
+            }
+
+            if (info == null) {
+                message ("[CD] track %u returned null info", track);
+                break;
+            }
+
+            var result = info.get_result ();
+            if (result != Gst.PbUtils.DiscovererResult.OK &&
+                result != Gst.PbUtils.DiscovererResult.TIMEOUT) {
+                message ("[CD] track %u result = %s — stopping", track, result.to_string ());
+                break;
+            }
+
+            Gst.ClockTime duration = info.get_duration ();
+            Gst.TagList? tags = info.get_tags ();
+
+            message ("[CD] found track %u  duration=%" + int64.FORMAT + " ns", track, (int64) duration);
+            add_track (track, duration, tags);
         }
 
-        var result = info.get_result ();
-        if (result == Gst.PbUtils.DiscovererResult.MISSING_PLUGINS) {
-            warning ("[CD] missing gstreamer cdda plugin");
-            return;
-        }
-        if (result != Gst.PbUtils.DiscovererResult.OK &&
-            result != Gst.PbUtils.DiscovererResult.TIMEOUT) {
-            warning ("[CD] disc not readable: %s", result.to_string ());
-            return;
-        }
-
-        var streams = info.get_audio_streams ();
-        if (streams == null || streams.length () == 0) {
-            /* No typed audio streams – create a single placeholder track */
-            add_track (1, info.get_duration (), null);
-            return;
-        }
-
-        uint track = 0;
-        foreach (var stream in streams) {
-            track++;
-            /* DiscovererStreamInfo has no get_duration(); pass NONE for now */
-            add_track (track, Gst.CLOCK_TIME_NONE, stream.get_tags ());
-        }
+        message ("[CD] finished probing — %u tracks in library", medias.size);
     }
 
     private void add_track (uint track, Gst.ClockTime duration, Gst.TagList? tags) {
@@ -93,7 +107,7 @@ public class Music.Plugins.CDLibrary : Music.Library {
         media.is_temporary = true;
         media.file_size = 0;
 
-        if (duration != Gst.CLOCK_TIME_NONE) {
+        if (duration != Gst.CLOCK_TIME_NONE && duration > 0) {
             media.length = (uint) (duration / Gst.MSECOND);
         }
 

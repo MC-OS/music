@@ -49,9 +49,9 @@ public class Music.Plugins.CDLibrary : Music.Library {
     }
 
     private string cdda_root_uri () {
-        string? unix = device.get_volume ().get_identifier ("unix-device");
-        if (unix != null && unix.has_prefix ("/dev/")) {
-            string device_name = unix.substring (5);
+        string? unix_device = device.get_volume ().get_identifier ("unix-device");
+        if (unix_device != null && unix_device.has_prefix ("/dev/")) {
+            string device_name = unix_device.substring (5);
             return "cdda://%s/".printf (device_name);
         }
 
@@ -141,7 +141,7 @@ public class Music.Plugins.CDLibrary : Music.Library {
             medias.set (uri, media);
         }
 
-        var added = new Gee.ArrayList<Music.Media> ();
+        var added = new Gee.ArrayList<Media> ();
         added.add (media);
         media_added (added);
     }

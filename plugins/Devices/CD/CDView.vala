@@ -44,14 +44,10 @@ public class Music.Plugins.CDView : Gtk.Box {
 
         library.media_added.connect (on_media_added);
         library.media_removed.connect (on_media_removed);
-        library.file_operations_started.connect (() => {
-            /* optional: could show a spinner */
-        });
         library.file_operations_done.connect (() => {
             refresh_empty_state ();
         });
 
-        /* Populate anything already scanned */
         foreach (var m in library.get_medias ()) {
             add_row (m);
         }
@@ -104,10 +100,7 @@ public class Music.Plugins.CDView : Gtk.Box {
         });
 
         App.player.clear_queue ();
-        foreach (var m in medias) {
-            App.player.queue_media (m);
-        }
-
+        App.player.queue_media (medias);
         App.player.play_media (track_row.media);
         App.player.start_playback ();
     }

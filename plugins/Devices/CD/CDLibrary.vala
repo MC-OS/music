@@ -51,8 +51,10 @@ public class Music.Plugins.CDLibrary : Music.Library {
     private string cdda_root_uri () {
         string? unix = device.get_volume ().get_identifier ("unix-device");
         if (unix != null && unix.has_prefix ("/dev/")) {
-            return "cdda://%s/".printf (unix.substring (5));
+            string device_name = unix.substring (5);
+            return "cdda://%s/".printf (device_name);
         }
+
         return "cdda://";
     }
 

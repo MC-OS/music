@@ -1,10 +1,10 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Audio CD device.
  *
- * Mirrors AudioPlayerDevice: only_use_custom_view() is false so the normal
- * DeviceSummaryWidget + library list render under the CD icon. The custom
- * view (CDView) is reserved for the CD-burning UI and is stacked below
- * the summary by DeviceView.
+ * Mirrors AudioPlayerDevice: only_use_custom_view() is false and
+ * get_custom_view() returns null, so the normal DeviceSummaryWidget
+ * renders under the CD icon. CDView.vala is kept in the tree for the
+ * future burn-CD UI but is not wired in yet.
  */
 
 public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
@@ -132,9 +132,9 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
         return false;
     }
 
-    /* Burn-CD UI, stacked below the summary by DeviceView. */
+    /* Burn-CD UI reserved for later; not wired in yet. */
     public Gtk.Widget? get_custom_view () {
-        return new CDView (this, library);
+        return null;
     }
 
     public bool read_only () {

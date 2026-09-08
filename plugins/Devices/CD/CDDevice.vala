@@ -3,8 +3,8 @@
  *
  * Mirrors AudioPlayerDevice: only_use_custom_view() is false and
  * get_custom_view() returns null, so the normal DeviceSummaryWidget
- * renders under the CD icon. CDView.vala is kept in the tree for the
- * future burn-CD UI but is not wired in yet.
+ * renders under the CD icon. Track list uses DeviceViewWrapper with
+ * DEVICE_AUDIO (Import to Library works via transfer_to_local_library).
  */
 
 public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
@@ -13,7 +13,7 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
     string display_name;
     CDLibrary library;
 
-    /* Blank audio CD: 74:33 @ 44100 Hz 16-bit stereo. */
+    /* Blank audio CD: 74:33 @ 44100 Hz 16-bit stereo (~80 min Red Book). */
     private const uint64 CD_CAPACITY = 681984000;
     private const uint BYTES_PER_SECTOR = 2352;
     private const uint SECTORS_PER_SEC = 75;
@@ -99,8 +99,12 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
     public uint64 get_used_space () {
         uint64 used = 0;
         foreach (var m in library.get_medias ()) {
-            double secs = m.length > 0 ? m.length / 1000.0 : 240.0;
-            used += (uint64) (secs * SECTORS_PER_SEC * BYTES_PER_SECTOR);
+            if (m.file_size > 0) {
+                used += m.file_size;
+            } else {
+                double secs = m.length > 0 ? m.length / 1000.0 : 240.0;
+                used += (uint64) (secs * SECTORS_PER_SEC * BYTES_PER_SECTOR);
+            }
         }
         return used;
     }

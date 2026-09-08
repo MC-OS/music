@@ -5,8 +5,8 @@
  * AudioPlayerLibrary so the DeviceViewWrapper has media when it builds.
  *
  * Import: tracks are is_temporary, so MediaMenu shows "Import to Library".
- * DeviceViewWrapper.import_request -> transfer_to_local_library, which
- * File.copies each cdda:// URI via GVFS into the music folder.
+ * Both import entry points go through CDImport.copy_track_async so the UI
+ * stays responsive while the optical drive spins.
  */
 
 public class Music.Plugins.CDLibrary : Music.Library {
@@ -156,6 +156,40 @@ public class Music.Plugins.CDLibrary : Music.Library {
         var added = new Gee.ArrayList<Media> ();
         added.add (media);
         media_added (added);
+    }
+
+    /*
+     * Import selected tracks into dest_dir using the shared async helper.
+     * on_progress receives overall fraction across all tracks.
+     */
+    public async void import_tracks (Gee.Collection<Media> tracks,
+                                     File dest_dir,
+                                     owned FileProgressCallback? on_progress = null) {
+        is_doing_file_operations = true;
+        file_operations_started ();
+
+        uint total = tracks.size;
+        uint done = 0;
+
+        foreach (var media in tracks) {
+            var source = File.new_for_uri (media.uri);
+            var dest = CDImport.destination_for_track (dest_dir, media);
+
+            bool ok = yield CDImport.copy_track_async (source, dest, (current, total_bytes) => {
+                double track_frac = total_bytes > 0 ? (double) current / (double) total_bytes : 0.0;
+                double overall = ((double) done + track_frac) / (double) total;
+                if (on_progress != null) {
+                    on_progress ((int64) (overall * 100), 100);
+                }
+            });
+
+            if (ok) {
+                done++;
+            }
+        }
+
+        is_doing_file_operations = false;
+        file_operations_done ();
     }
 
     public override void add_files_to_library (Gee.Collection<string> files) {}

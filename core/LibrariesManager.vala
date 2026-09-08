@@ -107,14 +107,18 @@ public class Music.LibrariesManager : GLib.Object {
         }
 
         int index = 0;
+        int total = list.size;
 
         progress = 0;
-        Timeout.add (500, do_progress_notification_with_timeout);
+        current_operation = _("Importing to library…");
+        Timeout.add (250, do_progress_notification_with_timeout);
 
-        int total = list.size;
         var copied_list = new Gee.TreeSet<Media> ();
 
         foreach (var m in list) {
+            current_operation = _("Importing <b>$NAME</b> by <b>$ARTIST</b> to library…");
+            current_operation = current_operation.replace ("$NAME", m.get_display_title ());
+            current_operation = current_operation.replace ("$ARTIST", m.get_display_artist ());
 
             if (File.new_for_uri (m.uri).query_exists ()) {
                 try {
@@ -123,9 +127,18 @@ public class Music.LibrariesManager : GLib.Object {
                         break;
                     }
 
-                    /* copy the file over */
-                    bool success = false;
-                    success = m.file.copy (dest, FileCopyFlags.NONE, null, null);
+                    /* Copy with live progress so slow sources (CDDA) update the bar. */
+                    int track_index = index;
+                    bool success = m.file.copy (dest, FileCopyFlags.NONE, null, (current_bytes, total_bytes) => {
+                        double track_frac = 0.0;
+                        if (total_bytes > 0) {
+                            track_frac = (double) current_bytes / (double) total_bytes;
+                        }
+                        progress = ((double) track_index + track_frac) / (double) total;
+                        if (progress > 0.999) {
+                            progress = 0.999;
+                        }
+                    });
 
                     if (success) {
                         Music.Media copy = m.copy ();
@@ -133,7 +146,7 @@ public class Music.LibrariesManager : GLib.Object {
                         copy.uri = dest.get_uri ();
                         copy.rowid = 0;
                         copy.is_temporary = false;
-                        copy.date_added = (int)time_t ();
+                        copy.date_added = (int) time_t ();
                         copied_list.add (copy);
                     } else {
                         warning ("Failure: Could not copy imported media %s to media folder %s", m.uri, dest.get_path ());
@@ -143,15 +156,12 @@ public class Music.LibrariesManager : GLib.Object {
                     warning ("Could not copy imported media %s to media folder: %s\n", m.uri, err.message);
                     break;
                 }
-
-                current_operation = _("Importing <b>$NAME</b> by <b>$ARTIST</b> to library…");
-                current_operation = current_operation.replace ("$NAME", m.get_display_title ());
-                current_operation = current_operation.replace ("$ARTIST", m.get_display_artist ());
             } else {
                 message ("Skipped transferring media %s. Either already in library, or has invalid file path.\n", m.get_display_title ());
             }
+
             index++;
-            progress = (double)index / total;
+            progress = (double) index / (double) total;
         }
 
         progress = 1;
@@ -163,8 +173,8 @@ public class Music.LibrariesManager : GLib.Object {
     }
 
     public bool do_progress_notification_with_timeout () {
-
-        NotificationManager.get_default ().update_progress (current_operation.replace ("&", "&amp;"), progress);
+        string op = current_operation ?? _("Importing to library…");
+        NotificationManager.get_default ().update_progress (op.replace ("&", "&"), progress);
 
         if (progress < 1) {
             return true;

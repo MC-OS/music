@@ -3,6 +3,10 @@
  *
  * Eager scan: tracks are listed as soon as the library is created, matching
  * AudioPlayerLibrary so the DeviceViewWrapper has media when it builds.
+ *
+ * Import: tracks are is_temporary, so MediaMenu shows "Import to Library".
+ * DeviceViewWrapper.import_request -> transfer_to_local_library, which
+ * File.copies each cdda:// URI via GVFS into the music folder.
  */
 
 public class Music.Plugins.CDLibrary : Music.Library {
@@ -12,6 +16,10 @@ public class Music.Plugins.CDLibrary : Music.Library {
     private bool is_doing_file_operations = false;
     private bool scan_started = false;
     private uint next_rowid = 1;
+
+    /* Red Book: 2352 bytes/sector, 75 sectors/second. */
+    private const uint BYTES_PER_SECTOR = 2352;
+    private const uint SECTORS_PER_SEC = 75;
 
     public CDLibrary (CDDevice device) {
         this.device = device;
@@ -135,11 +143,11 @@ public class Music.Plugins.CDLibrary : Music.Library {
         media.artist = (artist != null && artist != "") ? artist : _("Unknown");
         media.album = device.get_display_name ();
         media.is_temporary = true;
-        media.file_size = 0;
 
-        if (duration_sec > 0) {
-            media.length = (uint) (duration_sec * 1000);
-        }
+        /* Default ~4 min if duration missing so storage bar still has a slice. */
+        double secs = duration_sec > 0 ? (double) duration_sec : 240.0;
+        media.length = (uint) (secs * 1000);
+        media.file_size = (uint64) (secs * SECTORS_PER_SEC * BYTES_PER_SECTOR);
 
         lock (medias) {
             medias.set (uri, media);

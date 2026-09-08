@@ -85,7 +85,7 @@ public class Music.Plugins.CDStreamer : Music.Playback, GLib.Object {
     }
 
     private void try_set_device (Gst.Element el) {
-        var klass = ((GLib.ObjectClass) el.get_class ());
+        unowned var klass = ((GLib.ObjectClass) el.get_class ());
         if (klass.find_property ("device") != null) {
             el.set ("device", cdda_device);
             message ("[CD streamer] set device=%s on %s", cdda_device, el.get_name ());

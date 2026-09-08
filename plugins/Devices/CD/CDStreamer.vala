@@ -68,10 +68,11 @@ public class Music.Plugins.CDStreamer : Music.Playback, GLib.Object {
     }
 
     /* playbin created the CDDA source — point it at our drive. */
-    private void on_source_setup (Gst.Element playbin, Gst.Element source) {
+    private void on_source_setup (Gst.Element source) {
         if (cdda_device == null) {
             return;
         }
+        try_set_device (source);
         if (source is Gst.Bin) {
             var it = ((Gst.Bin) source).iterate_recurse ();
             Gst.Element? child = null;
@@ -79,7 +80,6 @@ public class Music.Plugins.CDStreamer : Music.Playback, GLib.Object {
                 try_set_device (child);
             }
         }
-        try_set_device (source);
     }
 
     private void try_set_device (Gst.Element el) {

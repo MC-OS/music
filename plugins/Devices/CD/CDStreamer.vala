@@ -1,15 +1,23 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
-/* Streamer for cdda:// URIs – playbin does the work. */
+/* Streamer for audio CDs.
+ *
+ * GStreamer accepts cdda://<track> or cdda://<device>#<track>. The GVFS
+ * file-manager paths (cdda://sr0/Track%20N.wav) are NOT accepted by any
+ * CDDA source, so we play the native form and tell the source which
+ * device to open via the source-setup signal.
+ */
 
 public class Music.Plugins.CDStreamer : Music.Playback, GLib.Object {
     Music.Pipeline pipe;
     public bool set_resume_pos;
     private CDDeviceManager manager;
+    private string? cdda_device = null;
 
     public CDStreamer (CDDeviceManager manager) {
         this.manager = manager;
         pipe = new Music.Pipeline ();
         pipe.bus.add_watch (GLib.Priority.DEFAULT, bus_callback);
+        pipe.playbin.source_setup.connect (on_source_setup);
         Timeout.add (200, update_position);
     }
 
@@ -39,11 +47,47 @@ public class Music.Plugins.CDStreamer : Music.Playback, GLib.Object {
 
     public void set_media (Media media) {
         set_state (Gst.State.READY);
-        pipe.playbin.set_property ("uri", media.uri);
+
+        // Remember the device node so source-setup can configure it.
+        cdda_device = null;
+        var dev = manager.get_device_for_uri (media.uri);
+        if (dev != null) {
+            string? unix_device = dev.get_volume ().get_identifier ("unix-device");
+            if (unix_device != null) {
+                cdda_device = unix_device;
+            }
+        }
+
+        // Play the GStreamer-native form: cdda://<track-number>.
+        uint track = media.track > 0 ? media.track : 1;
+        pipe.playbin.set_property ("uri", "cdda://%u".printf (track));
         set_state (Gst.State.PLAYING);
         pipe.playbin.seek_simple (Gst.Format.TIME, Gst.SeekFlags.FLUSH,
             (int64) App.player.current_media.resume_pos * 1000000000);
         play ();
+    }
+
+    /* playbin created the CDDA source — point it at our drive. */
+    private void on_source_setup (Gst.Element playbin, Gst.Element source) {
+        if (cdda_device == null) {
+            return;
+        }
+        if (source is Gst.Bin) {
+            var it = ((Gst.Bin) source).iterate_recurse ();
+            Gst.Element? child = null;
+            while (it.next (out child) == Gst.IteratorResult.OK && child != null) {
+                try_set_device (child);
+            }
+        }
+        try_set_device (source);
+    }
+
+    private void try_set_device (Gst.Element el) {
+        var klass = ((GLib.ObjectClass) el.get_class ());
+        if (klass.find_property ("device") != null) {
+            el.set_property ("device", cdda_device);
+            message ("[CD streamer] set device=%s on %s", cdda_device, el.get_name ());
+        }
     }
 
     public void set_position (int64 pos) {

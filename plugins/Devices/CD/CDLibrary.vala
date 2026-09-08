@@ -1,7 +1,8 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Audio CD library via pure GVFS/GIO (cdda://).
  *
- * Lazy: TOC is only read when the user opens the CD view.
+ * Eager scan: tracks are listed as soon as the library is created, matching
+ * AudioPlayerLibrary so the DeviceViewWrapper has media when it builds.
  */
 
 public class Music.Plugins.CDLibrary : Music.Library {
@@ -26,6 +27,9 @@ public class Music.Plugins.CDLibrary : Music.Library {
             device.initialized (device);
             return false;
         });
+
+        // Eager scan so tracks exist before DeviceViewWrapper builds.
+        ensure_scanned ();
     }
 
     public void ensure_scanned () {

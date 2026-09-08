@@ -3,7 +3,7 @@
  *
  * Mirrors AudioPlayerDevice: only_use_custom_view() is false so the normal
  * DeviceSummaryWidget + library list render under the CD icon. The custom
- * view (CDView) is reserved for a future CD-burning UI and is stacked below
+ * view (CDView) is reserved for the CD-burning UI and is stacked below
  * the summary by DeviceView.
  */
 
@@ -12,6 +12,11 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
     GLib.Icon icon;
     string display_name;
     CDLibrary library;
+
+    /* Blank audio CD: 74:33 @ 44100 Hz 16-bit stereo. */
+    private const uint64 CD_CAPACITY = 681984000;
+    private const uint BYTES_PER_SECTOR = 2352;
+    private const uint SECTORS_PER_SEC = 75;
 
     public CDDevice (Volume volume) {
         this.volume = volume;
@@ -83,10 +88,27 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
         return icon;
     }
 
-    public uint64 get_capacity () { return 0; }
-    public string get_fancy_capacity () { return ""; }
-    public uint64 get_used_space () { return 0; }
-    public uint64 get_free_space () { return 0; }
+    public uint64 get_capacity () {
+        return CD_CAPACITY;
+    }
+
+    public string get_fancy_capacity () {
+        return _("80 min");
+    }
+
+    public uint64 get_used_space () {
+        uint64 used = 0;
+        foreach (var m in library.get_medias ()) {
+            double secs = m.length > 0 ? m.length / 1000.0 : 240.0;
+            used += (uint64) (secs * SECTORS_PER_SEC * BYTES_PER_SECTOR);
+        }
+        return used;
+    }
+
+    public uint64 get_free_space () {
+        uint64 used = get_used_space ();
+        return CD_CAPACITY > used ? CD_CAPACITY - used : 0;
+    }
 
     public void unmount () {
         var mount = volume.get_mount ();
@@ -110,7 +132,7 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
         return false;
     }
 
-    /* Burn-CD UI placeholder, stacked below the summary by DeviceView. */
+    /* Burn-CD UI, stacked below the summary by DeviceView. */
     public Gtk.Widget? get_custom_view () {
         return new CDView (this, library);
     }

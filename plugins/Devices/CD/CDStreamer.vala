@@ -17,7 +17,6 @@ public class Music.Plugins.CDStreamer : Music.Playback, GLib.Object {
         this.manager = manager;
         pipe = new Music.Pipeline ();
         pipe.bus.add_watch (GLib.Priority.DEFAULT, bus_callback);
-        pipe.playbin.source_setup.connect (on_source_setup);
         Timeout.add (200, update_position);
     }
 
@@ -85,7 +84,7 @@ public class Music.Plugins.CDStreamer : Music.Playback, GLib.Object {
     private void try_set_device (Gst.Element el) {
         var klass = ((GLib.ObjectClass) el.get_class ());
         if (klass.find_property ("device") != null) {
-            el.set_property ("device", cdda_device);
+            el.set ("device", cdda_device);
             message ("[CD streamer] set device=%s on %s", cdda_device, el.get_name ());
         }
     }

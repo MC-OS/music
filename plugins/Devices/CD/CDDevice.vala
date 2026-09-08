@@ -1,8 +1,9 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Audio CD device.
  *
- * only_use_custom_view() is true so DeviceView never attaches the summary
- * (storage bar / sync). get_custom_view() returns CDView (track list).
+ * Same pattern as AudioPlayerDevice: no custom view, so the normal
+ * DeviceSummaryWidget + library list render at the bottom. The custom
+ * view (CDView) is reserved for a future CD-burning UI.
  */
 
 public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
@@ -103,15 +104,14 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
     public void synchronize () {
     }
 
-    /* Never use the device summary page */
+    /* Match AudioPlayerDevice: no custom view, normal summary + library list. */
     public bool only_use_custom_view () {
-        return true;
+        return false;
     }
 
-    /* Track list only – DeviceView embeds this instead of DeviceSummaryWidget */
+    /* Reserved for a future CD-burning UI. */
     public Gtk.Widget? get_custom_view () {
-        library.ensure_scanned ();
-        return new CDView (this, library);
+        return null;
     }
 
     public bool read_only () {

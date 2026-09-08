@@ -74,9 +74,12 @@ public class Music.Plugins.CDStreamer : Music.Playback, GLib.Object {
         try_set_device (source);
         if (source is Gst.Bin) {
             var it = ((Gst.Bin) source).iterate_recurse ();
-            Gst.Element? child = null;
-            while (it.next (out child) == Gst.IteratorResult.OK && child != null) {
-                try_set_device (child);
+            GLib.Value item = GLib.Value (typeof (GLib.Object));
+            while (it.next (out item) == Gst.IteratorResult.OK) {
+                var child = item.get_object () as Gst.Element;
+                if (child != null) {
+                    try_set_device (child);
+                }
             }
         }
     }

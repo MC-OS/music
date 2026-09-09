@@ -1,10 +1,10 @@
 cdrom_files = files(
-  'CD.vala',
-  'CDDevice.vala',
-  'CDDeviceManager.vala',
-  'CDLibrary.vala',
-  'CDStreamer.vala',
-  'CDImport.vala'
+  'CDRom.vala',
+  'CDRomHelper.vala',
+  'CDRomDevice.vala',
+  'CDRomDeviceManager.vala',
+  'CDRomLibrary.vala',
+  'CDRomStreamer.vala',
 )
 
 shared_module(

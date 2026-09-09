@@ -3,7 +3,7 @@ if plugins.contains('audioplayer')
 endif
 
 if plugins.contains('cdrom')
-  subdir('CD')
+  subdir('CDRom')
 endif
 
 if plugins.contains('ipod')

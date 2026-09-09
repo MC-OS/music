@@ -1,15 +1,15 @@
 // -*- Mode: vala; indent-tabs-mode: nil; tab-width: 4 -*-
 /* Watch for optical media via GVolumeMonitor (GVFS) and register CDDevice. */
 
-public class Music.Plugins.CDDeviceManager : GLib.Object {
-    Gee.ArrayList<CDDevice> devices;
-    CDStreamer streamer;
+public class Music.Plugins.CDRomDeviceManager : GLib.Object {
+    Gee.ArrayList<CDRomDevice> devices;
+    CDRomStreamer streamer;
     VolumeMonitor volume_monitor;
 
-    public CDDeviceManager () {
-        devices = new Gee.ArrayList<CDDevice> ();
+    public CDRomDeviceManager () {
+        devices = new Gee.ArrayList<CDRomDevice> ();
 
-        streamer = new CDStreamer (this);
+        streamer = new CDRomStreamer (this);
         Music.App.player.add_playback (streamer);
 
         volume_monitor = VolumeMonitor.get ();
@@ -28,10 +28,10 @@ public class Music.Plugins.CDDeviceManager : GLib.Object {
         foreach (var dev in devices) {
             device_manager.device_removed ((Music.Device) dev);
         }
-        devices = new Gee.ArrayList<CDDevice> ();
+        devices = new Gee.ArrayList<CDRomDevice> ();
     }
 
-    public CDDevice? get_device_for_uri (string uri) {
+    public CDRomDevice? get_device_for_uri (string uri) {
         foreach (var device in devices) {
             if (device.get_library ().media_from_uri (uri) != null) {
                 return device;
@@ -78,7 +78,7 @@ public class Music.Plugins.CDDeviceManager : GLib.Object {
                  vol.get_name () ?? "(unnamed)",
                  device_path);
 
-        var added = new CDDevice (vol);
+        var added = new CDRomDevice (vol);
         devices.add (added);
 
         if (added.start_initialization ()) {

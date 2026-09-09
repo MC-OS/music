@@ -7,13 +7,13 @@
  * device to open via the source-setup signal.
  */
 
-public class Music.Plugins.CDStreamer : Music.Playback, GLib.Object {
+public class Music.Plugins.CDRomStreamer : Music.Playback, GLib.Object {
     Music.Pipeline pipe;
     public bool set_resume_pos;
-    private CDDeviceManager manager;
+    private CDRomDeviceManager manager;
     private string? cdda_device = null;
 
-    public CDStreamer (CDDeviceManager manager) {
+    public CDRomStreamer (CDRomDeviceManager manager) {
         this.manager = manager;
         pipe = new Music.Pipeline ();
         pipe.bus.add_watch (GLib.Priority.DEFAULT, bus_callback);
@@ -28,17 +28,29 @@ public class Music.Plugins.CDStreamer : Music.Playback, GLib.Object {
     }
 
     public bool update_position () {
-        if (set_resume_pos || (App.player.current_media != null && get_position () >= (int64)(App.player.current_media.resume_pos - 1) * 1000000000)) {
+        if (set_resume_pos ||
+            (App.player.current_media != null &&
+             get_position () >= (int64) (App.player.current_media.resume_pos - 1) * 1000000000)) {
             set_resume_pos = true;
             current_position_update (get_position ());
         } else if (App.player.current_media != null) {
-            pipe.playbin.seek_simple (Gst.Format.TIME, Gst.SeekFlags.FLUSH, (int64)App.player.current_media.resume_pos * 1000000000);
+            pipe.playbin.seek_simple (
+                Gst.Format.TIME,
+                Gst.SeekFlags.FLUSH,
+                (int64) App.player.current_media.resume_pos * 1000000000
+            );
         }
+
         return true;
     }
 
-    public void play () { set_state (Gst.State.PLAYING); }
-    public void pause () { set_state (Gst.State.PAUSED); }
+    public void play () {
+        set_state (Gst.State.PLAYING);
+    }
+
+    public void pause () {
+        set_state (Gst.State.PAUSED);
+    }
 
     public void set_state (Gst.State s) {
         pipe.playbin.set_state (s);
@@ -121,9 +133,17 @@ public class Music.Plugins.CDStreamer : Music.Playback, GLib.Object {
         return (double) val;
     }
 
-    public void enable_equalizer () { pipe.enable_equalizer (); }
-    public void disable_equalizer () { pipe.disable_equalizer (); }
-    public void set_equalizer_gain (int index, int val) { pipe.eq.set_gain (index, val); }
+    public void enable_equalizer () {
+        pipe.enable_equalizer ();
+    }
+
+    public void disable_equalizer () {
+        pipe.disable_equalizer ();
+    }
+
+    public void set_equalizer_gain (int index, int val) {
+        pipe.eq.set_gain (index, val);
+    }
 
     private bool bus_callback (Gst.Bus bus, Gst.Message message) {
         switch (message.type) {

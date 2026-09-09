@@ -5,11 +5,11 @@
  */
 
 namespace Music.Plugins {
-    public class CDPlugin : Peas.ExtensionBase, Peas.Activatable {
+    public class CDRomPlugin : Peas.ExtensionBase, Peas.Activatable {
 
         Interface plugins;
         public GLib.Object object { owned get; construct; }
-        CDDeviceManager cd_manager;
+        CDRomDeviceManager cd_manager;
 
         public void activate () {
             message ("Activating CD Device plugin (GVFS)");
@@ -18,7 +18,7 @@ namespace Music.Plugins {
             get_property ("object", ref value);
             plugins = (Music.Plugins.Interface) value.get_object ();
             plugins.register_function (Interface.Hook.WINDOW, () => {
-                cd_manager = new CDDeviceManager ();
+                cd_manager = new CDRomDeviceManager ();
             });
         }
 
@@ -29,6 +29,10 @@ namespace Music.Plugins {
         }
 
         public void update_state () {
+            /*
+             * Unfinished: the plugin currently does not need a refresh cycle.
+             * This hook is kept for compatibility with the Peas activator API.
+             */
         }
     }
 }
@@ -38,6 +42,6 @@ public void peas_register_types (GLib.TypeModule module) {
     var objmodule = module as Peas.ObjectModule;
     objmodule.register_extension_type (
         typeof (Peas.Activatable),
-        typeof (Music.Plugins.CDPlugin)
+        typeof (Music.Plugins.CDRomPlugin)
     );
 }

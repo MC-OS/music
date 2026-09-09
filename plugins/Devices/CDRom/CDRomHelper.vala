@@ -7,7 +7,7 @@
  * a progress callback reports fraction without stalling.
  */
 
-public class Music.Plugins.CDImport : GLib.Object {
+public class Music.Plugins.CDRomHelper : GLib.Object {
     /* Red Book: 2352 bytes/sector, 75 sectors/second. */
     private const uint BYTES_PER_SECTOR = 2352;
     private const uint SECTORS_PER_SEC = 75;
@@ -18,15 +18,10 @@ public class Music.Plugins.CDImport : GLib.Object {
      * on_progress is called with the fraction of THIS track copied
      * (0.0 .. 1.0). Returns true on success.
      */
-    public static async bool copy_track_async (File source,
-                                               File dest_file,
-                                               owned FileProgressCallback? on_progress = null) {
+    public static async bool copy_track_async ( File source, File dest_file, owned FileProgressCallback? on_progress = null ) {
         try {
-            yield source.copy_async (dest_file,
-                                     FileCopyFlags.OVERWRITE,
-                                     Priority.DEFAULT,
-                                     null,
-                                     on_progress);
+            yield source.copy_async ( dest_file, FileCopyFlags.OVERWRITE, Priority.DEFAULT, null, on_progress );
+
             return true;
         } catch (Error e) {
             warning ("[CD import] copy failed: %s", e.message);

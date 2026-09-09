@@ -7,25 +7,25 @@
  * DEVICE_AUDIO (Import to Library works via transfer_to_local_library).
  */
 
-public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
+public class Music.Plugins.CDRomDevice : GLib.Object, Music.Device {
     Volume volume;
     GLib.Icon icon;
     string display_name;
-    CDLibrary library;
+    CDRomLibrary library;
 
     /* Blank audio CD: 74:33 @ 44100 Hz 16-bit stereo (~80 min Red Book). */
     private const uint64 CD_CAPACITY = 681984000;
     private const uint BYTES_PER_SECTOR = 2352;
     private const uint SECTORS_PER_SEC = 75;
 
-    public CDDevice (Volume volume) {
+    public CDRomDevice (Volume volume) {
         this.volume = volume;
         display_name = volume.get_name () ?? _("Audio CD");
         icon = new ThemedIcon ("media-optical");
     }
 
     public bool start_initialization () {
-        library = new CDLibrary (this);
+        library = new CDRomLibrary (this);
         libraries_manager.add_library (library);
         return true;
     }
@@ -60,6 +60,10 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
     }
 
     public void set_mount (Mount mount) {
+        /*
+         * Unfinished: the mount is provided by GVFS and does not need any
+         * explicit device-side assignment here.
+         */
     }
 
     public Mount? get_mount () {
@@ -129,6 +133,10 @@ public class Music.Plugins.CDDevice : GLib.Object, Music.Device {
     }
 
     public void synchronize () {
+        /*
+         * Unfinished: synchronization is handled by the underlying GVFS volume,
+         * so no direct CD-specific sync step is required right now.
+         */
     }
 
     /* Match AudioPlayerDevice: normal summary + library list under the icon. */

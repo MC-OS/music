@@ -5,14 +5,14 @@
  * AudioPlayerLibrary so the DeviceViewWrapper has media when it builds.
  *
  * Import: tracks are is_temporary, so MediaMenu shows "Import to Library".
- * Both import entry points go through CDImport.copy_track_async so the UI
+ * Both import entry points go through CDRomHelper.copy_track_async so the UI
  * stays responsive while the optical drive spins.
  */
 
-public class Music.Plugins.CDLibrary : Music.Library {
+public class Music.Plugins.CDRomLibrary : Music.Library {
     private Gee.HashMap<string, Music.Media> medias;
     private Gee.LinkedList<Music.Media> searched_medias;
-    private CDDevice device;
+    private CDRomDevice device;
     private bool is_doing_file_operations = false;
     private bool scan_started = false;
     private uint next_rowid = 1;
@@ -21,13 +21,17 @@ public class Music.Plugins.CDLibrary : Music.Library {
     private const uint BYTES_PER_SECTOR = 2352;
     private const uint SECTORS_PER_SEC = 75;
 
-    public CDLibrary (CDDevice device) {
+    public CDRomLibrary (CDRomDevice device) {
         this.device = device;
         medias = new Gee.HashMap<string, Music.Media> ();
         searched_medias = new Gee.LinkedList<Music.Media> ();
     }
 
     public override void initialize_library () {
+        /*
+         * Unfinished: the library is initialized lazily when the CD device is
+         * created, so there is no explicit startup work to do here yet.
+         */
     }
 
     public async void finish_initialization_async () {
@@ -162,9 +166,7 @@ public class Music.Plugins.CDLibrary : Music.Library {
      * Import selected tracks into dest_dir using the shared async helper.
      * on_progress receives overall fraction across all tracks.
      */
-    public async void import_tracks (Gee.Collection<Media> tracks,
-                                     File dest_dir,
-                                     owned FileProgressCallback? on_progress = null) {
+    public async void import_tracks (Gee.Collection<Media> tracks, File dest_dir, owned FileProgressCallback? on_progress = null) {
         is_doing_file_operations = true;
         file_operations_started ();
 
@@ -173,9 +175,9 @@ public class Music.Plugins.CDLibrary : Music.Library {
 
         foreach (var media in tracks) {
             var source = File.new_for_uri (media.uri);
-            var dest = CDImport.destination_for_track (dest_dir, media);
+            var dest = CDRomHelper.destination_for_track (dest_dir, media);
 
-            bool ok = yield CDImport.copy_track_async (source, dest, (current, total_bytes) => {
+            bool ok = yield CDRomHelper.copy_track_async (source, dest, (current, total_bytes) => {
                 double track_frac = total_bytes > 0 ? (double) current / (double) total_bytes : 0.0;
                 double overall = ((double) done + track_frac) / (double) total;
                 if (on_progress != null) {
@@ -192,8 +194,19 @@ public class Music.Plugins.CDLibrary : Music.Library {
         file_operations_done ();
     }
 
-    public override void add_files_to_library (Gee.Collection<string> files) {}
-    public override void add_medias (Gee.Collection<Music.Media> list) {}
+    public override void add_files_to_library (Gee.Collection<string> files) {
+        /*
+         * Unfinished: CD media is discovered through GVFS enumeration instead of
+         * being imported by file path list injection.
+         */
+    }
+
+    public override void add_medias (Gee.Collection<Music.Media> list) {
+        /*
+         * Unfinished: direct media insertion is intentionally unsupported for
+         * this read-only optical library.
+         */
+    }
 
     public override void search_medias (string search) {
         lock (searched_medias) {
@@ -211,14 +224,36 @@ public class Music.Plugins.CDLibrary : Music.Library {
         search_finished ();
     }
 
-    public override Gee.Collection<Media> get_search_result () { return searched_medias; }
-    public override Gee.Collection<Media> get_medias () { return medias.values; }
-    public override Gee.Collection<StaticPlaylist> get_playlists () { return new Gee.LinkedList<StaticPlaylist> (); }
-    public override Gee.Collection<SmartPlaylist> get_smart_playlists () { return new Gee.LinkedList<SmartPlaylist> (); }
+    public override Gee.Collection<Media> get_search_result () {
+        return searched_medias;
+    }
 
-    public override void add_media (Music.Media s) {}
-    public override Media? media_from_id (int64 id) { return null; }
-    public override Gee.Collection<Media> medias_from_ids (Gee.Collection<int64?> ids) { return new Gee.LinkedList<Media> (); }
+    public override Gee.Collection<Media> get_medias () {
+        return medias.values;
+    }
+
+    public override Gee.Collection<StaticPlaylist> get_playlists () {
+        return new Gee.LinkedList<StaticPlaylist> ();
+    }
+
+    public override Gee.Collection<SmartPlaylist> get_smart_playlists () {
+        return new Gee.LinkedList<SmartPlaylist> ();
+    }
+
+    public override void add_media (Music.Media s) {
+        /*
+         * Unfinished: media is added from the mounted CD scan rather than by
+         * calling this mutating method directly.
+         */
+    }
+
+    public override Media? media_from_id (int64 id) {
+        return null;
+    }
+
+    public override Gee.Collection<Media> medias_from_ids (Gee.Collection<int64?> ids) {
+        return new Gee.LinkedList<Media> ();
+    }
 
     public override Gee.Collection<Media> medias_from_uris (Gee.Collection<string> uris) {
         var result = new Gee.LinkedList<Media> ();
@@ -232,8 +267,13 @@ public class Music.Plugins.CDLibrary : Music.Library {
         return result;
     }
 
-    public override Media? find_media (Media to_find) { return null; }
-    public override Media? media_from_file (File file) { return media_from_uri (file.get_uri ()); }
+    public override Media? find_media (Media to_find) {
+        return null;
+    }
+
+    public override Media? media_from_file (File file) {
+        return media_from_uri (file.get_uri ());
+    }
 
     public override Media? media_from_uri (string uri) {
         lock (medias) {
@@ -241,24 +281,89 @@ public class Music.Plugins.CDLibrary : Music.Library {
         }
     }
 
-    public override void update_media (Media s, bool update_meta, bool record_time) {}
-    public override void update_medias (Gee.Collection<Media> updates, bool update_meta, bool record_time) {}
-    public override void remove_media (Media s, bool trash) {}
-    public override void remove_medias (Gee.Collection<Music.Media> to_remove, bool trash) {}
+    public override void update_media (Media s, bool update_meta, bool record_time) {
+        /*
+         * Unfinished: read-only CD track metadata is not edited from this
+         * library backend.
+         */
+    }
 
-    public override void add_smart_playlist (SmartPlaylist p) {}
-    public override bool support_smart_playlists () { return false; }
-    public override void remove_smart_playlist (int64 id) {}
-    public override SmartPlaylist? smart_playlist_from_id (int64 id) { return null; }
-    public override SmartPlaylist? smart_playlist_from_name (string name) { return null; }
+    public override void update_medias (Gee.Collection<Media> updates, bool update_meta, bool record_time) {
+        /*
+         * Unfinished: bulk metadata changes are intentionally not supported for
+         * this mounted CD view.
+         */
+    }
 
-    public override bool support_playlists () { return false; }
-    public override void add_playlist (StaticPlaylist p) {}
-    public override void remove_playlist (int64 id) {}
-    public override StaticPlaylist? playlist_from_id (int64 id) { return null; }
-    public override StaticPlaylist? playlist_from_name (string name) { return null; }
+    public override void remove_media (Media s, bool trash) {
+        /*
+         * Unfinished: removing tracks from the optical source itself is not
+         * supported by this GVFS-backed library.
+         */
+    }
 
-    public override bool start_file_operations (string? message) { return true; }
-    public override bool doing_file_operations () { return is_doing_file_operations; }
-    public override void finish_file_operations () {}
+    public override void remove_medias (Gee.Collection<Music.Media> to_remove, bool trash) {
+        /*
+         * Unfinished: batch removal is not implemented for this read-only CD
+         * collection.
+         */
+    }
+
+    public override void add_smart_playlist (SmartPlaylist p) {
+        /*
+         * Unfinished: smart playlists are intentionally unsupported for this
+         * device library.
+         */
+    }
+
+    public override bool support_smart_playlists () {
+        return false;
+    }
+
+    public override void remove_smart_playlist (int64 id) {
+        /* Unfinished: no smart playlists are managed by this library. */
+    }
+
+    public override SmartPlaylist? smart_playlist_from_id (int64 id) {
+        return null;
+    }
+
+    public override SmartPlaylist? smart_playlist_from_name (string name) {
+        return null;
+    }
+
+    public override bool support_playlists () {
+        return false;
+    }
+
+    public override void add_playlist (StaticPlaylist p) {
+        /* Unfinished: ordinary playlists are not created for the CD library. */
+    }
+
+    public override void remove_playlist (int64 id) {
+        /* Unfinished: playlist removal is not implemented for this backend. */
+    }
+
+    public override StaticPlaylist? playlist_from_id (int64 id) {
+        return null;
+    }
+
+    public override StaticPlaylist? playlist_from_name (string name) {
+        return null;
+    }
+
+    public override bool start_file_operations (string? message) {
+        return true;
+    }
+
+    public override bool doing_file_operations () {
+        return is_doing_file_operations;
+    }
+
+    public override void finish_file_operations () {
+        /*
+         * Unfinished: the actual file-operation lifecycle is handled by the scan
+         * routine itself, so this hook remains intentionally minimal.
+         */
+    }
 }

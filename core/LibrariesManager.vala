@@ -122,8 +122,6 @@ public class Music.LibrariesManager : GLib.Object {
         current_operation = _("Importing to library…");
         Timeout.add (250, do_progress_notification_with_timeout);
 
-        var copied_list = new Gee.TreeSet<Media> ();
-
         foreach (var m in list) {
             current_operation = _("Importing <b>$NAME</b> by <b>$ARTIST</b> to library…");
             current_operation = current_operation.replace ("$NAME", m.get_display_title ());
@@ -158,7 +156,15 @@ public class Music.LibrariesManager : GLib.Object {
                         copy.rowid = 0;
                         copy.is_temporary = false;
                         copy.date_added = (int) time_t ();
-                        copied_list.add (copy);
+
+                        /* Add each track as soon as its copy finishes so the
+                         * library updates live instead of waiting for the batch. */
+                        var just_added = new Gee.TreeSet<Media> ();
+                        just_added.add (copy);
+                        Idle.add (() => {
+                            local_library.add_medias (just_added);
+                            return false;
+                        });
                     } else {
                         warning ("Failure: Could not copy imported media %s to media folder %s", m.uri, dest.get_path ());
                         break;
@@ -176,11 +182,6 @@ public class Music.LibrariesManager : GLib.Object {
         }
 
         progress = 1;
-
-        Idle.add (() => {
-            local_library.add_medias (copied_list);
-            return false;
-        });
     }
 
     public bool do_progress_notification_with_timeout () {

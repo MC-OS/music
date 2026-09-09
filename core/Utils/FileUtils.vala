@@ -111,7 +111,8 @@ namespace Music.FileUtils {
 
             var ext = "";
             if (s.uri.has_prefix ("cdda://")) {
-                ext = ".mp3";
+                /* Red Book PCM from GVFS CDDA — keep lossless WAV, not MP3. */
+                ext = ".wav";
             } else {
                 ext = s.uri.slice (s.uri.last_index_of (".", 0), s.uri.length);
             }

@@ -39,7 +39,18 @@ public class Music.Plugins.CDRomHelper : GLib.Object {
         /* Strip characters that break filenames. */
         base_name = base_name.replace ("/", "-").replace ("\\", "-");
 
-        return dest_dir.get_child (base_name + ".wav");
+        string path = File.new_for_uri (media.uri);
+
+        if (path != null) {
+            string ext = GLib.Path.get_extension (path);
+            if (ext != null && ext != "") {
+                base_name += "." + ext;
+            } else {
+                base_name += ".wav";
+            }
+        }
+
+        return dest_dir.get_child (base_name);
     }
 
     /* Estimated Red Book byte size for a track from its length in ms. */

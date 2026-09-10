@@ -60,6 +60,8 @@ public class Music.NotImportedDialog : Granite.Dialog {
 
         var info = new Gtk.Label (secondary_text);
         info.halign = Gtk.Align.START;
+        info.wrap = true;
+        info.max_width_chars = 45;
 
         var trash_all = new Gtk.CheckButton.with_label (_("Move all corrupted files to trash"));
         trash_all.valign = Gtk.Align.CENTER;
@@ -99,6 +101,7 @@ public class Music.NotImportedDialog : Granite.Dialog {
 
         move_to_trash = new Gtk.Button.with_label (_("Move to Trash"));
         move_to_trash.sensitive = false;
+        move_to_trash.get_style_context ().add_class (Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION);
 
         var ignore_button = new Gtk.Button.with_label (_("Ignore"));
 

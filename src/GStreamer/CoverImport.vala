@@ -29,8 +29,11 @@
 public class Music.CoverImport : GLib.Object {
     private const int DISCOVERER_TIMEOUT = 5;
 
+    private static bool missing_plugins_dialog_shown = false;
+
     private Gst.PbUtils.Discoverer discoverer;
     private Album album;
+    private bool missing_plugins = false;
 
     construct {
         try {
@@ -53,8 +56,49 @@ public class Music.CoverImport : GLib.Object {
                     }
                 }
             }
+
+            if (missing_plugins) {
+                Idle.add (show_missing_plugins_dialog);
+            }
+
             return null;
         });
+    }
+
+    private bool show_missing_plugins_dialog () {
+        if (missing_plugins_dialog_shown) {
+            return false;
+        }
+
+        missing_plugins_dialog_shown = true;
+
+        var dialog = new Granite.MessageDialog.with_image_from_icon_name (
+            _("Unable to Load Some Album Art"),
+            _("A required GStreamer plugin is missing. Install the necessary codecs, then rescan your music folder to load album art."),
+            "dialog-warning",
+            Gtk.ButtonsType.CANCEL
+        );
+        dialog.transient_for = App.main_window;
+        dialog.modal = true;
+
+        dialog.primary_label.max_width_chars = 45;
+        dialog.primary_label.wrap = true;
+        dialog.secondary_label.max_width_chars = 45;
+        dialog.secondary_label.wrap = true;
+
+        var rescan_button = (Gtk.Button) dialog.add_button (_("Rescan Library"), Gtk.ResponseType.ACCEPT);
+        rescan_button.get_style_context ().add_class (Gtk.STYLE_CLASS_SUGGESTED_ACTION);
+
+        dialog.response.connect ((response_id) => {
+            if (response_id == Gtk.ResponseType.ACCEPT) {
+                ((LocalLibrary) libraries_manager.local_library).rescan_music_folder ();
+            }
+
+            dialog.destroy ();
+        });
+
+        dialog.show_all ();
+        return false;
     }
 
     private void read_info (Gst.PbUtils.DiscovererInfo info) {
@@ -83,12 +127,7 @@ public class Music.CoverImport : GLib.Object {
 
             case Gst.PbUtils.DiscovererResult.MISSING_PLUGINS:
                 warning ("GStreamer could not import '%s': Missing plugins.", uri);
-
-                /**
-                 * TODO: handle this gracefully.
-                 * After the import finishes, show the plugin-not-found
-                 * dialog and rescan the music folder.
-                 */
+                missing_plugins = true;
             break;
         }
 

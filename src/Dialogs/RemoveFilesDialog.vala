@@ -39,8 +39,10 @@ public class Music.RemoveFilesDialog : Granite.MessageDialog {
             transient_for: App.main_window
         );
 
-        primary_label.max_width_chars = 65;
-        secondary_label.max_width_chars = 65;
+        primary_label.max_width_chars = 45;
+        primary_label.wrap = true;
+        secondary_label.max_width_chars = 45;
+        secondary_label.wrap = true;
 
         var to_remove_size = to_remove.size;
 
@@ -69,6 +71,9 @@ public class Music.RemoveFilesDialog : Granite.MessageDialog {
             }
         }
 
+        var cancel_button = (Gtk.Button) add_button (_("Cancel"), Gtk.ResponseType.CANCEL);
+        var remove_button = (Gtk.Button) add_button (_("Remove from Library"), Gtk.ResponseType.APPLY);
+
         if (need_trash) {
             var trash_button = (Gtk.Button) add_button (_("Move to Trash"), 0);
             trash_button.get_style_context ().add_class (Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION);
@@ -78,9 +83,6 @@ public class Music.RemoveFilesDialog : Granite.MessageDialog {
                 destroy ();
             });
         }
-
-        var cancel_button = (Gtk.Button) add_button (_("Cancel"), Gtk.ResponseType.CANCEL);
-        var remove_button = (Gtk.Button) add_button (_("Remove from Library"), Gtk.ResponseType.APPLY);
 
         remove_button.clicked.connect (() => {
             remove_media (false);

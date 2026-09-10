@@ -38,6 +38,11 @@ public class Music.FileNotFoundDialog : Granite.MessageDialog {
             transient_for: App.main_window
         );
 
+        primary_label.max_width_chars = 45;
+        primary_label.wrap = true;
+        secondary_label.max_width_chars = 45;
+        secondary_label.wrap = true;
+
         media_list = new Gee.LinkedList<Media> ();
         media_list.add_all (_media_list);
 
@@ -53,7 +58,8 @@ public class Music.FileNotFoundDialog : Granite.MessageDialog {
         var rescan_library = (Gtk.Button) add_button (_("Rescan Library"), 1);
         add_button (_("Remove Song"), 2);
         add_button (_("Cancel"), Gtk.ResponseType.CLOSE);
-        add_button (_("Find Song"), 3);
+        var find_button = (Gtk.Button) add_button (_("Find Song"), 3);
+        find_button.get_style_context ().add_class (Gtk.STYLE_CLASS_SUGGESTED_ACTION);
 
         rescan_library.sensitive = !libraries_manager.local_library.doing_file_operations ();
 

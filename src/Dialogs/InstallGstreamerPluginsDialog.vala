@@ -46,6 +46,11 @@ public class Music.InstallGstreamerPluginsDialog : Granite.MessageDialog {
         modal = true;
         transient_for = App.main_window;
 
+        primary_label.max_width_chars = 45;
+        primary_label.wrap = true;
+        secondary_label.max_width_chars = 45;
+        secondary_label.wrap = true;
+
         add_button (_("Cancel"), Gtk.ResponseType.CLOSE);
 
         var install_button = add_button (_("Install Plugin"), Gtk.ResponseType.APPLY);
@@ -93,7 +98,7 @@ public class Music.InstallGstreamerPluginsDialog : Granite.MessageDialog {
         try {
             // Launch dpkg asynchronously and pass the arguments as an array
             process = new Subprocess (
-                SubprocessFlags.STDOUT_PIPE, 
+                SubprocessFlags.STDOUT_PIPE,
                 "/usr/bin/dpkg", "-l"
             );
         } catch (Error e) {

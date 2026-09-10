@@ -44,6 +44,11 @@ public class Music.SetMusicFolderConfirmation : Granite.MessageDialog {
         modal = true;
         transient_for = App.main_window;
 
+        primary_label.max_width_chars = 45;
+        primary_label.wrap = true;
+        secondary_label.max_width_chars = 45;
+        secondary_label.wrap = true;
+
         var save_playlists = new Gtk.Button.with_label (_("Export Playlists"));
         is_finished = new Gtk.Image ();
         is_working = new Gtk.Spinner ();
